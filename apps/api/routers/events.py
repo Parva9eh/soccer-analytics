@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
+from typing import Optional
 from core.supabase_client import supabase
 from schemas.event import EventListResponse
 
@@ -8,35 +9,41 @@ router = APIRouter(prefix="/events", tags=["Events"])
 @router.get("/", response_model=EventListResponse)
 def get_events(
     match_id: int = Query(..., description="Database match ID"),
+    event_type: Optional[str] = Query(None, description="Filter by event type (e.g. Pass, Shot)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, le=500)
 ) -> EventListResponse:
-    """Get paginated events for a specific match with x/y coordinates."""
+    """Get paginated events for a match, optionally filtered by event_type."""
+    try:
+        query = (
+            supabase.table("events")
+            .select("*", count="exact")
+            .eq("match_id", match_id)
+        )
 
-    # Total count
-    count_response = (
-        supabase.table("events")
-        .select("id", count="exact")
-        .eq("match_id", match_id)
-        .execute()
-    )
-    total = count_response.count or 0
+        if event_type:
+            query = query.eq("event_type", event_type)
 
-    # Paginated data
-    offset = (page - 1) * page_size
-    response = (
-        supabase.table("events")
-        .select("*")
-        .eq("match_id", match_id)
-        .order("minute")
-        .order("second")
-        .range(offset, offset + page_size - 1)
-        .execute()
-    )
+        # Get total count
+        count_response = query.execute()
+        total = count_response.count or 0
 
-    return EventListResponse(
-        total=total,
-        page=page,
-        page_size=page_size,
-        events=response.data or []
-    )
+        # Get paginated results
+        offset = (page - 1) * page_size
+        response = (
+            query.order("minute")
+            .order("second")
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+
+        return EventListResponse(
+            total=total,
+            page=page,
+            page_size=page_size,
+            events=response.data or []
+        )
+
+    except Exception as e:
+        print(f"[Events] Error in get_events: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch events")
