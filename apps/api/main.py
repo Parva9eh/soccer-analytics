@@ -1,14 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers.health import router as health_router
 from routers.matches import router as matches_router
 from routers.events import router as events_router
+from routers.summary import router as summary_router 
+
 
 app = FastAPI(
     title="Soccer Analytics API",
-    description="Professional soccer data analysis platform",
-    version="0.2.0"
+    description="Professional soccer data analysis platform for coaches and fans",
+    version="0.3.0"
 )
 
 app.add_middleware(
@@ -22,7 +25,16 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(matches_router)
 app.include_router(events_router)
+app.include_router(summary_router)   # ← New
 
 @app.get("/")
 def root():
-    return {"message": "Soccer Analytics API is running"}
+    return {"message": "Soccer Analytics API"}
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"[Global Error] {request.url} → {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred. Please try again later."}
+    )

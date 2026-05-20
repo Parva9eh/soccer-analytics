@@ -1,26 +1,28 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from core.supabase_client import supabase
 
 router = APIRouter(prefix="/health", tags=["Health"])
 
+
 @router.get("/")
 def health_check():
-    """Basic health check endpoint."""
+    """Basic health check."""
     return {"status": "healthy", "service": "Soccer Analytics API"}
+
 
 @router.get("/supabase")
 def test_supabase_connection():
-    """Test connection to Supabase."""
+    """Test Supabase connection."""
     try:
-        # Simple test query
-        response = supabase.table("users").select("*", count="exact").limit(0).execute()
+        response = supabase.table("matches").select("id", count="exact").limit(0).execute()
         return {
             "status": "connected",
             "message": "Supabase connection successful",
-            "user_count": response.count
+            "matches_count": response.count
         }
     except Exception as e:
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+        print(f"[Health] Supabase connection error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to connect to the database"
+        )
