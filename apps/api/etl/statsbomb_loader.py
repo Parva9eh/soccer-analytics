@@ -420,4 +420,47 @@ Events: 100%|██████████████████████�
      - Carry: 902
      - Pressure: 198
      - Ball Recovery: 85
+
+# Match 3: High-scoring
+uv run python etl/statsbomb_loader.py --load-events --match-id 3773586
+
+📥 Loading events for match 3773586...
+Events: 100%|██████████████████████████████████████████████| 3953/3953 [10:07<00:00,  6.50event/s]
+
+✅ Finished in 609.6s
+   Total events in match: 3953
+   Successfully inserted: 0
+   Skipped (duplicates/errors): 3953
+
+   Top event types:
+     - Pass: 1113
+     - Ball Receipt*: 1099
+     - Carry: 931
+     - Pressure: 354
+     - Ball Recovery: 71
+
+To tes:
+
+uv run python -c "
+from core.supabase_client import supabase
+
+# Total events
+total_events = supabase.table('events').select('id', count='exact').execute().count
+print(f'Total Events: {total_events}')
+
+# Events per match
+print('\nEvents per match:')
+result = supabase.table('events').select('match_id', count='exact').execute()
+from collections import Counter
+counts = Counter([e['match_id'] for e in result.data])
+for match_id, count in sorted(counts.items()):
+    print(f'  Match DB ID {match_id}: {count} events')
+"
+Result: 
+Total Events: 5091
+
+Events per match:
+  Match DB ID 1: 749 events
+  Match DB ID 8: 251 events
+  
 """
