@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Calendar, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Calendar, Users, BarChart3 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -15,9 +15,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-white">
-      <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-semibold tracking-tight">
+    <div className="flex h-screen w-64 flex-col border-r border-slate-700 bg-slate-900">
+      <div className="flex h-16 items-center border-b border-slate-700 px-6">
+        <h1 className="text-xl font-semibold tracking-tight text-white">
           Soccer Analytics
         </h1>
       </div>
@@ -31,10 +31,10 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-slate-100 text-slate-900"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -44,8 +44,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t p-4 text-xs text-slate-500">
-        v0.1.0 • La Liga 2020/21
+      <div className="border-t border-slate-700 p-4 text-xs text-slate-500">
+        v0.2.0 • La Liga 2020/21
       </div>
     </div>
   );

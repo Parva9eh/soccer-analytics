@@ -30,23 +30,27 @@ export default function MatchesPage() {
   if (isLoading) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-semibold mb-2">Matches</h1>
-        <p className="text-muted-foreground mb-8">Loading matches...</p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">
+            Matches
+          </h1>
+          <p className="text-slate-400 mt-1">Loading matches...</p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-[220px] rounded-xl bg-slate-100 animate-pulse"
+              className="h-[220px] rounded-xl bg-slate-800 border border-slate-700 animate-pulse"
             />
           ))}
         </div>
       </div>
     );
   }
-
   if (error) {
     return (
-      <div className="p-8 text-red-500">
+      <div className="p-8 text-red-400">
         Failed to load matches. Please check the backend.
       </div>
     );
@@ -55,8 +59,10 @@ export default function MatchesPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Matches</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-3xl font-semibold tracking-tight text-white">
+          Matches
+        </h1>
+        <p className="text-slate-400 mt-1">
           La Liga 2020/2021 • {matches?.length ?? 0} matches
         </p>
       </div>
