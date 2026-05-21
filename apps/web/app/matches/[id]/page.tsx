@@ -4,9 +4,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Trophy } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Trophy,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -56,7 +62,10 @@ interface EventsResponse {
 export default function MatchDetailPage() {
   const params = useParams();
   const matchId = Number(params.id);
+
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedEventType, setSelectedEventType] = useState<string>("all");
+  const pageSize = 50;
 
   // Fetch match details
   const { data: match, isLoading: matchLoading } = useQuery<Match>({
@@ -69,13 +78,15 @@ export default function MatchDetailPage() {
     enabled: !!matchId,
   });
 
-  // Fetch events
+  // Fetch events with pagination
   const { data: eventsData, isLoading: eventsLoading } =
     useQuery<EventsResponse>({
-      queryKey: ["events", matchId],
+      queryKey: ["events", matchId, currentPage, selectedEventType],
       queryFn: async () => {
+        const eventTypeParam =
+          selectedEventType === "all" ? "" : `&event_type=${selectedEventType}`;
         const res = await fetch(
-          `http://localhost:8000/events/?match_id=${matchId}&page=1&page_size=200`,
+          `http://localhost:8000/events/?match_id=${matchId}&page=${currentPage}&page_size=${pageSize}${eventTypeParam}`,
         );
         if (!res.ok) throw new Error("Failed to fetch events");
         return res.json();
@@ -83,35 +94,48 @@ export default function MatchDetailPage() {
       enabled: !!matchId,
     });
 
-  // Get unique event types for the filter
-  const eventTypes = eventsData?.events
+  // Get unique event types (for filter dropdown)
+  const { data: allEventsForTypes } = useQuery<EventsResponse>({
+    queryKey: ["all-events-for-filter", matchId],
+    queryFn: async () => {
+      const res = await fetch(
+        `http://localhost:8000/events/?match_id=${matchId}&page=1&page_size=500`,
+      );
+      if (!res.ok) return { events: [] };
+      return res.json();
+    },
+    enabled: !!matchId,
+  });
+
+  const eventTypes = allEventsForTypes?.events
     ? (Array.from(
-        new Set(eventsData.events.map((e) => e.event_type).filter(Boolean)),
+        new Set(
+          allEventsForTypes.events.map((e) => e.event_type).filter(Boolean),
+        ),
       ) as string[])
     : [];
 
-  // Filter events based on selected type
-  const filteredEvents = eventsData?.events
-    ? selectedEventType === "all"
-      ? eventsData.events
-      : eventsData.events.filter(
-          (event) => event.event_type === selectedEventType,
-        )
-    : [];
+  const totalPages = eventsData ? Math.ceil(eventsData.total / pageSize) : 1;
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // Reset to page 1 when filter changes
+  const handleFilterChange = (value: string) => {
+    setSelectedEventType(value);
+    setCurrentPage(1);
+  };
 
   if (matchLoading) {
-    return (
-      <div className="p-8 max-w-6xl mx-auto">
-        <div className="h-8 w-64 bg-slate-200 rounded animate-pulse mb-8" />
-        <div className="h-[200px] bg-slate-100 rounded-xl animate-pulse mb-8" />
-        <div className="h-96 bg-slate-100 rounded-xl animate-pulse" />
-      </div>
-    );
+    return <div className="p-8">Loading match...</div>;
   }
 
   if (!match) {
     return (
-      <div className="p-8 max-w-6xl mx-auto">
+      <div className="p-8">
         <p className="text-red-500">Match not found.</p>
         <Link href="/matches">
           <Button variant="outline" className="mt-4">
@@ -187,19 +211,14 @@ export default function MatchDetailPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Events</h2>
-          <div className="flex items-center gap-4">
-            {eventsData && (
-              <div className="text-sm text-muted-foreground">
-                {filteredEvents.length} of {eventsData.total} events
-              </div>
-            )}
 
+          <div className="flex items-center gap-4">
             {/* Event Type Filter */}
             {eventTypes.length > 0 && (
-              <div className="w-52">
+              <div className="w-56">
                 <Select
                   value={selectedEventType}
-                  onValueChange={setSelectedEventType}
+                  onValueChange={handleFilterChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Filter by event type" />
@@ -215,46 +234,84 @@ export default function MatchDetailPage() {
                 </Select>
               </div>
             )}
+
+            {/* Pagination Info */}
+            {eventsData && (
+              <div className="text-sm text-muted-foreground whitespace-nowrap">
+                Page {currentPage} of {totalPages} • {eventsData.total} total
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Events Table */}
         {eventsLoading ? (
-          <div className="h-64 bg-slate-100 rounded-xl animate-pulse" />
-        ) : filteredEvents.length > 0 ? (
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Minute</TableHead>
-                  <TableHead>Event Type</TableHead>
-                  <TableHead>Location (x, y)</TableHead>
-                  <TableHead>End Location</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEvents.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell className="font-mono">
-                      {event.minute ?? "-"}:
-                      {event.second?.toString().padStart(2, "0") ?? "00"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {event.event_type || "Unknown"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {event.x?.toFixed(1) ?? "-"}, {event.y?.toFixed(1) ?? "-"}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {event.end_x?.toFixed(1) ?? "-"},{" "}
-                      {event.end_y?.toFixed(1) ?? "-"}
-                    </TableCell>
+          <div className="h-96 bg-slate-100 rounded-xl animate-pulse" />
+        ) : eventsData && eventsData.events.length > 0 ? (
+          <>
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[110px]">Minute</TableHead>
+                    <TableHead>Event Type</TableHead>
+                    <TableHead>Location (x, y)</TableHead>
+                    <TableHead>End Location</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+                </TableHeader>
+                <TableBody>
+                  {eventsData.events.map((event) => (
+                    <TableRow key={event.id}>
+                      <TableCell className="font-mono">
+                        {event.minute ?? "-"}:
+                        {event.second?.toString().padStart(2, "0") ?? "00"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {event.event_type || "Unknown"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {event.x?.toFixed(1) ?? "-"},{" "}
+                        {event.y?.toFixed(1) ?? "-"}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {event.end_x?.toFixed(1) ?? "-"},{" "}
+                        {event.end_y?.toFixed(1) ?? "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between mt-4">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+
+              <div className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * pageSize + 1}–
+                {Math.min(currentPage * pageSize, eventsData.total)} of{" "}
+                {eventsData.total}
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </>
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
