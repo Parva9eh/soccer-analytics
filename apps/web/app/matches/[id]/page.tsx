@@ -4,17 +4,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Calendar,
-  Trophy,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Trophy } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Pitch } from "@/components/pitch/Pitch";
+
 import {
   Table,
   TableBody,
@@ -61,24 +57,37 @@ interface EventsResponse {
 
 export default function MatchDetailPage() {
   const params = useParams();
-  const matchId = Number(params.id);
+  const rawId = params.id;
+  const matchId = rawId ? Number(rawId) : null;
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEventType, setSelectedEventType] = useState<string>("all");
   const pageSize = 50;
 
   // Fetch match details
-  const { data: match, isLoading: matchLoading } = useQuery<Match>({
+  const {
+    data: match,
+    isLoading: matchLoading,
+    error: matchError,
+  } = useQuery<Match>({
     queryKey: ["match", matchId],
     queryFn: async () => {
+      if (!matchId || isNaN(matchId)) {
+        throw new Error("Invalid match ID");
+      }
       const res = await fetch(`http://localhost:8000/matches/${matchId}`);
-      if (!res.ok) throw new Error("Match not found");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || `Failed to fetch match (status: ${res.status})`,
+        );
+      }
       return res.json();
     },
-    enabled: !!matchId,
+    enabled: !!matchId && !isNaN(matchId),
   });
 
-  // Fetch events with pagination
+  // Fetch events for table
   const { data: eventsData, isLoading: eventsLoading } =
     useQuery<EventsResponse>({
       queryKey: ["events", matchId, currentPage, selectedEventType],
@@ -91,12 +100,12 @@ export default function MatchDetailPage() {
         if (!res.ok) throw new Error("Failed to fetch events");
         return res.json();
       },
-      enabled: !!matchId,
+      enabled: !!matchId && !isNaN(matchId),
     });
 
-  // Get unique event types (for filter dropdown)
-  const { data: allEventsForTypes } = useQuery<EventsResponse>({
-    queryKey: ["all-events-for-filter", matchId],
+  // Fetch events for Pitch
+  const { data: pitchEventsData } = useQuery<EventsResponse>({
+    queryKey: ["pitch-events", matchId],
     queryFn: async () => {
       const res = await fetch(
         `http://localhost:8000/events/?match_id=${matchId}&page=1&page_size=500`,
@@ -104,13 +113,26 @@ export default function MatchDetailPage() {
       if (!res.ok) return { events: [] };
       return res.json();
     },
-    enabled: !!matchId,
+    enabled: !!matchId && !isNaN(matchId),
   });
 
-  const eventTypes = allEventsForTypes?.events
+  // Get unique event types
+  const { data: allEventsForFilter } = useQuery<EventsResponse>({
+    queryKey: ["all-events-filter", matchId],
+    queryFn: async () => {
+      const res = await fetch(
+        `http://localhost:8000/events/?match_id=${matchId}&page=1&page_size=500`,
+      );
+      if (!res.ok) return { events: [] };
+      return res.json();
+    },
+    enabled: !!matchId && !isNaN(matchId),
+  });
+
+  const eventTypes = allEventsForFilter?.events
     ? (Array.from(
         new Set(
-          allEventsForTypes.events.map((e) => e.event_type).filter(Boolean),
+          allEventsForFilter.events.map((e) => e.event_type).filter(Boolean),
         ),
       ) as string[])
     : [];
@@ -118,30 +140,41 @@ export default function MatchDetailPage() {
   const totalPages = eventsData ? Math.ceil(eventsData.total / pageSize) : 1;
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
+    if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage);
   };
 
-  // Reset to page 1 when filter changes
   const handleFilterChange = (value: string) => {
     setSelectedEventType(value);
     setCurrentPage(1);
   };
 
+  // Loading state
   if (matchLoading) {
-    return <div className="p-8">Loading match...</div>;
+    return <div className="p-8">Loading match details...</div>;
   }
 
-  if (!match) {
+  // Error state
+  if (matchError || !match) {
     return (
-      <div className="p-8">
-        <p className="text-red-500">Match not found.</p>
-        <Link href="/matches">
-          <Button variant="outline" className="mt-4">
-            Back to Matches
-          </Button>
+      <div className="p-8 max-w-4xl mx-auto">
+        <Link
+          href="/matches"
+          className="inline-flex items-center gap-2 text-sm mb-6 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Matches
         </Link>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-red-500 font-medium mb-2">
+              {matchError?.message || "Match not found."}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Match ID from URL: <code>{rawId}</code>
+              <br />
+              Parsed ID: <code>{matchId}</code>
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -154,7 +187,7 @@ export default function MatchDetailPage() {
   });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto">
       {/* Back Button */}
       <Link
         href="/matches"
@@ -207,13 +240,18 @@ export default function MatchDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Pitch Visualization */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold mb-4">Match Visualization</h2>
+        <Pitch events={pitchEventsData?.events || []} />
+      </div>
+
       {/* Events Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Events</h2>
 
           <div className="flex items-center gap-4">
-            {/* Event Type Filter */}
             {eventTypes.length > 0 && (
               <div className="w-56">
                 <Select
@@ -235,16 +273,14 @@ export default function MatchDetailPage() {
               </div>
             )}
 
-            {/* Pagination Info */}
             {eventsData && (
               <div className="text-sm text-muted-foreground whitespace-nowrap">
-                Page {currentPage} of {totalPages} • {eventsData.total} total
+                Page {currentPage} of {totalPages}
               </div>
             )}
           </div>
         </div>
 
-        {/* Events Table */}
         {eventsLoading ? (
           <div className="h-96 bg-slate-100 rounded-xl animate-pulse" />
         ) : eventsData && eventsData.events.length > 0 ? (
@@ -285,30 +321,26 @@ export default function MatchDetailPage() {
               </Table>
             </Card>
 
-            {/* Pagination Controls */}
+            {/* Pagination */}
             <div className="flex items-center justify-between mt-4">
               <Button
                 variant="outline"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                <ChevronLeft className="h-4 w-4 mr-2" />
                 Previous
               </Button>
-
               <div className="text-sm text-muted-foreground">
                 Showing {(currentPage - 1) * pageSize + 1}–
                 {Math.min(currentPage * pageSize, eventsData.total)} of{" "}
                 {eventsData.total}
               </div>
-
               <Button
                 variant="outline"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
                 Next
-                <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
           </>
