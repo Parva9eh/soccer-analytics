@@ -24,15 +24,18 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="p-8">
-        <h1 className="text-3xl font-semibold mb-8">Dashboard</h1>
+        <h1 className="text-3xl font-semibold mb-8 text-white">Dashboard</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
+            <Card
+              key={i}
+              className="animate-pulse border-slate-700 bg-slate-800"
+            >
               <CardHeader>
-                <div className="h-4 bg-slate-200 rounded w-24" />
+                <div className="h-4 bg-slate-700 rounded w-24" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-slate-200 rounded w-16" />
+                <div className="h-8 bg-slate-700 rounded w-16" />
               </CardContent>
             </Card>
           ))}
@@ -44,11 +47,10 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="p-8">
-        <Card>
-          <CardContent>
-            <p className="text-red-500">
-              Failed to load dashboard data. Make sure the backend is running on
-              port 8000.
+        <Card className="border-slate-700 bg-slate-800">
+          <CardContent className="pt-6">
+            <p className="text-red-400">
+              Failed to load dashboard data. Please check the backend.
             </p>
           </CardContent>
         </Card>
@@ -59,73 +61,81 @@ export default function Dashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-3xl font-semibold tracking-tight text-white">
+          Dashboard
+        </h1>
+        <p className="text-slate-400 mt-1">
           Overview of La Liga 2020/2021 season
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Matches Card */}
-        <Card>
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Matches</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-400">
+              Total Matches
+            </CardTitle>
+            <Calendar className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{data?.total_matches ?? 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              La Liga 2020/21
-            </p>
+            <div className="text-3xl font-bold text-white">
+              {data?.total_matches ?? 0}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">La Liga 2020/21</p>
           </CardContent>
         </Card>
 
         {/* Total Events Card */}
-        <Card>
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-400">
+              Total Events
+            </CardTitle>
+            <Target className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
+            <div className="text-3xl font-bold text-white">
               {data?.total_events?.toLocaleString() ?? 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Passes, shots, pressures...
             </p>
           </CardContent>
         </Card>
 
         {/* Total Players Card */}
-        <Card>
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-slate-400">
               Players Loaded
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{data?.total_players ?? 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">From lineups</p>
+            <div className="text-3xl font-bold text-white">
+              {data?.total_players ?? 0}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">From lineups</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="mt-8">
-        <Card>
+        <Card className="border-slate-700 bg-slate-800">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="text-white">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-4">
+          <CardContent className="flex flex-wrap gap-4">
             <a
               href="/matches"
-              className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              className="inline-flex items-center justify-center rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
             >
               Browse Matches
             </a>
             <a
               href="/analytics"
-              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors"
             >
               View Analytics
             </a>

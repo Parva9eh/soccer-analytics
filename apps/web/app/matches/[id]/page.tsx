@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Trophy } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, X, ChevronDown } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Match {
   id: number;
@@ -57,37 +62,38 @@ interface EventsResponse {
 
 export default function MatchDetailPage() {
   const params = useParams();
-  const rawId = params.id;
-  const matchId = rawId ? Number(rawId) : null;
+  const matchId = params.id ? Number(params.id) : null;
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEventType, setSelectedEventType] = useState<string>("all");
+  const [highlightedEventId, setHighlightedEventId] = useState<number | null>(
+    null,
+  );
+  const [isControlsOpen, setIsControlsOpen] = useState(false);
+
+  // Pitch visibility controls
+  const [visibleEventTypes, setVisibleEventTypes] = useState<string[]>([
+    "Shot",
+    "Pass",
+    "Pressure",
+    "Carry",
+    "Duel",
+  ]);
+
   const pageSize = 50;
 
   // Fetch match details
-  const {
-    data: match,
-    isLoading: matchLoading,
-    error: matchError,
-  } = useQuery<Match>({
+  const { data: match, isLoading: matchLoading } = useQuery<Match>({
     queryKey: ["match", matchId],
     queryFn: async () => {
-      if (!matchId || isNaN(matchId)) {
-        throw new Error("Invalid match ID");
-      }
       const res = await fetch(`http://localhost:8000/matches/${matchId}`);
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail || `Failed to fetch match (status: ${res.status})`,
-        );
-      }
+      if (!res.ok) throw new Error("Match not found");
       return res.json();
     },
-    enabled: !!matchId && !isNaN(matchId),
+    enabled: !!matchId,
   });
 
-  // Fetch events for table
+  // Fetch events for the table (paginated + filtered)
   const { data: eventsData, isLoading: eventsLoading } =
     useQuery<EventsResponse>({
       queryKey: ["events", matchId, currentPage, selectedEventType],
@@ -100,10 +106,10 @@ export default function MatchDetailPage() {
         if (!res.ok) throw new Error("Failed to fetch events");
         return res.json();
       },
-      enabled: !!matchId && !isNaN(matchId),
+      enabled: !!matchId,
     });
 
-  // Fetch events for Pitch
+  // Fetch events for Pitch visualization
   const { data: pitchEventsData } = useQuery<EventsResponse>({
     queryKey: ["pitch-events", matchId],
     queryFn: async () => {
@@ -113,10 +119,19 @@ export default function MatchDetailPage() {
       if (!res.ok) return { events: [] };
       return res.json();
     },
-    enabled: !!matchId && !isNaN(matchId),
+    enabled: !!matchId,
   });
 
-  // Get unique event types
+  // Filter events shown on the pitch
+  const filteredPitchEvents =
+    pitchEventsData?.events?.filter((event) => {
+      if (!event.event_type) return false;
+      return visibleEventTypes.some((type) =>
+        event.event_type!.toLowerCase().includes(type.toLowerCase()),
+      );
+    }) || [];
+
+  // Get unique event types for the filter dropdown
   const { data: allEventsForFilter } = useQuery<EventsResponse>({
     queryKey: ["all-events-filter", matchId],
     queryFn: async () => {
@@ -126,7 +141,7 @@ export default function MatchDetailPage() {
       if (!res.ok) return { events: [] };
       return res.json();
     },
-    enabled: !!matchId && !isNaN(matchId),
+    enabled: !!matchId,
   });
 
   const eventTypes = allEventsForFilter?.events
@@ -139,42 +154,69 @@ export default function MatchDetailPage() {
 
   const totalPages = eventsData ? Math.ceil(eventsData.total / pageSize) : 1;
 
+  // Handle page change
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) setCurrentPage(newPage);
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      setHighlightedEventId(null);
+    }
   };
 
+  // Handle event type filter change
   const handleFilterChange = (value: string) => {
     setSelectedEventType(value);
     setCurrentPage(1);
+    setHighlightedEventId(null);
   };
 
-  // Loading state
+  // Toggle event type visibility on pitch
+  const toggleEventType = (type: string) => {
+    setVisibleEventTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+  };
+
+  // Handle click on a dot from the pitch
+  const handlePitchEventClick = (event: any) => {
+    setHighlightedEventId(event.id);
+
+    // Find which page this event belongs to and switch to it
+    if (pitchEventsData?.events) {
+      const index = pitchEventsData.events.findIndex((e) => e.id === event.id);
+      if (index !== -1) {
+        const targetPage = Math.floor(index / pageSize) + 1;
+        if (targetPage !== currentPage) {
+          setCurrentPage(targetPage);
+        }
+      }
+    }
+
+    // Scroll to the events table
+    setTimeout(() => {
+      document.getElementById("events-table")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
+  const clearSelection = () => {
+    setHighlightedEventId(null);
+  };
+
   if (matchLoading) {
     return <div className="p-8">Loading match details...</div>;
   }
 
-  // Error state
-  if (matchError || !match) {
+  if (!match) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <Link
-          href="/matches"
-          className="inline-flex items-center gap-2 text-sm mb-6 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to Matches
+      <div className="p-8">
+        <p className="text-red-500">Match not found.</p>
+        <Link href="/matches">
+          <Button variant="outline" className="mt-4">
+            Back to Matches
+          </Button>
         </Link>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-red-500 font-medium mb-2">
-              {matchError?.message || "Match not found."}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Match ID from URL: <code>{rawId}</code>
-              <br />
-              Parsed ID: <code>{matchId}</code>
-            </p>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -242,12 +284,108 @@ export default function MatchDetailPage() {
 
       {/* Pitch Visualization */}
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Match Visualization</h2>
-        <Pitch events={pitchEventsData?.events || []} />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold">Match Visualization</h2>
+
+          {/* Pitch Controls Dropdown */}
+          <div className="relative">
+            <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  Pitch Controls
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${isControlsOpen ? "rotate-180" : ""}`}
+                  />
+                </Button>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent className="absolute right-0 top-11 z-50">
+                <Card className="w-64 border-slate-700 bg-slate-800 shadow-xl">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {["Shot", "Pass", "Pressure", "Carry", "Duel"].map(
+                        (type) => (
+                          <label
+                            key={type}
+                            className="flex items-center gap-3 text-sm text-slate-200 cursor-pointer hover:bg-slate-700 p-1.5 rounded"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={visibleEventTypes.includes(type)}
+                              onChange={() => toggleEventType(type)}
+                              className="h-4 w-4 accent-teal-500"
+                            />
+                            <span>Show {type}s</span>
+                          </label>
+                        ),
+                      )}
+
+                      <div className="pt-3 border-t border-slate-700">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setVisibleEventTypes([
+                              "Shot",
+                              "Pass",
+                              "Pressure",
+                              "Carry",
+                              "Duel",
+                            ])
+                          }
+                          className="w-full justify-start text-xs text-slate-300 hover:text-white"
+                        >
+                          Reset All Filters
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </div>
+
+        <Pitch
+          events={filteredPitchEvents}
+          onEventClick={handlePitchEventClick}
+          highlightedEventId={highlightedEventId}
+        />
       </div>
 
-      {/* Events Section */}
-      <div>
+      {/* Selected Event from Pitch */}
+      {highlightedEventId && (
+        <Card className="mb-6 border-blue-200 bg-blue-50">
+          <CardContent className="flex items-center justify-between py-3">
+            <div className="text-sm">
+              <span className="font-medium text-blue-900">
+                Selected from Pitch:{" "}
+              </span>
+              {
+                pitchEventsData?.events?.find(
+                  (e) => e.id === highlightedEventId,
+                )?.event_type
+              }{" "}
+              • Minute{" "}
+              {
+                pitchEventsData?.events?.find(
+                  (e) => e.id === highlightedEventId,
+                )?.minute
+              }
+            </div>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              <X className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Events Table */}
+      <div id="events-table">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Events</h2>
 
@@ -297,7 +435,14 @@ export default function MatchDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {eventsData.events.map((event) => (
-                    <TableRow key={event.id}>
+                    <TableRow
+                      key={event.id}
+                      className={
+                        highlightedEventId === event.id
+                          ? "bg-blue-100 border-l-4 border-blue-500"
+                          : ""
+                      }
+                    >
                       <TableCell className="font-mono">
                         {event.minute ?? "-"}:
                         {event.second?.toString().padStart(2, "0") ?? "00"}
