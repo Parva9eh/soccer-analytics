@@ -1,9 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Trophy } from "lucide-react";
-import Link from "next/link";
+import { MatchCard } from "@/components/matches/MatchCard";
 
 interface Match {
   id: number;
@@ -16,10 +14,11 @@ interface Match {
 }
 
 export default function MatchesPage() {
+  // Fetch all matches
   const {
     data: matches,
-    isLoading,
-    error,
+    isLoading: matchesLoading,
+    error: matchesError,
   } = useQuery<Match[]>({
     queryKey: ["matches"],
     queryFn: async () => {
@@ -29,41 +28,53 @@ export default function MatchesPage() {
     },
   });
 
-  if (isLoading) {
+  // Fetch events to determine which matches have events
+  const { data: eventsData } = useQuery({
+    queryKey: ["events-for-matches"],
+    queryFn: async () => {
+      const res = await fetch(
+        "http://localhost:8000/events/?match_id=1&page_size=5000",
+      );
+      // We only need to know which match_ids exist, so we fetch a large page
+      // A better long-term solution is a dedicated backend endpoint
+      if (!res.ok) return { events: [] };
+      return res.json();
+    },
+    enabled: !!matches, // Only run after matches are loaded
+  });
+
+  // Create a Set of match IDs that have events
+  const matchesWithEvents = new Set<number>();
+
+  if (eventsData?.events) {
+    eventsData.events.forEach((event: any) => {
+      if (event.match_id) {
+        matchesWithEvents.add(event.match_id);
+      }
+    });
+  }
+
+  if (matchesLoading) {
     return (
       <div className="p-8">
         <h1 className="text-3xl font-semibold mb-2">Matches</h1>
-        <p className="text-muted-foreground mb-8">La Liga 2020/2021 season</p>
-
+        <p className="text-muted-foreground mb-8">Loading matches...</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-slate-200 rounded w-20" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="h-5 bg-slate-200 rounded w-3/4" />
-                  <div className="h-5 bg-slate-200 rounded w-2/3" />
-                </div>
-              </CardContent>
-            </Card>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-[220px] rounded-xl bg-slate-100 animate-pulse"
+            />
           ))}
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (matchesError) {
     return (
-      <div className="p-8">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-red-500">
-              Failed to load matches. Please check if the backend is running.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="p-8 text-red-500">
+        Failed to load matches. Please check if the backend is running.
       </div>
     );
   }
@@ -73,68 +84,19 @@ export default function MatchesPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Matches</h1>
         <p className="text-muted-foreground mt-1">
-          La Liga 2020/2021 season • {matches?.length ?? 0} matches
+          La Liga 2020/2021 • {matches?.length ?? 0} matches
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {matches?.map((match) => (
-          <Link href={`/matches/${match.id}`} key={match.id}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(match.match_date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </div>
-                  {match.match_week && (
-                    <div className="flex items-center gap-1 text-xs bg-slate-100 px-2 py-0.5 rounded">
-                      <Trophy className="h-3 w-3" />
-                      Week {match.match_week}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Teams */}
-                  <div className="flex justify-between items-center">
-                    <div className="font-medium text-lg">
-                      {match.home_team || "Home Team"}
-                    </div>
-                    <div className="text-sm text-muted-foreground">vs</div>
-                    <div className="font-medium text-lg text-right">
-                      {match.away_team || "Away Team"}
-                    </div>
-                  </div>
-
-                  {/* Score */}
-                  <div className="flex justify-center items-center gap-4 pt-2 border-t">
-                    <div className="text-3xl font-bold tabular-nums">
-                      {match.home_score ?? "-"}
-                    </div>
-                    <div className="text-muted-foreground text-sm">—</div>
-                    <div className="text-3xl font-bold tabular-nums">
-                      {match.away_score ?? "-"}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+          <MatchCard
+            key={match.id}
+            match={match}
+            hasEvents={matchesWithEvents.has(match.id)}
+          />
         ))}
       </div>
-
-      {matches && matches.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          No matches found.
-        </div>
-      )}
     </div>
   );
 }
