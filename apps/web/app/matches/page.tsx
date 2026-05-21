@@ -14,11 +14,10 @@ interface Match {
 }
 
 export default function MatchesPage() {
-  // Fetch all matches
   const {
     data: matches,
-    isLoading: matchesLoading,
-    error: matchesError,
+    isLoading,
+    error,
   } = useQuery<Match[]>({
     queryKey: ["matches"],
     queryFn: async () => {
@@ -28,33 +27,7 @@ export default function MatchesPage() {
     },
   });
 
-  // Fetch events to determine which matches have events
-  const { data: eventsData } = useQuery({
-    queryKey: ["events-for-matches"],
-    queryFn: async () => {
-      const res = await fetch(
-        "http://localhost:8000/events/?match_id=1&page_size=5000",
-      );
-      // We only need to know which match_ids exist, so we fetch a large page
-      // A better long-term solution is a dedicated backend endpoint
-      if (!res.ok) return { events: [] };
-      return res.json();
-    },
-    enabled: !!matches, // Only run after matches are loaded
-  });
-
-  // Create a Set of match IDs that have events
-  const matchesWithEvents = new Set<number>();
-
-  if (eventsData?.events) {
-    eventsData.events.forEach((event: any) => {
-      if (event.match_id) {
-        matchesWithEvents.add(event.match_id);
-      }
-    });
-  }
-
-  if (matchesLoading) {
+  if (isLoading) {
     return (
       <div className="p-8">
         <h1 className="text-3xl font-semibold mb-2">Matches</h1>
@@ -71,10 +44,10 @@ export default function MatchesPage() {
     );
   }
 
-  if (matchesError) {
+  if (error) {
     return (
       <div className="p-8 text-red-500">
-        Failed to load matches. Please check if the backend is running.
+        Failed to load matches. Please check the backend.
       </div>
     );
   }
@@ -90,11 +63,7 @@ export default function MatchesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {matches?.map((match) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            hasEvents={matchesWithEvents.has(match.id)}
-          />
+          <MatchCard key={match.id} match={match} hasEvents={false} />
         ))}
       </div>
     </div>
