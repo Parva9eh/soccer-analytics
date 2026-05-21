@@ -131,7 +131,7 @@ export default function MatchDetailPage() {
       );
     }) || [];
 
-  // Get unique event types for the filter dropdown
+  // Get unique event types for filter
   const { data: allEventsForFilter } = useQuery<EventsResponse>({
     queryKey: ["all-events-filter", matchId],
     queryFn: async () => {
@@ -154,7 +154,6 @@ export default function MatchDetailPage() {
 
   const totalPages = eventsData ? Math.ceil(eventsData.total / pageSize) : 1;
 
-  // Handle page change
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -162,25 +161,23 @@ export default function MatchDetailPage() {
     }
   };
 
-  // Handle event type filter change
   const handleFilterChange = (value: string) => {
     setSelectedEventType(value);
     setCurrentPage(1);
     setHighlightedEventId(null);
   };
 
-  // Toggle event type visibility on pitch
   const toggleEventType = (type: string) => {
     setVisibleEventTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     );
   };
 
-  // Handle click on a dot from the pitch
+  // Handle click on a dot from the pitch (with cross-page support)
   const handlePitchEventClick = (event: any) => {
     setHighlightedEventId(event.id);
 
-    // Find which page this event belongs to and switch to it
+    // Find which page this event belongs to
     if (pitchEventsData?.events) {
       const index = pitchEventsData.events.findIndex((e) => e.id === event.id);
       if (index !== -1) {
@@ -191,12 +188,11 @@ export default function MatchDetailPage() {
       }
     }
 
-    // Scroll to the events table
+    // Scroll to table
     setTimeout(() => {
-      document.getElementById("events-table")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+      document
+        .getElementById("events-table")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
 
@@ -205,18 +201,60 @@ export default function MatchDetailPage() {
   };
 
   if (matchLoading) {
-    return <div className="p-8">Loading match details...</div>;
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="h-8 w-64 bg-slate-700 rounded animate-pulse mb-2" />
+          <div className="h-4 w-48 bg-slate-700 rounded animate-pulse" />
+        </div>
+
+        <Card className="mb-8 border-slate-700 bg-slate-800">
+          <CardContent className="pt-6">
+            <div className="flex justify-center items-center gap-12">
+              <div className="text-center">
+                <div className="h-4 w-24 bg-slate-700 rounded mx-auto mb-2" />
+                <div className="h-14 w-14 bg-slate-700 rounded mx-auto" />
+              </div>
+              <div className="h-8 w-8 bg-slate-700 rounded" />
+              <div className="text-center">
+                <div className="h-4 w-24 bg-slate-700 rounded mx-auto mb-2" />
+                <div className="h-14 w-14 bg-slate-700 rounded mx-auto" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="mb-8">
+          <div className="h-8 w-48 bg-slate-700 rounded mb-4" />
+          <div className="h-[560px] bg-slate-800 border border-slate-700 rounded-2xl animate-pulse" />
+        </div>
+
+        <div>
+          <div className="h-8 w-32 bg-slate-700 rounded mb-4" />
+          <div className="h-96 bg-slate-800 border border-slate-700 rounded-xl animate-pulse" />
+        </div>
+      </div>
+    );
   }
 
   if (!match) {
     return (
-      <div className="p-8">
-        <p className="text-red-500">Match not found.</p>
-        <Link href="/matches">
-          <Button variant="outline" className="mt-4">
-            Back to Matches
-          </Button>
+      <div className="p-8 max-w-4xl mx-auto">
+        <Link
+          href="/matches"
+          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-6"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Matches
         </Link>
+        <Card className="border-slate-700 bg-slate-800">
+          <CardContent className="pt-6">
+            <p className="text-red-400 font-medium mb-2">Match not found</p>
+            <p className="text-slate-400 text-sm">
+              The match you are looking for does not exist or could not be
+              loaded.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -287,7 +325,6 @@ export default function MatchDetailPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Match Visualization</h2>
 
-          {/* Pitch Controls Dropdown */}
           <div className="relative">
             <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
               <CollapsibleTrigger asChild>
@@ -420,10 +457,10 @@ export default function MatchDetailPage() {
         </div>
 
         {eventsLoading ? (
-          <div className="h-96 bg-slate-100 rounded-xl animate-pulse" />
+          <div className="h-96 bg-slate-800 border border-slate-700 rounded-xl animate-pulse" />
         ) : eventsData && eventsData.events.length > 0 ? (
           <>
-            <Card>
+            <Card className="border-slate-700 bg-slate-800">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -439,7 +476,7 @@ export default function MatchDetailPage() {
                       key={event.id}
                       className={
                         highlightedEventId === event.id
-                          ? "bg-blue-100 border-l-4 border-blue-500"
+                          ? "bg-blue-900/30 border-l-4 border-blue-500"
                           : ""
                       }
                     >
@@ -490,7 +527,7 @@ export default function MatchDetailPage() {
             </div>
           </>
         ) : (
-          <Card>
+          <Card className="border-slate-700 bg-slate-800">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">
                 No events found for this match.

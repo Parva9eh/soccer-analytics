@@ -41,13 +41,36 @@ export default function MatchesPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-[220px] rounded-xl bg-slate-800 border border-slate-700 animate-pulse"
-            />
+              className="h-[220px] rounded-xl border border-slate-700 bg-slate-800 p-6 animate-pulse"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-4 w-24 bg-slate-700 rounded" />
+                <div className="h-5 w-16 bg-slate-700 rounded-full" />
+              </div>
+
+              <div className="flex justify-between items-center gap-4 mb-4">
+                <div className="h-5 w-28 bg-slate-700 rounded" />
+                <div className="h-4 w-6 bg-slate-700 rounded" />
+                <div className="h-5 w-28 bg-slate-700 rounded" />
+              </div>
+
+              <div className="flex items-center justify-center gap-6 py-4 border-y border-slate-700 mb-4">
+                <div className="h-9 w-12 bg-slate-700 rounded" />
+                <div className="h-4 w-4 bg-slate-700 rounded" />
+                <div className="h-9 w-12 bg-slate-700 rounded" />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-28 bg-slate-700 rounded" />
+                <div className="h-4 w-20 bg-slate-700 rounded" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
     );
   }
+
   if (error) {
     return (
       <div className="p-8 text-red-400">

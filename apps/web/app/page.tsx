@@ -29,7 +29,7 @@ export default function Dashboard() {
           {[1, 2, 3].map((i) => (
             <Card
               key={i}
-              className="animate-pulse border-slate-700 bg-slate-800"
+              className="border-slate-700 bg-slate-800 animate-pulse"
             >
               <CardHeader>
                 <div className="h-4 bg-slate-700 rounded w-24" />
