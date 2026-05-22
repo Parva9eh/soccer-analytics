@@ -439,6 +439,74 @@ Events: 100%|██████████████████████�
      - Pressure: 354
      - Ball Recovery: 71
 
+# 5 uv run python etl/statsbomb_loader.py --load-events --match-id 3773660
+
+📥 Loading events for match 3773660...
+Events: 100%|██████████████████████| 3743/3743 [10:33<00:00,  5.90event/s]
+
+✅ Finished in 683.3s
+   Total events in match: 3743
+   Successfully inserted: 0
+   Skipped (duplicates/errors): 3743
+
+   Top event types:
+     - Pass: 1123
+     - Ball Receipt*: 1093
+     - Carry: 839
+     - Pressure: 251
+     - Ball Recovery: 70
+
+#6 uv run python etl/statsbomb_loader.py --load-events --match-id 3773377
+
+📥 Loading events for match 3773377...
+Events: 100%|██████████████████████| 3717/3717 [10:27<00:00,  5.92event/s]
+
+✅ Finished in 630.4s
+   Total events in match: 3717
+   Successfully inserted: 0
+   Skipped (duplicates/errors): 3717
+
+   Top event types:
+     - Pass: 1069
+     - Ball Receipt*: 1036
+     - Carry: 882
+     - Pressure: 235
+     - Ball Recovery: 85
+
+#7 uv run python etl/statsbomb_loader.py --load-events --match-id 3773474
+
+📥 Loading events for match 3773474...
+Events: 100%|██████████████████████| 3955/3955 [10:56<00:00,  6.03event/s]
+
+✅ Finished in 659.1s
+   Total events in match: 3955
+   Successfully inserted: 0
+   Skipped (duplicates/errors): 3955
+
+   Top event types:
+     - Pass: 1088
+     - Ball Receipt*: 1036
+     - Carry: 948
+     - Pressure: 374
+     - Ball Recovery: 97
+
+#8 uv run python etl/statsbomb_loader.py --load-events --match-id 3773369
+
+📥 Loading events for match 3773369...
+Events: 100%|██████████████████████| 4806/4806 [13:00<00:00,  6.15event/s]
+
+✅ Finished in 783.6s
+   Total events in match: 4806
+   Successfully inserted: 0
+   Skipped (duplicates/errors): 4806
+
+   Top event types:
+     - Pass: 1357
+     - Ball Receipt*: 1335
+     - Carry: 1206
+     - Pressure: 453
+     - Ball Recovery: 83
+
 To tes:
 
 uv run python -c "
@@ -462,5 +530,5 @@ Total Events: 5091
 Events per match:
   Match DB ID 1: 749 events
   Match DB ID 8: 251 events
-  
+
 """

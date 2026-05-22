@@ -32,6 +32,14 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+
 interface Match {
   id: number;
   match_date: string;
@@ -70,8 +78,8 @@ export default function MatchDetailPage() {
     null,
   );
   const [isControlsOpen, setIsControlsOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
-  // Pitch visibility controls
   const [visibleEventTypes, setVisibleEventTypes] = useState<string[]>([
     "Shot",
     "Pass",
@@ -93,7 +101,7 @@ export default function MatchDetailPage() {
     enabled: !!matchId,
   });
 
-  // Fetch events for the table (paginated + filtered)
+  // Fetch events for table
   const { data: eventsData, isLoading: eventsLoading } =
     useQuery<EventsResponse>({
       queryKey: ["events", matchId, currentPage, selectedEventType],
@@ -109,7 +117,7 @@ export default function MatchDetailPage() {
       enabled: !!matchId,
     });
 
-  // Fetch events for Pitch visualization
+  // Fetch events for Pitch
   const { data: pitchEventsData } = useQuery<EventsResponse>({
     queryKey: ["pitch-events", matchId],
     queryFn: async () => {
@@ -122,7 +130,7 @@ export default function MatchDetailPage() {
     enabled: !!matchId,
   });
 
-  // Filter events shown on the pitch
+  // Filter events shown on pitch
   const filteredPitchEvents =
     pitchEventsData?.events?.filter((event) => {
       if (!event.event_type) return false;
@@ -131,23 +139,10 @@ export default function MatchDetailPage() {
       );
     }) || [];
 
-  // Get unique event types for filter
-  const { data: allEventsForFilter } = useQuery<EventsResponse>({
-    queryKey: ["all-events-filter", matchId],
-    queryFn: async () => {
-      const res = await fetch(
-        `http://localhost:8000/events/?match_id=${matchId}&page=1&page_size=500`,
-      );
-      if (!res.ok) return { events: [] };
-      return res.json();
-    },
-    enabled: !!matchId,
-  });
-
-  const eventTypes = allEventsForFilter?.events
+  const eventTypes = pitchEventsData?.events
     ? (Array.from(
         new Set(
-          allEventsForFilter.events.map((e) => e.event_type).filter(Boolean),
+          pitchEventsData.events.map((e) => e.event_type).filter(Boolean),
         ),
       ) as string[])
     : [];
@@ -173,11 +168,12 @@ export default function MatchDetailPage() {
     );
   };
 
-  // Handle click on a dot from the pitch (with cross-page support)
+  // Handle click on pitch (dot or arrow)
   const handlePitchEventClick = (event: any) => {
     setHighlightedEventId(event.id);
+    setSelectedEvent(event);
 
-    // Find which page this event belongs to
+    // Switch to correct page if needed
     if (pitchEventsData?.events) {
       const index = pitchEventsData.events.findIndex((e) => e.id === event.id);
       if (index !== -1) {
@@ -187,74 +183,26 @@ export default function MatchDetailPage() {
         }
       }
     }
-
-    // Scroll to table
-    setTimeout(() => {
-      document
-        .getElementById("events-table")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
   };
 
   const clearSelection = () => {
     setHighlightedEventId(null);
+    setSelectedEvent(null);
   };
 
   if (matchLoading) {
-    return (
-      <div className="p-8 max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="h-8 w-64 bg-slate-700 rounded animate-pulse mb-2" />
-          <div className="h-4 w-48 bg-slate-700 rounded animate-pulse" />
-        </div>
-
-        <Card className="mb-8 border-slate-700 bg-slate-800">
-          <CardContent className="pt-6">
-            <div className="flex justify-center items-center gap-12">
-              <div className="text-center">
-                <div className="h-4 w-24 bg-slate-700 rounded mx-auto mb-2" />
-                <div className="h-14 w-14 bg-slate-700 rounded mx-auto" />
-              </div>
-              <div className="h-8 w-8 bg-slate-700 rounded" />
-              <div className="text-center">
-                <div className="h-4 w-24 bg-slate-700 rounded mx-auto mb-2" />
-                <div className="h-14 w-14 bg-slate-700 rounded mx-auto" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="mb-8">
-          <div className="h-8 w-48 bg-slate-700 rounded mb-4" />
-          <div className="h-[560px] bg-slate-800 border border-slate-700 rounded-2xl animate-pulse" />
-        </div>
-
-        <div>
-          <div className="h-8 w-32 bg-slate-700 rounded mb-4" />
-          <div className="h-96 bg-slate-800 border border-slate-700 rounded-xl animate-pulse" />
-        </div>
-      </div>
-    );
+    return <div className="p-8">Loading match...</div>;
   }
 
   if (!match) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <Link
-          href="/matches"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to Matches
+      <div className="p-8">
+        <p className="text-red-500">Match not found.</p>
+        <Link href="/matches">
+          <Button variant="outline" className="mt-4">
+            Back to Matches
+          </Button>
         </Link>
-        <Card className="border-slate-700 bg-slate-800">
-          <CardContent className="pt-6">
-            <p className="text-red-400 font-medium mb-2">Match not found</p>
-            <p className="text-slate-400 text-sm">
-              The match you are looking for does not exist or could not be
-              loaded.
-            </p>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -360,7 +308,6 @@ export default function MatchDetailPage() {
                           </label>
                         ),
                       )}
-
                       <div className="pt-3 border-t border-slate-700">
                         <Button
                           variant="ghost"
@@ -393,33 +340,6 @@ export default function MatchDetailPage() {
           highlightedEventId={highlightedEventId}
         />
       </div>
-
-      {/* Selected Event from Pitch */}
-      {highlightedEventId && (
-        <Card className="mb-6 border-blue-200 bg-blue-50">
-          <CardContent className="flex items-center justify-between py-3">
-            <div className="text-sm">
-              <span className="font-medium text-blue-900">
-                Selected from Pitch:{" "}
-              </span>
-              {
-                pitchEventsData?.events?.find(
-                  (e) => e.id === highlightedEventId,
-                )?.event_type
-              }{" "}
-              • Minute{" "}
-              {
-                pitchEventsData?.events?.find(
-                  (e) => e.id === highlightedEventId,
-                )?.minute
-              }
-            </div>
-            <Button variant="ghost" size="sm" onClick={clearSelection}>
-              <X className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Events Table */}
       <div id="events-table">
@@ -536,6 +456,98 @@ export default function MatchDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* ==================== PREMIUM SIDE PANEL ==================== */}
+      <Sheet
+        open={!!selectedEvent}
+        onOpenChange={(open) => !open && setSelectedEvent(null)}
+      >
+        <SheetContent className="w-[380px] sm:w-[420px] bg-slate-900 border-l border-slate-700 p-0 flex flex-col">
+          {/* Header */}
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-slate-700">
+            <div className="flex items-start justify-between">
+              <div>
+                <SheetTitle className="text-xl text-white">
+                  Event Details
+                </SheetTitle>
+                <SheetDescription className="text-slate-400 mt-1">
+                  {selectedEvent?.event_type} • Minute {selectedEvent?.minute}
+                  {selectedEvent?.second !== null &&
+                    `:${selectedEvent?.second.toString().padStart(2, "0")}`}
+                </SheetDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedEvent(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </SheetHeader>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Event Type */}
+            <div>
+              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                Event Type
+              </div>
+              <div className="text-lg font-semibold text-white">
+                {selectedEvent?.event_type}
+              </div>
+            </div>
+
+            {/* Time */}
+            <div>
+              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                Time
+              </div>
+              <div className="text-white font-mono text-lg">
+                {selectedEvent?.minute}:
+                {selectedEvent?.second?.toString().padStart(2, "0")}
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                  Start Location
+                </div>
+                <div className="font-mono text-white">
+                  ({selectedEvent?.x?.toFixed(1)},{" "}
+                  {selectedEvent?.y?.toFixed(1)})
+                </div>
+              </div>
+
+              {(selectedEvent?.end_x || selectedEvent?.end_y) && (
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                    End Location
+                  </div>
+                  <div className="font-mono text-white">
+                    ({selectedEvent?.end_x?.toFixed(1)},{" "}
+                    {selectedEvent?.end_y?.toFixed(1)})
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-slate-700">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedEvent(null)}
+              className="w-full"
+            >
+              Close
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
