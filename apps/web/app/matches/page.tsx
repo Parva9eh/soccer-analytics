@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { MatchCard } from "@/components/matches/MatchCard";
+import { apiFetch } from "@/lib/api";
 
 interface Match {
   id: number;
@@ -21,7 +22,7 @@ export default function MatchesPage() {
   } = useQuery<Match[]>({
     queryKey: ["matches"],
     queryFn: async () => {
-      const res = await fetch("http://localhost:8000/matches/?limit=100");
+      const res = await apiFetch("/matches/?limit=100");
       if (!res.ok) throw new Error("Failed to fetch matches");
       return res.json();
     },

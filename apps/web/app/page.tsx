@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Target, Users } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface SummaryData {
   total_matches: number;
@@ -15,7 +16,7 @@ export default function Dashboard() {
   const { data, isLoading, error } = useQuery<SummaryData>({
     queryKey: ["summary"],
     queryFn: async () => {
-      const res = await fetch("http://localhost:8000/summary/");
+      const res = await apiFetch("/summary/");
       if (!res.ok) throw new Error("Failed to fetch summary");
       return res.json();
     },
