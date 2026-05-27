@@ -12,6 +12,7 @@ import httpx
 from tqdm import tqdm
 from typing import List, Dict, Any
 from core.supabase_client import supabase
+import argparse
 
 STATSBOMB_BASE = "https://raw.githubusercontent.com/statsbomb/open-data/master/data"
 COMPETITIONS_URL = f"{STATSBOMB_BASE}/competitions.json"
@@ -278,6 +279,66 @@ def load_events_for_match(statsbomb_match_id: int, dry_run: bool = False) -> Non
         for event_type, count in event_type_counter.most_common(5):
             print(f"     - {event_type}: {count}")
 
+def load_players_for_loaded_matches(dry_run: bool = False):
+    """Load players from lineups of matches that already exist in the database."""
+    print("\n📥 Loading players from lineups of existing matches...")
+
+    # 1. Get all matches we already have
+    matches_result = supabase.table("matches").select("statsbomb_match_id").execute()
+    if not matches_result.data:
+        print("❌ No matches found in database. Load matches first.")
+        return
+
+    match_ids = [m["statsbomb_match_id"] for m in matches_result.data]
+    print(f"Found {len(match_ids)} matches in database. Fetching lineups...")
+
+    all_players = {}  # Deduplicate by statsbomb_player_id
+
+    for match_id in tqdm(match_ids, desc="Processing matches"):
+        url = f"https://raw.githubusercontent.com/statsbomb/open-data/master/data/lineups/{match_id}.json"
+        lineup_data = fetch_json(url)
+
+        if not lineup_data:
+            continue
+
+        for team in lineup_data:
+            for player in team.get("lineup", []):
+                player_id = player.get("player_id")
+                if not player_id:
+                    continue
+
+                # Get first position if available
+                positions = player.get("positions", [])
+                position = positions[0].get("position") if positions else None
+
+                all_players[player_id] = {
+                    "statsbomb_player_id": player_id,
+                    "name": player.get("player_name"),
+                    "position": position,
+                    "jersey_number": player.get("jersey_number"),
+                    "nationality": player.get("country", {}).get("name") if player.get("country") else None,
+                }
+
+    if not all_players:
+        print("⚠️ No players found in lineups.")
+        return
+
+    print(f"Total unique players found: {len(all_players)}")
+
+    if dry_run:
+        print("🔍 Dry run enabled. No data will be inserted.")
+        for pid, p in list(all_players.items())[:5]:
+            print(f"  - #{p.get('jersey_number')} {p['name']} ({p['position']})")
+        return
+
+    # 2. Upsert players
+    data_to_insert = list(all_players.values())
+    result = supabase.table("players").upsert(
+        data_to_insert,
+        on_conflict="statsbomb_player_id"
+    ).execute()
+
+    print(f"✅ Players loaded/updated: {len(data_to_insert)}")
 
 def load_all_events(dry_run: bool = False) -> None:
     print("\n" + "="*70)
@@ -296,59 +357,38 @@ def load_all_events(dry_run: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="StatsBomb Data Loader")
-    parser.add_argument("--competition", type=str, default="La Liga")
-    parser.add_argument("--season", type=str, default="2020/2021")
-    parser.add_argument("--load-competitions", action="store_true")
-    parser.add_argument("--load-seasons", action="store_true")
-    parser.add_argument("--load-matches", action="store_true")
-    parser.add_argument("--load-players", action="store_true")
-    parser.add_argument("--load-events", action="store_true", help="Load events for one match (requires --match-id)")
-    parser.add_argument("--match-id", type=int, help="StatsBomb match_id (use with --load-events)")
-    parser.add_argument("--load-events-all", action="store_true", help="Load events for ALL matches (heavy!)")
-    parser.add_argument("--load-all", action="store_true")
-    parser.add_argument("--list-seasons", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
+    parser = argparse.ArgumentParser(description="StatsBomb Data Loader for Soccer Analytics")
+    parser.add_argument("--load-competitions", action="store_true", help="Load competitions")
+    parser.add_argument("--load-seasons", action="store_true", help="Load seasons for a competition")
+    parser.add_argument("--load-matches", action="store_true", help="Load matches for a season")
+    parser.add_argument("--load-events", action="store_true", help="Load events for a specific match")
+    parser.add_argument("--load-events-all", action="store_true", help="Load events for ALL matches (can be slow)")
+    parser.add_argument("--load-players-for-matches", action="store_true", help="Load players from lineups of existing matches")
+    parser.add_argument("--competition", type=str, default="La Liga", help="Competition name")
+    parser.add_argument("--season", type=str, default="2020/2021", help="Season name (e.g. 2020/2021)")
+    parser.add_argument("--match-id", type=int, help="StatsBomb match ID")
+    parser.add_argument("--dry-run", action="store_true", help="Preview without inserting data")
 
     args = parser.parse_args()
     dry_run = args.dry_run
 
-    if args.list_seasons:
-        seasons = get_available_seasons(args.competition)
-        print(f"Available seasons for '{args.competition}': {seasons}")
-
-    elif args.load_all:
-        print("=== 🚀 Running FULL LOAD (competitions → seasons → matches) ===")
+    if args.load_competitions:
         load_competitions(dry_run)
-        load_seasons_for_competition(args.competition, dry_run=dry_run)
-        load_matches_for_season(args.competition, args.season, dry_run=dry_run)
-
-    elif args.load_competitions:
-        load_competitions(dry_run)
-
     elif args.load_seasons:
-        load_seasons_for_competition(args.competition, dry_run=dry_run)
-
+        load_seasons_for_competition(args.competition, dry_run)
     elif args.load_matches:
-        load_matches_for_season(args.competition, args.season, dry_run=dry_run)
-
-    elif args.load_players:
-        load_players(dry_run)
-
+        load_matches_for_season(args.competition, args.season, dry_run)
     elif args.load_events:
         if not args.match_id:
             print("❌ Error: --match-id is required when using --load-events")
         else:
             load_events_for_match(args.match_id, dry_run)
-
     elif args.load_events_all:
         load_all_events(dry_run)
-
+    elif args.load_players_for_matches:
+        load_players_for_loaded_matches(dry_run)
     else:
         print("No action specified. Use --help for usage options.")
-
 
 """
 # 1. Check available seasons
@@ -530,5 +570,24 @@ Total Events: 5091
 Events per match:
   Match DB ID 1: 749 events
   Match DB ID 8: 251 events
+
+To load players for matches that already exist in the database:
+To review first, add --dry-run flag to see which players would be loaded without actually inserting them:
+uv run python etl/statsbomb_loader.py --load-players-for-matches --dry-run
+uv run python etl/statsbomb_loader.py --load-players-for-matches
+
+uv run python etl/statsbomb_loader.py --load-players-for-matches --dry-run
+
+📥 Loading players from lineups of existing matches...
+Found 35 matches in database. Fetching lineups...
+Processing matches: 100%|█████████████████| 35/35 [00:10<00:00,  3.20it/s]
+Total unique players found: 516
+🔍 Dry run enabled. No data will be inserted.
+  - #22 Florian Grégoire Claude Lejeune (Left Center Back)
+  - #9 José Luis Sanmartín Mato (Right Center Forward)
+  - #10 John Guidetti (None)
+  - #3 Rubén Duarte Sánchez (Left Back)
+  - #5 Víctor Laguardia Cisneros (Right Back)
+
 
 """
