@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Trophy, X, ChevronDown } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ export default function MatchDetailPage() {
   const { data: match, isLoading: matchLoading } = useQuery<Match>({
     queryKey: ["match", matchId],
     queryFn: async () => {
-      const res = await fetch(`http://localhost:8000/matches/${matchId}`);
+      const res = await apiFetch(`/matches/${matchId}`);
       if (!res.ok) throw new Error("Match not found");
       return res.json();
     },
@@ -108,8 +109,8 @@ export default function MatchDetailPage() {
       queryFn: async () => {
         const eventTypeParam =
           selectedEventType === "all" ? "" : `&event_type=${selectedEventType}`;
-        const res = await fetch(
-          `http://localhost:8000/events/?match_id=${matchId}&page=${currentPage}&page_size=${pageSize}${eventTypeParam}`,
+        const res = await apiFetch(
+          `/events/?match_id=${matchId}&page=${currentPage}&page_size=${pageSize}${eventTypeParam}`,
         );
         if (!res.ok) throw new Error("Failed to fetch events");
         return res.json();
@@ -121,8 +122,8 @@ export default function MatchDetailPage() {
   const { data: pitchEventsData } = useQuery<EventsResponse>({
     queryKey: ["pitch-events", matchId],
     queryFn: async () => {
-      const res = await fetch(
-        `http://localhost:8000/events/?match_id=${matchId}&page=1&page_size=500`,
+      const res = await apiFetch(
+        `/events/?match_id=${matchId}&page=1&page_size=500`,
       );
       if (!res.ok) return { events: [] };
       return res.json();
