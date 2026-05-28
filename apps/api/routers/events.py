@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional
-from core.supabase_client import supabase
+from supabase import Client
+
+from core.supabase_client import get_supabase
 from schemas.event import EventListResponse
 
 router = APIRouter(prefix="/events", tags=["Events"])
@@ -8,6 +10,7 @@ router = APIRouter(prefix="/events", tags=["Events"])
 
 @router.get("/", response_model=EventListResponse)
 def get_events(
+    supabase: Client = Depends(get_supabase),
     match_id: int = Query(..., description="Database match ID"),
     event_type: Optional[str] = Query(None, description="Filter by event type (e.g. Pass, Shot)"),
     page: int = Query(1, ge=1),

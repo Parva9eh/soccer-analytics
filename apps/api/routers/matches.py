@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import List, Optional
-from core.supabase_client import supabase
+from supabase import Client
+
+from core.supabase_client import get_supabase
 from schemas.match import MatchResponse
 
 router = APIRouter(prefix="/matches", tags=["Matches"])
 
 
-def _get_team_names(team_ids: List[int]) -> dict:
+def _get_team_names(supabase: Client, team_ids: List[int]) -> dict:
     """Fetch team names safely."""
     if not team_ids:
         return {}
@@ -20,6 +22,7 @@ def _get_team_names(team_ids: List[int]) -> dict:
 
 @router.get("/", response_model=List[MatchResponse])
 def get_matches(
+    supabase: Client = Depends(get_supabase),
     competition: Optional[str] = None,
     season: Optional[str] = None,
     limit: int = Query(50, le=200)
@@ -40,7 +43,7 @@ def get_matches(
             if m.get("away_team_id"):
                 team_ids.add(m["away_team_id"])
 
-        team_names = _get_team_names(list(team_ids))
+        team_names = _get_team_names(supabase, list(team_ids))
 
         result = []
         for m in matches_data:
@@ -65,7 +68,7 @@ def get_matches(
 
 
 @router.get("/{match_id}", response_model=MatchResponse)
-def get_match(match_id: int) -> MatchResponse:
+def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchResponse:
     """Get a single match by ID."""
     try:
         response = (
@@ -80,7 +83,7 @@ def get_match(match_id: int) -> MatchResponse:
             raise HTTPException(status_code=404, detail="Match not found")
 
         m = response.data
-        team_names = _get_team_names([m.get("home_team_id"), m.get("away_team_id")])
+        team_names = _get_team_names(supabase, [m.get("home_team_id"), m.get("away_team_id")])
 
         return MatchResponse(
             id=m["id"],

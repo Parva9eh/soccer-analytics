@@ -1,11 +1,13 @@
-from fastapi import APIRouter, HTTPException
-from core.supabase_client import supabase
+from fastapi import APIRouter, HTTPException, Depends
+from supabase import Client
+
+from core.supabase_client import get_supabase
 
 router = APIRouter(prefix="/summary", tags=["Summary"])
 
 
 @router.get("/")
-def get_summary():
+def get_summary(supabase: Client = Depends(get_supabase)):
     """Get high-level summary of loaded data."""
     try:
         matches_count = supabase.table("matches").select("id", count="exact").execute().count or 0
