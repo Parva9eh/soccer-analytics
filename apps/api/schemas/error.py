@@ -23,12 +23,14 @@ class ErrorCode:
 class ErrorResponse(BaseModel):
     detail: str
     code: Optional[str] = None
+    request_id: Optional[str] = None
 
     class Config:
         schema_extra = {
             "example": {
                 "detail": "Match not found",
-                "code": "MATCH_NOT_FOUND"
+                "code": "MATCH_NOT_FOUND",
+                "request_id": "550e8400-e29b-41d4-a716-446655440000"
             }
         }
 
