@@ -1,7 +1,11 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends
 from supabase import Client
 
 from core.supabase_client import get_supabase
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/summary", tags=["Summary"])
 
@@ -21,6 +25,6 @@ def get_summary(supabase: Client = Depends(get_supabase)):
             "status": "healthy"
         }
 
-    except Exception as e:
-        print(f"[Summary] Error: {e}")
+    except Exception:
+        logger.exception("Failed to generate summary")
         raise HTTPException(status_code=500, detail="Failed to generate summary")

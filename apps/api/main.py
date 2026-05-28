@@ -1,21 +1,17 @@
-import logging
-
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from core.logging import configure_logging, add_request_logging_middleware
 from routers.health import router as health_router
 from routers.matches import router as matches_router
 from routers.events import router as events_router
 from routers.summary import router as summary_router
 
 
-# Basic structured logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+configure_logging()
 
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -37,6 +33,9 @@ app.include_router(health_router)
 app.include_router(matches_router)
 app.include_router(events_router)
 app.include_router(summary_router)   # ← New
+
+# Add request logging middleware (after routers are included is fine)
+add_request_logging_middleware(app)
 
 
 @app.get("/")
