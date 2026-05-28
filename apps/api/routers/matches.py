@@ -33,9 +33,26 @@ def get_matches(
             "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id, "
             "home_team:teams!home_team_id(name), "
             "away_team:teams!away_team_id(name)"
-        ).limit(limit)
+        )
 
-        response = query.execute()
+        comp_name = None
+        season_name = None
+
+        if competition:
+            comp_result = supabase.table("competitions").select("id").eq("name", competition).execute()
+            if comp_result.data:
+                comp_id = comp_result.data[0]["id"]
+                comp_name = competition
+                query = query.eq("competition_id", comp_id)
+
+        if season:
+            season_result = supabase.table("seasons").select("id").eq("year", season).execute()
+            if season_result.data:
+                season_id = season_result.data[0]["id"]
+                season_name = season
+                query = query.eq("season_id", season_id)
+
+        response = query.limit(limit).execute()
         matches_data = response.data or []
 
         result = []
@@ -52,8 +69,8 @@ def get_matches(
                     match_week=m.get("match_week"),
                     home_team=home_team.get("name"),
                     away_team=away_team.get("name"),
-                    competition=None,
-                    season=None,
+                    competition=comp_name,
+                    season=season_name,
                 )
             )
         return result
