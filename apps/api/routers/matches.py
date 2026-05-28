@@ -30,23 +30,19 @@ def get_matches(
     """Get list of matches with team names."""
     try:
         query = supabase.table("matches").select(
-            "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id"
+            "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id, "
+            "home_team:teams!home_team_id(name), "
+            "away_team:teams!away_team_id(name)"
         ).limit(limit)
 
         response = query.execute()
         matches_data = response.data or []
 
-        team_ids = set()
-        for m in matches_data:
-            if m.get("home_team_id"):
-                team_ids.add(m["home_team_id"])
-            if m.get("away_team_id"):
-                team_ids.add(m["away_team_id"])
-
-        team_names = _get_team_names(supabase, list(team_ids))
-
         result = []
         for m in matches_data:
+            home_team = m.get("home_team") or {}
+            away_team = m.get("away_team") or {}
+
             result.append(
                 MatchResponse(
                     id=m["id"],
@@ -54,8 +50,8 @@ def get_matches(
                     home_score=m.get("home_score"),
                     away_score=m.get("away_score"),
                     match_week=m.get("match_week"),
-                    home_team=team_names.get(m.get("home_team_id")),
-                    away_team=team_names.get(m.get("away_team_id")),
+                    home_team=home_team.get("name"),
+                    away_team=away_team.get("name"),
                     competition=None,
                     season=None,
                 )
@@ -73,7 +69,11 @@ def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchR
     try:
         response = (
             supabase.table("matches")
-            .select("id, match_date, home_score, away_score, match_week, home_team_id, away_team_id")
+            .select(
+                "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id, "
+                "home_team:teams!home_team_id(name), "
+                "away_team:teams!away_team_id(name)"
+            )
             .eq("id", match_id)
             .single()
             .execute()
@@ -83,7 +83,8 @@ def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchR
             raise HTTPException(status_code=404, detail="Match not found")
 
         m = response.data
-        team_names = _get_team_names(supabase, [m.get("home_team_id"), m.get("away_team_id")])
+        home_team = m.get("home_team") or {}
+        away_team = m.get("away_team") or {}
 
         return MatchResponse(
             id=m["id"],
@@ -91,8 +92,8 @@ def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchR
             home_score=m.get("home_score"),
             away_score=m.get("away_score"),
             match_week=m.get("match_week"),
-            home_team=team_names.get(m.get("home_team_id")),
-            away_team=team_names.get(m.get("away_team_id")),
+            home_team=home_team.get("name"),
+            away_team=away_team.get("name"),
             competition=None,
             season=None,
         )
