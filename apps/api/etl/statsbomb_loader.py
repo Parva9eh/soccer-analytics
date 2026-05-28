@@ -11,7 +11,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 import httpx
 from tqdm import tqdm
 from typing import List, Dict, Any
-from core.supabase_client import supabase
+from core.supabase_client import get_supabase_service_client
+
+supabase = get_supabase_service_client()
 import argparse
 
 STATSBOMB_BASE = "https://raw.githubusercontent.com/statsbomb/open-data/master/data"
