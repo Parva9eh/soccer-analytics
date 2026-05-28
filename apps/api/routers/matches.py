@@ -6,6 +6,7 @@ from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.match import MatchResponse
+from schemas.error import ErrorResponse, ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,11 @@ def _get_team_names(supabase: Client, team_ids: List[int]) -> dict:
         return {}
 
 
-@router.get("/", response_model=List[MatchResponse])
+@router.get(
+    "/",
+    response_model=List[MatchResponse],
+    responses=COMMON_ERROR_RESPONSES,
+)
 def get_matches(
     supabase: Client = Depends(get_supabase),
     competition: Optional[str] = None,
@@ -84,7 +89,11 @@ def get_matches(
         raise HTTPException(status_code=500, detail="Failed to fetch matches")
 
 
-@router.get("/{match_id}", response_model=MatchResponse)
+@router.get(
+    "/{match_id}",
+    response_model=MatchResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
 def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchResponse:
     """Get a single match by ID."""
     try:
@@ -101,7 +110,11 @@ def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchR
         )
 
         if not response.data:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise_http_exception(
+                status_code=404,
+                detail="Match not found",
+                code=ErrorCode.NOT_FOUND
+            )
 
         m = response.data
         home_team = m.get("home_team") or {}
