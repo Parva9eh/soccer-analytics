@@ -2,7 +2,8 @@ from fastapi import FastAPI, Request, HTTPException as FastAPIHTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from core.logging import configure_logging, add_request_logging_middleware
+from core.logging import configure_logging, add_request_logging_middleware, get_request_id
+
 from routers.health import router as health_router
 from routers.matches import router as matches_router
 from routers.events import router as events_router
@@ -47,26 +48,36 @@ def root():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.exception(f"Unhandled exception at {request.url}")
+    rid = getattr(request.state, "request_id", None)
+    logger.exception(f"Unhandled exception at {request.url} (request_id={rid})")
     return JSONResponse(
         status_code=500,
         content=ErrorResponse(
             detail="An unexpected error occurred. Please try again later.",
-            code=ErrorCode.INTERNAL_SERVER_ERROR
-        ).dict()
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+            request_id=rid,
+        ).dict(),
+        headers={"X-Request-ID": rid} if rid else None,
     )
 
 
 @app.exception_handler(FastAPIHTTPException)
 async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
-    """Ensure all HTTPException responses use the consistent ErrorResponse shape."""
+    """Ensure all HTTPException responses use the consistent ErrorResponse shape + request ID."""
+    rid = getattr(request.state, "request_id", None)
+
     if isinstance(exc.detail, dict):
         content = exc.detail
     else:
-        content = ErrorResponse(detail=str(exc.detail)).dict()
+        content = ErrorResponse(detail=str(exc.detail), request_id=rid).dict()
+
+    # Merge any existing exc.headers with our request ID header
+    headers = dict(exc.headers or {})
+    if rid:
+        headers["X-Request-ID"] = rid
 
     return JSONResponse(
         status_code=exc.status_code,
         content=content,
-        headers=exc.headers,
+        headers=headers or None,
     )
