@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException
-from core.supabase_client import supabase
+from fastapi import APIRouter, HTTPException, Depends
+from supabase import Client
+
+from core.supabase_client import get_supabase
 
 router = APIRouter(prefix="/health", tags=["Health"])
 
@@ -11,7 +13,7 @@ def health_check():
 
 
 @router.get("/supabase")
-def test_supabase_connection():
+def test_supabase_connection(supabase: Client = Depends(get_supabase)):
     """Test Supabase connection."""
     try:
         response = supabase.table("matches").select("id", count="exact").limit(0).execute()
