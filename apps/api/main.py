@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException as FastAPIHTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -7,6 +7,8 @@ from routers.health import router as health_router
 from routers.matches import router as matches_router
 from routers.events import router as events_router
 from routers.summary import router as summary_router
+
+from schemas.error import ErrorResponse, ErrorCode
 
 
 configure_logging()
@@ -48,5 +50,23 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.exception(f"Unhandled exception at {request.url}")
     return JSONResponse(
         status_code=500,
-        content={"detail": "An unexpected error occurred. Please try again later."}
+        content=ErrorResponse(
+            detail="An unexpected error occurred. Please try again later.",
+            code=ErrorCode.INTERNAL_SERVER_ERROR
+        ).dict()
+    )
+
+
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    """Ensure all HTTPException responses use the consistent ErrorResponse shape."""
+    if isinstance(exc.detail, dict):
+        content = exc.detail
+    else:
+        content = ErrorResponse(detail=str(exc.detail)).dict()
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=content,
+        headers=exc.headers,
     )

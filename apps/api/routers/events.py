@@ -6,13 +6,18 @@ from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.event import EventListResponse
+from schemas.error import ErrorResponse, ErrorCode, COMMON_ERROR_RESPONSES
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
-@router.get("/", response_model=EventListResponse)
+@router.get(
+    "/",
+    response_model=EventListResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
 def get_events(
     supabase: Client = Depends(get_supabase),
     match_id: int = Query(..., description="Database match ID"),
@@ -53,4 +58,10 @@ def get_events(
 
     except Exception:
         logger.exception("Error in get_events")
-        raise HTTPException(status_code=500, detail="Failed to fetch events")
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                detail="Failed to fetch events",
+                code=ErrorCode.INTERNAL_SERVER_ERROR
+            ).dict()
+        )
