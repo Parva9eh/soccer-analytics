@@ -1,9 +1,13 @@
+import logging
+
 from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import List, Optional
 from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.match import MatchResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/matches", tags=["Matches"])
 
@@ -15,8 +19,8 @@ def _get_team_names(supabase: Client, team_ids: List[int]) -> dict:
     try:
         response = supabase.table("teams").select("id, name").in_("id", team_ids).execute()
         return {team["id"]: team["name"] for team in (response.data or [])}
-    except Exception as e:
-        print(f"[Matches] Error fetching team names: {e}")
+    except Exception:
+        logger.exception("Error fetching team names")
         return {}
 
 
@@ -75,8 +79,8 @@ def get_matches(
             )
         return result
 
-    except Exception as e:
-        print(f"[Matches] Error in get_matches: {e}")
+    except Exception:
+        logger.exception("Error in get_matches")
         raise HTTPException(status_code=500, detail="Failed to fetch matches")
 
 
@@ -117,6 +121,6 @@ def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchR
 
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"[Matches] Error in get_match: {e}")
+    except Exception:
+        logger.exception("Error in get_match")
         raise HTTPException(status_code=500, detail="Failed to fetch match")

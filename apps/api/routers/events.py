@@ -1,9 +1,13 @@
+import logging
+
 from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional
 from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.event import EventListResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -47,6 +51,6 @@ def get_events(
             events=response.data or []
         )
 
-    except Exception as e:
-        print(f"[Events] Error in get_events: {e}")
+    except Exception:
+        logger.exception("Error in get_events")
         raise HTTPException(status_code=500, detail="Failed to fetch events")
