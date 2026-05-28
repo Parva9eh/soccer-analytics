@@ -3,9 +3,7 @@ import argparse
 from etl.competitions import load_competitions, load_seasons_for_competition
 from etl.matches import load_matches_for_season
 from etl.players import load_players_for_loaded_matches
-
-# Events functions are still in the main loader for now
-from etl.statsbomb_loader import load_events_for_match, load_all_events
+from etl.events import load_events_for_match, load_all_events
 
 
 def main():
