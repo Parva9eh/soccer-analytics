@@ -1,9 +1,10 @@
 import json
 import logging
-import os
 import sys
 import uuid
 from datetime import datetime, timezone
+
+from core.config import get_settings
 
 
 class JsonFormatter(logging.Formatter):
@@ -28,12 +29,12 @@ class JsonFormatter(logging.Formatter):
 def configure_logging() -> None:
     """Configure root logging for the application.
 
-    Respects the following environment variables:
-    - LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default: INFO
-    - LOG_FORMAT: Output format. "text" (default) or "json".
+    Settings are read from centralized Settings (via pydantic-settings).
+    Supports LOG_LEVEL, LOG_FORMAT (text|json).
     """
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    log_format = os.getenv("LOG_FORMAT", "text").lower()
+    settings = get_settings()
+    log_level = settings.LOG_LEVEL.upper()
+    log_format = settings.LOG_FORMAT.lower()
 
     handler = logging.StreamHandler(sys.stdout)
 
@@ -71,7 +72,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     @classmethod
     def get_excluded_paths(cls):
-        env_value = os.getenv("LOG_EXCLUDED_PATHS")
+        settings = get_settings()
+        env_value = settings.LOG_EXCLUDED_PATHS
         if env_value:
             return {p.strip() for p in env_value.split(",") if p.strip()}
         return cls.DEFAULT_EXCLUDED_PATHS
