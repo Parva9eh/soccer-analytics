@@ -11,6 +11,8 @@ from routers.health import router as health_router
 from routers.matches import router as matches_router
 from routers.events import router as events_router
 from routers.summary import router as summary_router
+from routers.players import router as players_router
+from routers.players import router as players_router
 
 from schemas.error import ErrorResponse, ErrorCode
 
@@ -57,7 +59,8 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(matches_router)
 app.include_router(events_router)
-app.include_router(summary_router)   # ← New
+app.include_router(summary_router)
+app.include_router(players_router)   # ← New
 
 # Add request logging middleware (after routers are included is fine)
 add_request_logging_middleware(app)
