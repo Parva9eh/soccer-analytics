@@ -24,8 +24,8 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        <h1 className="text-3xl font-semibold mb-8 text-white">Dashboard</h1>
+      <div className="content">
+        <h1 className="text-page-title mb-8">Dashboard</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <Card
@@ -47,7 +47,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className="content">
         <Card className="border-slate-700 bg-slate-800">
           <CardContent className="pt-6">
             <p className="text-red-400">
@@ -60,9 +60,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8">
+    <div className="content">
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-white">
+        <h1 className="text-page-title">
           Dashboard
         </h1>
         <p className="text-slate-400 mt-1">

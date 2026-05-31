@@ -216,11 +216,11 @@ export default function MatchDetailPage() {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="content max-w-7xl mx-auto">
       {/* Back Button */}
       <Link
         href="/matches"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+        className="inline-flex items-center gap-2 text-body-sm text-muted-foreground hover:text-foreground mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Matches
@@ -229,7 +229,7 @@ export default function MatchDetailPage() {
       {/* Match Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h1 className="text-page-title">
             {match.home_team} vs {match.away_team}
           </h1>
           {match.match_week && (
@@ -249,7 +249,7 @@ export default function MatchDetailPage() {
         <CardContent className="pt-6">
           <div className="flex justify-center items-center gap-12">
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-1">
+              <div className="text-label mb-1">
                 {match.home_team}
               </div>
               <div className="text-6xl font-bold tabular-nums">
@@ -258,7 +258,7 @@ export default function MatchDetailPage() {
             </div>
             <div className="text-2xl text-muted-foreground font-light">vs</div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-1">
+              <div className="text-label mb-1">
                 {match.away_team}
               </div>
               <div className="text-6xl font-bold tabular-nums">
@@ -271,8 +271,8 @@ export default function MatchDetailPage() {
 
       {/* Pitch Visualization */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">Match Visualization</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <h2 className="text-xl font-semibold tracking-tight">Match Visualization</h2>
 
           <div className="relative">
             <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
@@ -345,7 +345,7 @@ export default function MatchDetailPage() {
       {/* Events Table */}
       <div id="events-table">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">Events</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Events</h2>
 
           <div className="flex items-center gap-4">
             {eventTypes.length > 0 && (
@@ -370,7 +370,7 @@ export default function MatchDetailPage() {
             )}
 
             {eventsData && (
-              <div className="text-sm text-muted-foreground whitespace-nowrap">
+              <div className="text-body-sm text-muted-foreground whitespace-nowrap">
                 Page {currentPage} of {totalPages}
               </div>
             )}
@@ -388,14 +388,14 @@ export default function MatchDetailPage() {
                     <TableHead className="w-[110px]">Minute</TableHead>
                     <TableHead>Event Type</TableHead>
                     <TableHead>Location (x, y)</TableHead>
-                    <TableHead>End Location</TableHead>
+                    <TableHead className="hidden sm:table-cell">End Location</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {eventsData.events.map((event) => (
                     <TableRow
                       key={event.id}
-                      className={highlightedEventId === event.id ? "selected" : ""}
+                      className={highlightedEventId === event.id ? "selected min-h-[52px]" : "min-h-[52px]"}
                     >
                       <TableCell className="font-mono">
                         {event.minute ?? "-"}:
@@ -410,7 +410,7 @@ export default function MatchDetailPage() {
                         {event.x?.toFixed(1) ?? "-"},{" "}
                         {event.y?.toFixed(1) ?? "-"}
                       </TableCell>
-                      <TableCell className="font-mono text-sm text-slate-300">
+                      <TableCell className="font-mono text-sm text-slate-300 hidden sm:table-cell">
                         {event.end_x?.toFixed(1) ?? "-"},{" "}
                         {event.end_y?.toFixed(1) ?? "-"}
                       </TableCell>
@@ -459,7 +459,7 @@ export default function MatchDetailPage() {
         open={!!selectedEvent}
         onOpenChange={(open) => !open && setSelectedEvent(null)}
       >
-        <SheetContent className="w-[380px] sm:w-[420px] bg-slate-900 border-l border-slate-700 p-0 flex flex-col">
+        <SheetContent className="w-full max-w-[420px] sm:w-[420px] bg-slate-900 border-l border-slate-700 p-0 flex flex-col">
           {/* Header */}
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-slate-700">
             <div className="flex items-start justify-between">
@@ -488,7 +488,7 @@ export default function MatchDetailPage() {
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Event Type */}
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
+              <div className="text-label mb-1">
                 Event Type
               </div>
               <div className="text-lg font-semibold text-white">
@@ -498,7 +498,7 @@ export default function MatchDetailPage() {
 
             {/* Time */}
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
+              <div className="text-label mb-1">
                 Time
               </div>
               <div className="text-white font-mono text-lg">
@@ -510,7 +510,7 @@ export default function MatchDetailPage() {
             {/* Location */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
+                <div className="text-label mb-1">
                   Start Location
                 </div>
                 <div className="font-mono text-white">
@@ -521,7 +521,7 @@ export default function MatchDetailPage() {
 
               {(selectedEvent?.end_x || selectedEvent?.end_y) && (
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
+                  <div className="text-label mb-1">
                     End Location
                   </div>
                   <div className="font-mono text-white">
