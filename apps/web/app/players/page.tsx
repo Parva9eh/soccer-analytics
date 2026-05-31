@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import {
   Table,
@@ -24,6 +25,8 @@ export default function PlayersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const queryClient = useQueryClient();
 
   // Debounce the search input (300ms delay)
   useEffect(() => {
@@ -162,7 +165,22 @@ export default function PlayersPage() {
               sortedPlayers.map((player) => (
                 <TableRow key={player.id} className="hover:bg-slate-950">
                   <TableCell className="font-medium text-white">
-                    {player.name}
+                    <Link
+                      href={`/players/${player.id}`}
+                      className="hover:underline hover:text-blue-400 transition-colors"
+                      onMouseEnter={() => {
+                        queryClient.prefetchQuery({
+                          queryKey: ["player", player.id],
+                          queryFn: async () => {
+                            const res = await apiFetch(`/players/${player.id}`);
+                            if (!res.ok) throw new Error("Failed to fetch player");
+                            return res.json();
+                          },
+                        });
+                      }}
+                    >
+                      {player.name}
+                    </Link>
                   </TableCell>
                   <TableCell>{player.position || "—"}</TableCell>
                   <TableCell>{player.jersey_number ?? "—"}</TableCell>

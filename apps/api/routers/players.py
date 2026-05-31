@@ -48,3 +48,51 @@ def get_players(
             detail="Failed to fetch players",
             code=ErrorCode.INTERNAL_SERVER_ERROR,
         )
+
+
+@router.get(
+    "/{player_id}",
+    responses=COMMON_ERROR_RESPONSES,
+)
+def get_player(
+    player_id: int,
+    supabase: Client = Depends(get_supabase),
+):
+    """Get a single player by ID."""
+    try:
+        response = (
+            supabase.table("players")
+            .select("statsbomb_player_id, name, position, jersey_number, nationality")
+            .eq("statsbomb_player_id", player_id)
+            .single()
+            .execute()
+        )
+
+        if not response.data:
+            raise_http_exception(
+                status_code=404,
+                detail="Player not found",
+                code=ErrorCode.NOT_FOUND,
+            )
+
+        player = response.data
+        player["id"] = player.pop("statsbomb_player_id", None)
+
+        return player
+
+    except Exception as e:
+        # Handle Supabase "not found" or other lookup errors
+        error_msg = str(e).lower()
+        if "not found" in error_msg or "pgrst116" in error_msg:
+            raise_http_exception(
+                status_code=404,
+                detail="Player not found",
+                code=ErrorCode.NOT_FOUND,
+            )
+
+        logger.exception("Error fetching player")
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to fetch player",
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+        )
