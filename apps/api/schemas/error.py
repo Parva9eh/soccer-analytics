@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 
@@ -21,18 +21,19 @@ class ErrorCode:
 
 
 class ErrorResponse(BaseModel):
-    detail: str
-    code: Optional[str] = None
-    request_id: Optional[str] = None
+    detail: str = Field(..., examples=["Match not found"])
+    code: Optional[str] = Field(None, examples=["MATCH_NOT_FOUND"])
+    request_id: Optional[str] = Field(None, examples=["550e8400-e29b-41d4-a716-446655440000"])
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "detail": "Match not found",
                 "code": "MATCH_NOT_FOUND",
                 "request_id": "550e8400-e29b-41d4-a716-446655440000"
             }
         }
+    )
 
 
 # Reusable response schemas for common errors (use with the `responses` parameter on routes)
@@ -54,6 +55,6 @@ def raise_http_exception(
     """Convenience helper to raise an HTTPException using the standard ErrorResponse shape."""
     raise HTTPException(
         status_code=status_code,
-        detail=ErrorResponse(detail=detail, code=code).dict()
+        detail=ErrorResponse(detail=detail, code=code).model_dump()
     )
 
