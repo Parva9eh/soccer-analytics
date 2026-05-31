@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, Any
 from datetime import datetime
 
@@ -14,8 +14,7 @@ class EventResponse(BaseModel):
     end_y: Optional[float] = None
     details: Optional[Any] = None   # Full raw StatsBomb event
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EventListResponse(BaseModel):
