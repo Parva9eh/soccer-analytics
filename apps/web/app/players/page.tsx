@@ -86,23 +86,26 @@ export default function PlayersPage() {
               <tr className="border-b border-slate-700 text-left text-sm text-slate-400">
                 <th className="py-3 pr-4 font-medium">Player</th>
                 <th className="py-3 px-4 font-medium">Position</th>
-                <th className="py-3 px-4 font-medium">Jersey</th>
-                <th className="py-3 px-4 font-medium">Nationality</th>
+                <th className="py-3 px-4 font-medium hidden sm:table-cell">Jersey</th>
+                <th className="py-3 px-4 font-medium hidden md:table-cell">Nationality</th>
               </tr>
             </thead>
             <tbody>
               {Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="border-b border-slate-800">
                   <td className="py-4 pr-4">
-                    <div className="h-4 w-40 bg-slate-700 rounded animate-pulse" />
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-slate-700 animate-pulse" />
+                      <div className="h-4 w-40 bg-slate-700 rounded animate-pulse" />
+                    </div>
                   </td>
                   <td className="py-4 px-4">
                     <div className="h-4 w-24 bg-slate-700 rounded animate-pulse" />
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-4 px-4 hidden sm:table-cell">
                     <div className="h-4 w-16 bg-slate-700 rounded animate-pulse" />
                   </td>
-                  <td className="py-4 px-4">
+                  <td className="py-4 px-4 hidden md:table-cell">
                     <div className="h-4 w-28 bg-slate-700 rounded animate-pulse" />
                   </td>
                 </tr>
@@ -170,8 +173,8 @@ export default function PlayersPage() {
                 Player {sortDirection === "asc" ? "↑" : "↓"}
               </TableHead>
               <TableHead>Position</TableHead>
-              <TableHead>Jersey</TableHead>
-              <TableHead>Nationality</TableHead>
+              <TableHead className="hidden sm:table-cell">Jersey</TableHead>
+              <TableHead className="hidden md:table-cell">Nationality</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -179,7 +182,7 @@ export default function PlayersPage() {
               sortedPlayers.map((player) => (
                 <TableRow
                   key={player.id}
-                  className="cursor-pointer hover:bg-slate-950"
+                  className="cursor-pointer hover:bg-slate-950 min-h-[52px]"
                   onClick={() => router.push(`/players/${player.id}`)}
                   onMouseEnter={() => {
                     queryClient.prefetchQuery({
@@ -193,17 +196,28 @@ export default function PlayersPage() {
                   }}
                 >
                   <TableCell className="font-medium text-white">
-                    <Link
-                      href={`/players/${player.id}`}
-                      className="hover:underline hover:text-blue-400 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {player.name}
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      {/* B: Simple initials avatar */}
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-medium text-white">
+                        {player.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </div>
+                      <Link
+                        href={`/players/${player.id}`}
+                        className="hover:underline hover:text-blue-400 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {player.name}
+                      </Link>
+                    </div>
                   </TableCell>
                   <TableCell>{player.position || "—"}</TableCell>
-                  <TableCell>{player.jersey_number ?? "—"}</TableCell>
-                  <TableCell>{player.nationality || "—"}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{player.jersey_number ?? "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{player.nationality || "—"}</TableCell>
                 </TableRow>
               ))
             ) : (

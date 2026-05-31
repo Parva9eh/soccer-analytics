@@ -104,13 +104,25 @@ export default function PlayerDetailPage() {
       <div 
         className={`transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}
       >
-        <div className="mb-8">
-          <h1 className="text-4xl font-semibold tracking-tight text-white mb-2">
-            {player.name}
-          </h1>
-          <p className="text-slate-400">
-            {player.position || "Position unknown"} · {player.nationality || "Nationality unknown"}
-          </p>
+        <div className="mb-8 flex items-center gap-4">
+          {/* B: Initials avatar in detail header */}
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xl font-medium text-white">
+            {player.name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()}
+          </div>
+
+          <div>
+            <h1 className="text-4xl font-semibold tracking-tight text-white mb-1">
+              {player.name}
+            </h1>
+            <p className="text-slate-400">
+              {player.position || "Position unknown"} · {player.nationality || "Nationality unknown"}
+            </p>
+          </div>
         </div>
 
         <Card>
