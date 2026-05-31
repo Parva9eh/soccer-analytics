@@ -1,8 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Player {
   id: number;
@@ -15,6 +23,7 @@ interface Player {
 export default function PlayersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Debounce the search input (300ms delay)
   useEffect(() => {
@@ -42,6 +51,19 @@ export default function PlayersPage() {
     },
     placeholderData: (previousData) => previousData, // Keep previous results while searching
   });
+
+  // Client-side sorting on Name (B)
+  const sortedPlayers = useMemo(() => {
+    if (!players) return [];
+    return [...players].sort((a, b) => {
+      const comparison = a.name.localeCompare(b.name);
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [players, sortDirection]);
+
+  const toggleSort = () => {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
 
   if (isLoading) {
     return (
@@ -102,7 +124,7 @@ export default function PlayersPage() {
           Players
         </h1>
         <p className="text-slate-400 mt-1">
-          {players?.length ?? 0} players found
+          {sortedPlayers.length} players found
         </p>
       </div>
 
@@ -120,50 +142,46 @@ export default function PlayersPage() {
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-700 bg-slate-900">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-slate-700 bg-slate-950 text-left text-slate-400">
-              <th className="py-3 px-6 font-medium">Player</th>
-              <th className="py-3 px-6 font-medium">Position</th>
-              <th className="py-3 px-6 font-medium">Jersey</th>
-              <th className="py-3 px-6 font-medium">Nationality</th>
-            </tr>
-          </thead>
-          <tbody>
-            {players && players.length > 0 ? (
-              players.map((player) => (
-                <tr
-                  key={player.id}
-                  className="border-b border-slate-800 hover:bg-slate-950 transition-colors"
-                >
-                  <td className="py-4 px-6 font-medium text-white">
+      <div className="rounded-xl border border-slate-700 bg-slate-900">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead
+                className="cursor-pointer select-none"
+                onClick={toggleSort}
+              >
+                Player {sortDirection === "asc" ? "↑" : "↓"}
+              </TableHead>
+              <TableHead>Position</TableHead>
+              <TableHead>Jersey</TableHead>
+              <TableHead>Nationality</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedPlayers.length > 0 ? (
+              sortedPlayers.map((player) => (
+                <TableRow key={player.id} className="hover:bg-slate-950">
+                  <TableCell className="font-medium text-white">
                     {player.name}
-                  </td>
-                  <td className="py-4 px-6 text-slate-300">
-                    {player.position || "—"}
-                  </td>
-                  <td className="py-4 px-6 text-slate-300">
-                    {player.jersey_number ?? "—"}
-                  </td>
-                  <td className="py-4 px-6 text-slate-300">
-                    {player.nationality || "—"}
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{player.position || "—"}</TableCell>
+                  <TableCell>{player.jersey_number ?? "—"}</TableCell>
+                  <TableCell>{player.nationality || "—"}</TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan={4} className="py-8 text-center text-slate-400">
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-slate-400">
                   {search ? "No players found for your search." : "No players loaded yet."}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       <p className="text-xs text-slate-500 mt-4">
-        Data loaded from the backend. Use the search box to filter by name.
+        Click "Player" to sort. Search is debounced for better performance.
       </p>
     </div>
   );
