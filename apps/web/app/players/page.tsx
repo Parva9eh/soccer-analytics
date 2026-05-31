@@ -73,45 +73,48 @@ export default function PlayersPage() {
   if (isLoading) {
     return (
       <div className="p-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-semibold tracking-tight text-white">
             Players
           </h1>
           <p className="text-slate-400 mt-1">Loading players...</p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-slate-700 text-left text-sm text-slate-400">
-                <th className="py-3 pr-4 font-medium">Player</th>
-                <th className="py-3 px-4 font-medium">Position</th>
-                <th className="py-3 px-4 font-medium hidden sm:table-cell">Jersey</th>
-                <th className="py-3 px-4 font-medium hidden md:table-cell">Nationality</th>
-              </tr>
-            </thead>
-            <tbody>
+        {/* Skeleton mirrors final table structure exactly (no layout shift) */}
+        <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="TableHead sortable cursor-pointer select-none">
+                  Player
+                </TableHead>
+                <TableHead className="TableHead">Position</TableHead>
+                <TableHead className="TableHead hidden sm:table-cell numeric">Jersey</TableHead>
+                <TableHead className="TableHead hidden md:table-cell">Nationality</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {Array.from({ length: 8 }).map((_, i) => (
-                <tr key={i} className="border-b border-slate-800">
-                  <td className="py-4 pr-4">
+                <TableRow key={i} className="TableRow">
+                  <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 shrink-0 rounded-full bg-slate-700 animate-pulse" />
                       <div className="h-4 w-40 bg-slate-700 rounded animate-pulse" />
                     </div>
-                  </td>
-                  <td className="py-4 px-4">
+                  </TableCell>
+                  <TableCell>
                     <div className="h-4 w-24 bg-slate-700 rounded animate-pulse" />
-                  </td>
-                  <td className="py-4 px-4 hidden sm:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell numeric">
                     <div className="h-4 w-16 bg-slate-700 rounded animate-pulse" />
-                  </td>
-                  <td className="py-4 px-4 hidden md:table-cell">
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="h-4 w-28 bg-slate-700 rounded animate-pulse" />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     );
@@ -144,7 +147,7 @@ export default function PlayersPage() {
             placeholder="Search players by name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 pr-10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-600"
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 pr-10 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-600"
           />
           {search && (
             <button
@@ -162,19 +165,19 @@ export default function PlayersPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-700 bg-slate-900">
+      <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead
-                className="cursor-pointer select-none"
+                className="TableHead sortable cursor-pointer select-none"
                 onClick={toggleSort}
               >
                 Player {sortDirection === "asc" ? "↑" : "↓"}
               </TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead className="hidden sm:table-cell">Jersey</TableHead>
-              <TableHead className="hidden md:table-cell">Nationality</TableHead>
+              <TableHead className="TableHead">Position</TableHead>
+              <TableHead className="TableHead hidden sm:table-cell numeric">Jersey</TableHead>
+              <TableHead className="TableHead hidden md:table-cell">Nationality</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -182,7 +185,7 @@ export default function PlayersPage() {
               sortedPlayers.map((player) => (
                 <TableRow
                   key={player.id}
-                  className="cursor-pointer hover:bg-slate-950 min-h-[52px]"
+                  className="TableRow cursor-pointer"
                   onClick={() => router.push(`/players/${player.id}`)}
                   onMouseEnter={() => {
                     queryClient.prefetchQuery({
@@ -208,7 +211,7 @@ export default function PlayersPage() {
                       </div>
                       <Link
                         href={`/players/${player.id}`}
-                        className="hover:underline hover:text-blue-400 transition-colors"
+                        className="link transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {player.name}
@@ -216,7 +219,7 @@ export default function PlayersPage() {
                     </div>
                   </TableCell>
                   <TableCell>{player.position || "—"}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{player.jersey_number ?? "—"}</TableCell>
+                  <TableCell className="hidden sm:table-cell numeric">{player.jersey_number ?? "—"}</TableCell>
                   <TableCell className="hidden md:table-cell">{player.nationality || "—"}</TableCell>
                 </TableRow>
               ))
@@ -231,7 +234,7 @@ export default function PlayersPage() {
         </Table>
       </div>
 
-      <p className="text-xs text-slate-500 mt-4">
+      <p className="text-xs text-slate-400 mt-4">
         Click "Player" to sort. Search is debounced for better performance.
       </p>
     </div>

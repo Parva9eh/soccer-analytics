@@ -395,11 +395,7 @@ export default function MatchDetailPage() {
                   {eventsData.events.map((event) => (
                     <TableRow
                       key={event.id}
-                      className={
-                        highlightedEventId === event.id
-                          ? "bg-blue-900/30 border-l-4 border-blue-500"
-                          : ""
-                      }
+                      className={highlightedEventId === event.id ? "selected" : ""}
                     >
                       <TableCell className="font-mono">
                         {event.minute ?? "-"}:
@@ -410,11 +406,11 @@ export default function MatchDetailPage() {
                           {event.event_type || "Unknown"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-mono text-sm text-slate-300">
                         {event.x?.toFixed(1) ?? "-"},{" "}
                         {event.y?.toFixed(1) ?? "-"}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-mono text-sm text-slate-300">
                         {event.end_x?.toFixed(1) ?? "-"},{" "}
                         {event.end_y?.toFixed(1) ?? "-"}
                       </TableCell>
@@ -492,7 +488,7 @@ export default function MatchDetailPage() {
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Event Type */}
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+              <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
                 Event Type
               </div>
               <div className="text-lg font-semibold text-white">
@@ -502,7 +498,7 @@ export default function MatchDetailPage() {
 
             {/* Time */}
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+              <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
                 Time
               </div>
               <div className="text-white font-mono text-lg">
@@ -514,7 +510,7 @@ export default function MatchDetailPage() {
             {/* Location */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
                   Start Location
                 </div>
                 <div className="font-mono text-white">
@@ -525,7 +521,7 @@ export default function MatchDetailPage() {
 
               {(selectedEvent?.end_x || selectedEvent?.end_y) && (
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
+                  <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
                     End Location
                   </div>
                   <div className="font-mono text-white">

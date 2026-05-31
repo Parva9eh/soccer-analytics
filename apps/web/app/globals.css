@@ -8,34 +8,39 @@
 }
 
 :root {
-  /* === Professional Dark Sports Analytics Theme === */
-  --background: 15 23 42; /* #0F172A - Deep Navy */
-  --foreground: 241 245 249; /* #F1F5F9 - Slate 100 */
+  /* === Professional Dark Sports Analytics Theme (Inspired by Driblab + FBref + Hudl) === */
+  --background: 15 23 42;           /* Deep Navy - reduces eye strain */
+  --foreground: 241 245 249;       /* Slate 100 - primary text */
 
-  --card: 30 41 59; /* #1E293B - Slate 800 */
+  --card: 30 41 59;                /* Slate 800 */
   --card-foreground: 241 245 249;
 
   --popover: 30 41 59;
   --popover-foreground: 241 245 249;
 
-  --primary: 20 184 166; /* #14B8A6 - Teal */
+  /* Primary - Vibrant Teal (sports energy + data highlight) */
+  --primary: 13 148 136;           /* #0D9488 - Teal 600 */
   --primary-foreground: 15 23 42;
 
-  --secondary: 51 65 85; /* #334155 - Slate 700 */
+  /* Secondary / Muted */
+  --secondary: 51 65 85;           /* Slate 700 */
   --secondary-foreground: 241 245 249;
 
   --muted: 51 65 85;
-  --muted-foreground: 148 163 184; /* #94A3B8 - Slate 400 */
+  --muted-foreground: 148 163 184; /* Slate 400 - secondary text */
 
-  --accent: 56 189 248; /* #38BDF8 - Sky Blue */
+  /* Accent - Sky for highlights */
+  --accent: 56 189 248;            /* Sky 400 */
   --accent-foreground: 15 23 42;
 
-  --destructive: 239 68 68;
-  --destructive-foreground: 241 245 249;
+  /* Data Semantics (inspired by pro analytics tools) */
+  --success: 52 211 153;           /* Emerald 400 - high/positive percentiles */
+  --warning: 251 191 36;           /* Amber 400 */
+  --destructive: 248 113 113;      /* Red 400 - low/negative */
 
   --border: 51 65 85;
   --input: 51 65 85;
-  --ring: 20 184 166;
+  --ring: 13 148 136;
 
   --radius: 0.75rem;
 }
@@ -43,6 +48,20 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-feature-settings: "tnum"; /* Tabular numbers for data */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Professional Typography for Analytics */
+h1, h2, h3 {
+  font-feature-settings: "tnum";
+}
+
+.metric-value {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 /* === Better Dropdown / Select Styling === */
@@ -73,19 +92,138 @@ body {
   outline-offset: 2px;
 }
 
-/* Force dark background on all Select dropdowns */
-.SelectContent {
-  background-color: #1e293b !important; /* Slate 800 */
-  border: 1px solid #334155 !important;
-  color: #f1f5f9 !important;
+/* === Link Hover Color (consistent accent, no forced underlines) === */
+/* Color change only to --accent (sky blue-ish). Underlines are fully opt-in via explicit hover:underline in JSX when needed. */
+a[href],
+.link,
+table a,
+.TableRow a,
+.Card a {
+  transition: color 0.1s ease;
 }
 
-.SelectItem {
-  color: #f1f5f9 !important;
+a[href]:hover,
+.link:hover,
+table a:hover,
+.TableRow a:hover {
+  color: hsl(var(--accent));
 }
 
-.SelectItem:hover,
-.SelectItem[data-highlighted] {
-  background-color: #14b8a6 !important; /* Teal */
-  color: #0f172a !important;
+/* === Professional Data Table Styling (FBref + Driblab inspired) === */
+/* Automatic on shadcn/ui <Table> components + raw tables.
+   Use .numeric on metric columns, .mono on times/coords for pro scannability.
+   Zebra + dense rows enabled by default for analytics tables (B). */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
 }
+
+thead th,
+.TableHead {
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6875rem; /* 11px - still dense but improved readability */
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid hsl(var(--border));
+  background-color: hsl(var(--card) / 0.55);
+}
+
+tbody td,
+.TableCell {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.55);
+  font-feature-settings: "tnum";
+  vertical-align: middle;
+}
+
+/* Subtle zebra striping for long tables (default on, excellent for 30-100+ rows) */
+tbody tr:nth-child(even) {
+  background-color: hsl(var(--muted) / 0.07);
+}
+
+.TableRow,
+tbody tr {
+  transition: background-color 0.1s ease;
+}
+
+.TableRow:hover,
+tbody tr:hover {
+  background-color: hsl(var(--muted) / 0.38);
+}
+
+/* Numeric columns - right aligned + tabular nums (metrics, jersey, etc.) */
+.TableCell.numeric,
+.TableHead.numeric,
+td.numeric,
+th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Monospace data columns (minute:second, x,y coordinates, IDs) */
+.TableCell.mono,
+td.mono,
+.font-mono-data {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.02em;
+}
+
+/* Semantic data colors for metrics / percentiles */
+.TableCell.success, td.success { color: hsl(var(--success)); }
+.TableCell.warning, td.warning { color: hsl(var(--warning)); }
+.TableCell.destructive, td.destructive { color: hsl(var(--destructive)); }
+
+/* Sortable header affordance */
+th[role="columnheader"],
+.TableHead.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+th[role="columnheader"]:hover,
+.TableHead.sortable:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Selected / highlighted row (match events detail, etc.) */
+.TableRow.selected,
+tbody tr.selected,
+tr[data-selected="true"] {
+  background-color: hsl(var(--primary) / 0.12) !important;
+  border-left: 3px solid hsl(var(--primary));
+}
+
+/* Subtle card hover for dashboards (Driblab-inspired) */
+.Card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.Card:hover {
+  border-color: hsl(var(--border) / 0.8);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* === Typography Scale Additions (professional data apps) === */
+/* Consistent label style for form/field labels and section headers */
+.text-label {
+  font-size: 0.75rem; /* 12px */
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+
+/* Slightly stronger small body text for readability */
+.text-body-sm {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+}
+
+/* Select dropdowns inherit the professional dark theme (earlier rules at top already cover this).
+   No hardcoded duplicates needed — keeps everything in CSS variables for easy theming. */

@@ -83,7 +83,7 @@ export default function Dashboard() {
             <div className="text-3xl font-bold text-white">
               {data?.total_matches ?? 0}
             </div>
-            <p className="text-xs text-slate-500 mt-1">La Liga 2020/21</p>
+            <p className="text-xs text-slate-400 mt-1">La Liga 2020/21</p>
           </CardContent>
         </Card>
 
@@ -99,7 +99,7 @@ export default function Dashboard() {
             <div className="text-3xl font-bold text-white">
               {data?.total_events?.toLocaleString() ?? 0}
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               Passes, shots, pressures...
             </p>
           </CardContent>
@@ -117,7 +117,7 @@ export default function Dashboard() {
             <div className="text-3xl font-bold text-white">
               {data?.total_players ?? 0}
             </div>
-            <p className="text-xs text-slate-500 mt-1">From lineups</p>
+            <p className="text-xs text-slate-400 mt-1">From lineups</p>
           </CardContent>
         </Card>
       </div>

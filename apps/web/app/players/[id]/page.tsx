@@ -129,29 +129,29 @@ export default function PlayerDetailPage() {
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
               <div>
-                <div className="text-sm text-slate-400 mb-1">Position</div>
+                <div className="text-label mb-1">Position</div>
                 <div className="text-lg text-white">{player.position || "—"}</div>
               </div>
 
               <div>
-                <div className="text-sm text-slate-400 mb-1">Jersey Number</div>
+                <div className="text-label mb-1">Jersey Number</div>
                 <div className="text-lg text-white">{player.jersey_number ?? "—"}</div>
               </div>
 
               <div>
-                <div className="text-sm text-slate-400 mb-1">Nationality</div>
+                <div className="text-label mb-1">Nationality</div>
                 <div className="text-lg text-white">{player.nationality || "—"}</div>
               </div>
 
               <div>
-                <div className="text-sm text-slate-400 mb-1">Player ID</div>
+                <div className="text-label mb-1">Player ID</div>
                 <div className="text-lg text-white font-mono">{player.id}</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <p className="text-xs text-slate-500 mt-6">
+        <p className="text-xs text-slate-400 mt-6">
           More detailed statistics and match history coming soon.
         </p>
       </div>
