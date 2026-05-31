@@ -17,6 +17,7 @@ interface PitchProps {
   events: EventPoint[];
   onEventClick?: (event: EventPoint) => void;
   highlightedEventId?: number | null;
+
 }
 
 const getEventColor = (eventType: string | null): string => {
