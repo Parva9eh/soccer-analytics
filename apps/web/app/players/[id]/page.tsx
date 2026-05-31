@@ -51,7 +51,7 @@ export default function PlayerDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-2xl mx-auto">
+      <div className="content max-w-2xl mx-auto">
         <div className="mb-8">
           <Link href="/players">
             <Button variant="ghost" className="mb-6 -ml-4 flex items-center gap-2 text-slate-400 hover:text-white">
@@ -80,7 +80,7 @@ export default function PlayerDetailPage() {
 
   if (error || !player) {
     return (
-      <div className="p-8 max-w-2xl mx-auto">
+      <div className="content max-w-2xl mx-auto">
         <Link href="/players">
           <Button variant="ghost" className="mb-6 -ml-4 flex items-center gap-2 text-slate-400 hover:text-white">
             <ArrowLeft className="h-4 w-4" /> Back to Players
@@ -94,7 +94,7 @@ export default function PlayerDetailPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="content max-w-2xl mx-auto">
       <Link href="/players">
         <Button variant="ghost" className="mb-6 -ml-4 flex items-center gap-2 text-slate-400 hover:text-white">
           <ArrowLeft className="h-4 w-4" /> Back to Players
@@ -151,7 +151,7 @@ export default function PlayerDetailPage() {
           </CardContent>
         </Card>
 
-        <p className="text-xs text-slate-400 mt-6">
+        <p className="text-body-sm text-slate-400 mt-6">
           More detailed statistics and match history coming soon.
         </p>
       </div>

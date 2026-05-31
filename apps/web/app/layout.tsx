@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileHeader } from "@/components/layout/MobileHeader";
 import type { ReactNode } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -19,7 +20,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <div className="flex h-screen">
             <Sidebar />
-            <main className="flex-1 overflow-auto">{children}</main>
+
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <MobileHeader />
+              <main className="flex-1 overflow-auto pt-14 md:pt-0">
+                {children}
+              </main>
+            </div>
           </div>
         </Providers>
       </body>

@@ -29,9 +29,9 @@ export function MatchCard({ match, hasEvents = false }: MatchCardProps) {
       <Card
         className="group h-full border-slate-700 bg-slate-800 transition-all duration-300 ease-out 
                    hover:border-slate-600 hover:bg-slate-700 hover:shadow-2xl 
-                   hover:-translate-y-1 hover:scale-[1.01] hover:ring-1 hover:ring-teal-500/20"
+                   hover:-translate-y-1 hover:scale-[1.01] hover:ring-1 hover:ring-accent/30"
       >
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between text-sm">
             {/* Date */}
             <div className="flex items-center gap-2 text-slate-400 group-hover:text-slate-300 transition-colors">
@@ -50,7 +50,7 @@ export function MatchCard({ match, hasEvents = false }: MatchCardProps) {
         </CardHeader>
 
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Teams */}
             <div className="flex justify-between items-center gap-4">
               <div className="font-semibold text-lg text-white truncate pr-2 group-hover:text-accent transition-colors">

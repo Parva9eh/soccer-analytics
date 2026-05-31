@@ -200,12 +200,31 @@ tr[data-selected="true"] {
 
 /* Subtle card hover for dashboards (Driblab-inspired) */
 .Card {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .Card:hover {
-  border-color: hsl(var(--border) / 0.8);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  border-color: hsl(var(--border) / 0.9);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* === Spacing & Density (Group C) === */
+/* Tighter page content wrapper for better data density */
+.content {
+  padding: 1.5rem; /* 24px */
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding: 2rem; /* 32px */
+  }
+}
+
+/* Compact card content for data views */
+.card-compact,
+.card-compact .CardContent {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
 }
 
 /* === Typography Scale Additions (professional data apps) === */
@@ -222,6 +241,14 @@ tr[data-selected="true"] {
 .text-body-sm {
   font-size: 0.875rem;
   line-height: 1.5;
+  color: hsl(var(--foreground));
+}
+
+/* Consistent page title style */
+.text-page-title {
+  font-size: 1.875rem; /* 30px */
+  font-weight: 600;
+  letter-spacing: -0.025em; /* tracking-tight */
   color: hsl(var(--foreground));
 }
 

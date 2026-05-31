@@ -72,9 +72,9 @@ export default function PlayersPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
+      <div className="content">
         <div className="mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight text-white">
+          <h1 className="text-page-title">
             Players
           </h1>
           <p className="text-slate-400 mt-1">Loading players...</p>
@@ -129,9 +129,9 @@ export default function PlayersPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="content">
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-white">
+        <h1 className="text-page-title">
           Players
         </h1>
         <p className="text-slate-400 mt-1">
@@ -161,7 +161,7 @@ export default function PlayersPage() {
           )}
         </div>
         {search !== debouncedSearch && (
-          <span className="text-xs text-slate-400">Searching...</span>
+          <span className="text-body-sm text-slate-400">Searching...</span>
         )}
       </div>
 
@@ -185,7 +185,7 @@ export default function PlayersPage() {
               sortedPlayers.map((player) => (
                 <TableRow
                   key={player.id}
-                  className="TableRow cursor-pointer"
+                  className="TableRow cursor-pointer min-h-[52px]"
                   onClick={() => router.push(`/players/${player.id}`)}
                   onMouseEnter={() => {
                     queryClient.prefetchQuery({
@@ -234,7 +234,7 @@ export default function PlayersPage() {
         </Table>
       </div>
 
-      <p className="text-xs text-slate-400 mt-4">
+      <p className="text-body-sm text-slate-400 mt-4">
         Click "Player" to sort. Search is debounced for better performance.
       </p>
     </div>
