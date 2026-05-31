@@ -67,7 +67,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware that logs every request and injects a stable X-Request-ID for tracing."""
 
     # Paths that should not generate request logs (to avoid noise from health checks, docs, etc.)
-    # Can be overridden via the LOG_EXCLUDED_PATHS environment variable (comma-separated).
+    # Can be overridden via the LOG_EXCLUDED_PATHS setting (comma-separated).
     DEFAULT_EXCLUDED_PATHS = {"/health", "/docs", "/redoc", "/openapi.json", "/favicon.ico"}
 
     @classmethod
