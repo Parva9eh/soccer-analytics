@@ -1,28 +1,16 @@
 import logging
 
-from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi import APIRouter, Query, Depends
 from typing import List, Optional
 from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.match import MatchResponse
-from schemas.error import ErrorResponse, ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
+from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/matches", tags=["Matches"])
-
-
-def _get_team_names(supabase: Client, team_ids: List[int]) -> dict:
-    """Fetch team names safely."""
-    if not team_ids:
-        return {}
-    try:
-        response = supabase.table("teams").select("id, name").in_("id", team_ids).execute()
-        return {team["id"]: team["name"] for team in (response.data or [])}
-    except Exception:
-        logger.exception("Error fetching team names")
-        return {}
 
 
 @router.get(
@@ -32,9 +20,9 @@ def _get_team_names(supabase: Client, team_ids: List[int]) -> dict:
 )
 def get_matches(
     supabase: Client = Depends(get_supabase),
-    competition: Optional[str] = None,
-    season: Optional[str] = None,
-    limit: int = Query(50, le=200)
+    competition: Optional[str] = Query(None, description="Filter by competition name"),
+    season: Optional[str] = Query(None, description="Filter by season year"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of matches to return")
 ) -> List[MatchResponse]:
     """Get list of matches with team names."""
     try:
@@ -86,7 +74,11 @@ def get_matches(
 
     except Exception:
         logger.exception("Error in get_matches")
-        raise HTTPException(status_code=500, detail="Failed to fetch matches")
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to fetch matches",
+            code=ErrorCode.INTERNAL_SERVER_ERROR
+        )
 
 
 @router.get(
@@ -132,8 +124,10 @@ def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchR
             season=None,
         )
 
-    except HTTPException:
-        raise
     except Exception:
         logger.exception("Error in get_match")
-        raise HTTPException(status_code=500, detail="Failed to fetch match")
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to fetch match",
+            code=ErrorCode.INTERNAL_SERVER_ERROR
+        )

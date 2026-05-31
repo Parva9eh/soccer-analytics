@@ -1,9 +1,10 @@
 import logging
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from supabase import Client
 
 from core.supabase_client import get_supabase
+from schemas.error import ErrorCode, raise_http_exception
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,8 @@ def test_supabase_connection(supabase: Client = Depends(get_supabase)):
         }
     except Exception:
         logger.exception("Supabase connection test failed")
-        raise HTTPException(
+        raise_http_exception(
             status_code=503,
-            detail="Unable to connect to the database"
+            detail="Unable to connect to the database",
+            code=ErrorCode.SERVICE_UNAVAILABLE
         )
