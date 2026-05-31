@@ -44,7 +44,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-slate-700 p-4 text-xs text-slate-500">
+      <div className="border-t border-slate-700 p-4 text-xs text-slate-400">
         v0.2.0 • La Liga 2020/21
       </div>
     </div>

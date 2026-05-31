@@ -33,70 +33,71 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
-      {/* B: Quick summary stats at the top with proper loading skeletons */}
+      {/* Professional KPI Row - Inspired by Driblab / Iterpro style */}
       <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-slate-700 bg-slate-900">
+        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-slate-400" />
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-semibold text-white">
+                <div className="text-label mb-1">Matches Analyzed</div>
+                <div className="metric-value text-3xl font-semibold text-white">
                   {summaryLoading ? (
-                    <div className="h-8 w-12 bg-slate-700 rounded animate-pulse" />
+                    <div className="h-8 w-14 bg-slate-700 rounded animate-pulse" />
                   ) : (
                     summary?.total_matches ?? "—"
                   )}
                 </div>
-                <div className="text-sm text-slate-400">Matches</div>
               </div>
+              <Calendar className="h-8 w-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-900">
+        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <Activity className="h-5 w-5 text-slate-400" />
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-semibold text-white">
+                <div className="text-label mb-1">Total Events</div>
+                <div className="metric-value text-3xl font-semibold text-white">
                   {summaryLoading ? (
-                    <div className="h-8 w-16 bg-slate-700 rounded animate-pulse" />
+                    <div className="h-8 w-20 bg-slate-700 rounded animate-pulse" />
                   ) : (
                     summary?.total_events?.toLocaleString() ?? "—"
                   )}
                 </div>
-                <div className="text-sm text-slate-400">Events</div>
               </div>
+              <Activity className="h-8 w-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-900">
+        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-slate-400" />
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-semibold text-white">
+                <div className="text-label mb-1">Players Tracked</div>
+                <div className="metric-value text-3xl font-semibold text-white">
                   {summaryLoading ? (
-                    <div className="h-8 w-12 bg-slate-700 rounded animate-pulse" />
+                    <div className="h-8 w-14 bg-slate-700 rounded animate-pulse" />
                   ) : (
                     summary?.total_players ?? "—"
                   )}
                 </div>
-                <div className="text-sm text-slate-400">Players</div>
               </div>
+              <Users className="h-8 w-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-900">
+        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="h-5 w-5 text-slate-400" />
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-semibold text-white">La Liga</div>
-                <div className="text-sm text-slate-400">2020/21</div>
+                <div className="text-label mb-1">Competition</div>
+                <div className="metric-value text-3xl font-semibold text-white">La Liga</div>
+                <div className="text-sm text-slate-400">2020/21 Season</div>
               </div>
+              <BarChart3 className="h-8 w-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
@@ -179,7 +180,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <p className="text-xs text-slate-500 mt-8">
+      <p className="text-xs text-slate-400 mt-8">
         This page is under active development. Real interactive visualizations are coming in the next increments.
       </p>
     </div>
