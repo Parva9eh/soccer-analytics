@@ -31,8 +31,8 @@ export function MobileHeader() {
 
   return (
     <>
-      {/* Mobile Top Bar */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center border-b border-slate-700 bg-slate-900 px-4 shadow-sm md:hidden">
+      {/* Mobile Top Bar - Premium feel */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b border-slate-700/70 bg-slate-900/95 px-4 backdrop-blur-md md:hidden">
         {isDetailPage ? (
           <Button
             variant="ghost"
@@ -56,7 +56,7 @@ export function MobileHeader() {
         )}
 
         <div className="flex-1 min-w-0 pr-2">
-          <h1 className="text-[17px] font-semibold tracking-tight text-white truncate">
+          <h1 className="text-[17px] font-semibold tracking-[-0.01em] text-white truncate">
             {pageTitle}
           </h1>
         </div>
@@ -64,18 +64,18 @@ export function MobileHeader() {
 
       {/* Mobile Navigation Drawer */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-[260px] bg-slate-900 p-0">
-          <SheetHeader className="border-b border-slate-700 bg-slate-950/60 px-6 py-4">
-            <SheetTitle className="text-left text-lg font-semibold tracking-tight text-white">
-              Menu
+        <SheetContent side="left" className="w-[260px] bg-slate-900 p-0 border-r border-slate-700">
+          <SheetHeader className="border-b border-slate-700 bg-slate-950 px-6 py-5">
+            <SheetTitle className="text-left text-xl font-semibold tracking-tight text-white flex items-center gap-2">
+              <span>Soccer Analytics</span>
             </SheetTitle>
           </SheetHeader>
 
-          <div className="p-4 pt-2 pb-6">
+          <div className="p-3 pt-2">
             <NavLinks onLinkClick={() => setOpen(false)} />
           </div>
 
-          <div className="border-t border-slate-700 p-4 text-xs text-slate-400">
+          <div className="mt-auto border-t border-slate-700 p-4 text-[10px] text-slate-500 tracking-wider">
             v0.2.0 • La Liga 2020/21
           </div>
         </SheetContent>

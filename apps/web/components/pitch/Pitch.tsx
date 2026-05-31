@@ -56,6 +56,7 @@ export function Pitch({
   highlightedEventId,
 }: PitchProps) {
   const [hoveredEvent, setHoveredEvent] = useState<EventPoint | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   const width = 880;
   const height = 570;
@@ -64,13 +65,37 @@ export function Pitch({
   const scaleX = (x: number) => padding + (x / 120) * (width - padding * 2);
   const scaleY = (y: number) => padding + (y / 80) * (height - padding * 2);
 
+  // Convert SVG coordinates to screen for tooltip positioning
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!hoveredEvent) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * width;
+    const svgY = ((e.clientY - rect.top) / rect.height) * height;
+    setTooltipPos({ x: svgX, y: svgY });
+  };
+
   return (
     <div className="relative w-full max-w-[900px] mx-auto">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-auto border border-slate-700 rounded-2xl bg-[#0F172A] shadow-inner"
+        className="w-full h-auto border border-slate-700/70 rounded-2xl bg-[#0B1120] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
         preserveAspectRatio="xMidYMid meet"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => {
+          setTooltipPos(null);
+          setHoveredEvent(null);
+        }}
       >
+        <defs>
+          {/* Subtle glow for highlighted/hovered events */}
+          <filter id="eventGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         {/* Pitch Background */}
         <rect
           x={padding - 12}
@@ -78,9 +103,9 @@ export function Pitch({
           width={width - padding * 2 + 24}
           height={height - padding * 2 + 24}
           rx="14"
-          fill="#0F172A"
-          stroke="#334155"
-          strokeWidth="2.5"
+          fill="#0B1120"
+          stroke="#1E2937"
+          strokeWidth="2"
         />
 
         {/* Pitch Lines */}
@@ -165,6 +190,8 @@ export function Pitch({
             const isHighlighted = highlightedEventId === event.id;
             const isHovered = hoveredEvent?.id === event.id;
             const isActive = isHighlighted || isHovered;
+            const strokeW = isHighlighted ? 3.4 : isHovered ? 2.9 : 2.2;
+            const opacity = isActive ? 1 : 0.88;
 
             // === PASSES (Solid line + properly aligned arrowhead) ===
             if (isPass && event.end_x != null && event.end_y != null) {
@@ -182,9 +209,10 @@ export function Pitch({
                     x2={x2}
                     y2={y2}
                     stroke={getEventColor(event.event_type)}
-                    strokeWidth={isActive ? 2.7 : 2.1}
-                    strokeOpacity={isActive ? 1 : 0.9}
-                    className="cursor-pointer transition-all"
+                    strokeWidth={strokeW}
+                    strokeOpacity={opacity}
+                    filter={isActive ? "url(#eventGlow)" : undefined}
+                    className="cursor-pointer transition-all duration-150"
                     onMouseEnter={() => setHoveredEvent(event)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     onClick={() => onEventClick?.(event)}
@@ -216,10 +244,10 @@ export function Pitch({
                     x2={x2}
                     y2={y2}
                     stroke={getEventColor(event.event_type)}
-                    strokeWidth={isActive ? 2.5 : 2.0}
-                    strokeOpacity={isActive ? 1 : 0.85}
+                    strokeWidth={strokeW}
+                    strokeOpacity={opacity}
                     strokeDasharray="5 3"
-                    className="cursor-pointer transition-all"
+                    className="cursor-pointer transition-all duration-150"
                     onMouseEnter={() => setHoveredEvent(event)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     onClick={() => onEventClick?.(event)}
@@ -273,9 +301,11 @@ export function Pitch({
                     cy={y1}
                     r={size}
                     fill="#EF4444"
-                    stroke="#fff"
-                    strokeWidth={isActive ? 2.8 : 2.1}
-                    className="cursor-pointer transition-all"
+                    stroke={isActive ? "#fff" : "none"}
+                    strokeWidth={isActive ? 3 : 0}
+                    strokeOpacity={0.5}
+                    filter={isActive ? "url(#eventGlow)" : undefined}
+                    className="cursor-pointer transition-all duration-150"
                     onMouseEnter={() => setHoveredEvent(event)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     onClick={() => onEventClick?.(event)}
@@ -285,7 +315,7 @@ export function Pitch({
             }
 
             // === Default Events (Pressure, Duel, etc.) ===
-            const size = isActive ? 7.5 : 5.8;
+            const size = isHighlighted ? 8.5 : isHovered ? 7.5 : 6;
             return (
               <circle
                 key={event.id}
@@ -293,9 +323,11 @@ export function Pitch({
                 cy={scaleY(event.y!)}
                 r={size}
                 fill={getEventColor(event.event_type)}
-                stroke="#fff"
-                strokeWidth={isActive ? 2.2 : 1.4}
-                className="cursor-pointer transition-all"
+                stroke={isActive ? "#fff" : "none"}
+                strokeWidth={isActive ? 2.4 : 0}
+                strokeOpacity={0.6}
+                filter={isActive ? "url(#eventGlow)" : undefined}
+                className="cursor-pointer transition-all duration-150"
                 onMouseEnter={() => setHoveredEvent(event)}
                 onMouseLeave={() => setHoveredEvent(null)}
                 onClick={() => onEventClick?.(event)}
@@ -304,16 +336,30 @@ export function Pitch({
           })}
       </svg>
 
-      {/* Tooltip */}
-      {hoveredEvent && (
-        <div className="absolute top-4 right-4 bg-slate-800 border border-slate-700 shadow-lg rounded-lg px-3.5 py-2.5 text-sm z-50 pointer-events-none">
-          <div className="font-medium text-white">
-            {hoveredEvent.event_type}
+      {/* Advanced Tooltip - follows cursor near event */}
+      {hoveredEvent && tooltipPos && (
+        <div
+          className="absolute z-50 pointer-events-none rounded-lg border border-slate-700/80 bg-slate-900/95 px-3.5 py-2 text-sm shadow-xl backdrop-blur-sm"
+          style={{
+            left: `${(tooltipPos.x / width) * 100 + 3}%`,
+            top: `${(tooltipPos.y / height) * 100 - 8}%`,
+            transform: "translate(0, -100%)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: getEventColor(hoveredEvent.event_type) }}
+            />
+            <span className="font-semibold text-white">
+              {hoveredEvent.event_type}
+            </span>
           </div>
-          <div className="text-xs text-slate-400 mt-0.5">
-            Minute {hoveredEvent.minute}
-            {hoveredEvent.second !== null &&
-              `:${hoveredEvent.second.toString().padStart(2, "0")}`}
+          <div className="mt-0.5 text-[11px] font-medium text-slate-400 tabular-nums">
+            {hoveredEvent.minute}:
+            {hoveredEvent.second !== null
+              ? hoveredEvent.second.toString().padStart(2, "0")
+              : "00"}
           </div>
         </div>
       )}

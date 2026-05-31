@@ -245,7 +245,7 @@ export default function MatchDetailPage() {
       </div>
 
       {/* Score Card */}
-      <Card className="mb-8">
+      <Card className="mb-10">
         <CardContent className="pt-6">
           <div className="flex justify-center items-center gap-12">
             <div className="text-center">
@@ -270,9 +270,9 @@ export default function MatchDetailPage() {
       </Card>
 
       {/* Pitch Visualization */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-          <h2 className="text-xl font-semibold tracking-tight">Match Visualization</h2>
+      <div className="mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h2 className="text-xl font-semibold tracking-tight text-white/90">Match Visualization</h2>
 
           <div className="relative">
             <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
@@ -343,9 +343,9 @@ export default function MatchDetailPage() {
       </div>
 
       {/* Events Table */}
-      <div id="events-table">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold tracking-tight">Events</h2>
+      <div id="events-table" className="mt-2">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-semibold tracking-tight text-white/90">Events</h2>
 
           <div className="flex items-center gap-4">
             {eventTypes.length > 0 && (
@@ -378,7 +378,16 @@ export default function MatchDetailPage() {
         </div>
 
         {eventsLoading ? (
-          <div className="h-96 bg-slate-800 border border-slate-700 rounded-xl animate-pulse" />
+          <div className="h-96 rounded-xl border border-slate-700 bg-slate-800 p-6">
+            <div className="mb-4 h-5 w-32 animate-pulse rounded bg-slate-700" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="mb-3 flex items-center gap-4">
+                <div className="h-4 w-12 animate-pulse rounded bg-slate-700" />
+                <div className="h-4 flex-1 animate-pulse rounded bg-slate-700" />
+                <div className="h-4 w-28 animate-pulse rounded bg-slate-700" />
+              </div>
+            ))}
+          </div>
         ) : eventsData && eventsData.events.length > 0 ? (
           <>
             <Card className="border-slate-700 bg-slate-800">
@@ -395,6 +404,8 @@ export default function MatchDetailPage() {
                   {eventsData.events.map((event) => (
                     <TableRow
                       key={event.id}
+                      tabIndex={0}
+                      role="button"
                       className={highlightedEventId === event.id ? "selected min-h-[52px]" : "min-h-[52px]"}
                     >
                       <TableCell className="font-mono">
@@ -445,9 +456,15 @@ export default function MatchDetailPage() {
           </>
         ) : (
           <Card className="border-slate-700 bg-slate-800">
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">
-                No events found for this match.
+            <CardContent className="py-14 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/50">
+                <span className="text-xl">📍</span>
+              </div>
+              <p className="text-sm font-medium text-slate-300">
+                No events recorded for this match
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                This match may not have event data available yet.
               </p>
             </CardContent>
           </Card>

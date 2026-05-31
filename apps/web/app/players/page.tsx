@@ -180,12 +180,14 @@ export default function PlayersPage() {
               <TableHead className="TableHead hidden md:table-cell">Nationality</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="stagger in">
             {sortedPlayers.length > 0 ? (
               sortedPlayers.map((player) => (
                 <TableRow
                   key={player.id}
-                  className="TableRow cursor-pointer min-h-[52px]"
+                  tabIndex={0}
+                  role="button"
+                  className="TableRow cursor-pointer min-h-[52px] focus:outline-none"
                   onClick={() => router.push(`/players/${player.id}`)}
                   onMouseEnter={() => {
                     queryClient.prefetchQuery({
@@ -225,8 +227,13 @@ export default function PlayersPage() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-slate-400">
-                  {search ? "No players found for your search." : "No players loaded yet."}
+                <TableCell colSpan={4} className="py-10 text-center">
+                  <div className="text-sm font-medium text-slate-300">
+                    {search ? "No players match your search" : "No players available"}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {search ? "Try a different name or clear the search." : "Data will appear once loaded."}
+                  </div>
                 </TableCell>
               </TableRow>
             )}

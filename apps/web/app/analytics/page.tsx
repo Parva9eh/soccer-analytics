@@ -35,7 +35,7 @@ export default function AnalyticsPage() {
 
       {/* Professional KPI Row - Inspired by Driblab / Iterpro style */}
       <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -53,7 +53,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -71,7 +71,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -89,7 +89,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-900 hover:border-slate-600 transition-colors">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -103,9 +103,9 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger in">
         {/* Expected Goals */}
-        <Card className="border-slate-700 bg-slate-900 transition-all hover:border-slate-600 hover:shadow-md card-compact">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2 card-compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5" />
@@ -120,7 +120,7 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Passing Networks */}
-        <Card className="border-slate-700 bg-slate-900 transition-all hover:border-slate-600 hover:shadow-md card-compact">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2 card-compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <GitBranch className="h-5 w-5" />
@@ -135,7 +135,7 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Possession & Build-up */}
-        <Card className="border-slate-700 bg-slate-900 transition-all hover:border-slate-600 hover:shadow-md card-compact">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2 card-compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Player Insights */}
-        <Card className="border-slate-700 bg-slate-900 transition-all hover:border-slate-600 hover:shadow-md card-compact">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2 card-compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -165,7 +165,7 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Trends & Form */}
-        <Card className="border-slate-700 bg-slate-900 transition-all hover:border-slate-600 hover:shadow-md card-compact">
+        <Card className="border-slate-700 bg-slate-900 elevation-hover elevation-2 card-compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />

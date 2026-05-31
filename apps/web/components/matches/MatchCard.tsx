@@ -27,9 +27,8 @@ export function MatchCard({ match, hasEvents = false }: MatchCardProps) {
   return (
     <Link href={`/matches/${match.id}`}>
       <Card
-        className="group h-full border-slate-700 bg-slate-800 transition-all duration-300 ease-out 
-                   hover:border-slate-600 hover:bg-slate-700 hover:shadow-2xl 
-                   hover:-translate-y-1 hover:scale-[1.01] hover:ring-1 hover:ring-accent/30"
+        className="group h-full border-slate-700 bg-slate-800 elevation-hover elevation-2 
+                   hover:border-slate-600 hover:bg-slate-700 hover:ring-1 hover:ring-accent/30"
       >
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between text-sm">
