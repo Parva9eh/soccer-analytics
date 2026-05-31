@@ -6,6 +6,7 @@ from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.event import EventListResponse
+from schemas.params import PaginationParams
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 
 logger = logging.getLogger(__name__)
@@ -22,8 +23,7 @@ def get_events(
     supabase: Client = Depends(get_supabase),
     match_id: int = Query(..., description="Database match ID"),
     event_type: Optional[str] = Query(None, description="Filter by event type (e.g. Pass, Shot)"),
-    page: int = Query(1, ge=1, description="Page number (1-based)"),
-    page_size: int = Query(100, ge=1, le=500, description="Number of events per page")
+    pagination: PaginationParams = Depends()
 ) -> EventListResponse:
     """Get paginated events for a match, optionally filtered by event_type."""
     try:
@@ -41,18 +41,18 @@ def get_events(
         total = count_response.count or 0
 
         # Get paginated results
-        offset = (page - 1) * page_size
+        offset = pagination.offset
         response = (
             query.order("minute")
             .order("second")
-            .range(offset, offset + page_size - 1)
+            .range(offset, offset + pagination.page_size - 1)
             .execute()
         )
 
         return EventListResponse(
             total=total,
-            page=page,
-            page_size=page_size,
+            page=pagination.page,
+            page_size=pagination.page_size,
             events=response.data or []
         )
 

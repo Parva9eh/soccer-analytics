@@ -6,6 +6,7 @@ from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.match import MatchResponse
+from schemas.params import MatchListParams
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 
 logger = logging.getLogger(__name__)
@@ -20,9 +21,7 @@ router = APIRouter(prefix="/matches", tags=["Matches"])
 )
 def get_matches(
     supabase: Client = Depends(get_supabase),
-    competition: Optional[str] = Query(None, description="Filter by competition name"),
-    season: Optional[str] = Query(None, description="Filter by season year"),
-    limit: int = Query(50, ge=1, le=200, description="Maximum number of matches to return")
+    filters: MatchListParams = Depends()
 ) -> List[MatchResponse]:
     """Get list of matches with team names."""
     try:
@@ -35,21 +34,21 @@ def get_matches(
         comp_name = None
         season_name = None
 
-        if competition:
-            comp_result = supabase.table("competitions").select("id").eq("name", competition).execute()
+        if filters.competition:
+            comp_result = supabase.table("competitions").select("id").eq("name", filters.competition).execute()
             if comp_result.data:
                 comp_id = comp_result.data[0]["id"]
-                comp_name = competition
+                comp_name = filters.competition
                 query = query.eq("competition_id", comp_id)
 
-        if season:
-            season_result = supabase.table("seasons").select("id").eq("year", season).execute()
+        if filters.season:
+            season_result = supabase.table("seasons").select("id").eq("year", filters.season).execute()
             if season_result.data:
                 season_id = season_result.data[0]["id"]
-                season_name = season
+                season_name = filters.season
                 query = query.eq("season_id", season_id)
 
-        response = query.limit(limit).execute()
+        response = query.limit(filters.limit).execute()
         matches_data = response.data or []
 
         result = []
