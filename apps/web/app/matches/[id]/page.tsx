@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -90,6 +90,26 @@ export default function MatchDetailPage() {
   ]);
 
   const pageSize = 50;
+  const eventsTableRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to and highlight the selected event in the table when clicked from pitch
+  useEffect(() => {
+    if (highlightedEventId && eventsTableRef.current) {
+      const row = eventsTableRef.current.querySelector(
+        `[data-event-id="${highlightedEventId}"]`
+      ) as HTMLElement | null;
+
+      if (row) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Add temporary pulse animation
+        row.classList.add("!bg-accent/20", "ring-1", "ring-accent/50");
+        setTimeout(() => {
+          row.classList.remove("!bg-accent/20", "ring-1", "ring-accent/50");
+        }, 1400);
+      }
+    }
+  }, [highlightedEventId]);
 
   // Fetch match details
   const { data: match, isLoading: matchLoading } = useQuery<Match>({
@@ -220,10 +240,10 @@ export default function MatchDetailPage() {
       {/* Back Button */}
       <Link
         href="/matches"
-        className="inline-flex items-center gap-2 text-body-sm text-muted-foreground hover:text-foreground mb-6"
+        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-4 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Matches
+        Back
       </Link>
 
       {/* Match Header */}
@@ -244,35 +264,45 @@ export default function MatchDetailPage() {
         </div>
       </div>
 
-      {/* Score Card */}
-      <Card className="mb-10">
-        <CardContent className="pt-6">
-          <div className="flex justify-center items-center gap-12">
-            <div className="text-center">
-              <div className="text-label mb-1">
-                {match.home_team}
+      {/* Compact Score Header - Advanced layout */}
+      <Card className="mb-8 border-slate-700 bg-slate-900/60">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-xs uppercase tracking-[0.5px] text-slate-400">{match.home_team}</div>
+                <div className="text-5xl font-semibold tabular-nums tracking-tighter text-white">
+                  {match.home_score ?? "-"}
+                </div>
               </div>
-              <div className="text-6xl font-bold tabular-nums">
-                {match.home_score ?? "-"}
+
+              <div className="flex flex-col items-center text-center px-2">
+                <div className="text-[10px] uppercase tracking-[1px] text-slate-500 font-medium">vs</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">{match.match_week ? `W${match.match_week}` : ''}</div>
+              </div>
+
+              <div>
+                <div className="text-xs uppercase tracking-[0.5px] text-slate-400">{match.away_team}</div>
+                <div className="text-5xl font-semibold tabular-nums tracking-tighter text-white">
+                  {match.away_score ?? "-"}
+                </div>
               </div>
             </div>
-            <div className="text-2xl text-muted-foreground font-light">vs</div>
-            <div className="text-center">
-              <div className="text-label mb-1">
-                {match.away_team}
-              </div>
-              <div className="text-6xl font-bold tabular-nums">
-                {match.away_score ?? "-"}
-              </div>
+
+            <div className="hidden sm:block text-right text-xs text-slate-400">
+              <div className="font-medium text-slate-300">{formattedDate}</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Pitch Visualization */}
-      <div className="mb-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h2 className="text-xl font-semibold tracking-tight text-white/90">Match Visualization</h2>
+      {/* Pitch Visualization - Elevated as primary view */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-white">Pitch View</h2>
+            <p className="text-xs text-slate-400">Click events on the pitch to inspect</p>
+          </div>
 
           <div className="relative">
             <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
@@ -280,17 +310,15 @@ export default function MatchDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-xs"
                 >
-                  Pitch Controls
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${isControlsOpen ? "rotate-180" : ""}`}
-                  />
+                  Filters
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isControlsOpen ? "rotate-180" : ""}`} />
                 </Button>
               </CollapsibleTrigger>
 
-              <CollapsibleContent className="absolute right-0 top-11 z-50">
-                <Card className="w-64 border-slate-700 bg-slate-800 shadow-xl">
+              <CollapsibleContent className="absolute right-0 top-11 z-50 w-full max-w-[260px] sm:w-auto">
+                <Card className="border-slate-700 bg-slate-900 elevation-3">
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       {["Shot", "Pass", "Pressure", "Carry", "Duel"].map(
@@ -335,27 +363,34 @@ export default function MatchDetailPage() {
           </div>
         </div>
 
-        <Pitch
-          events={filteredPitchEvents}
-          onEventClick={handlePitchEventClick}
-          highlightedEventId={highlightedEventId}
-        />
+        <div className="elevation-3 rounded-2xl border border-slate-700/60 bg-slate-950/40 p-2 sm:p-3">
+          <Pitch
+            events={filteredPitchEvents}
+            onEventClick={handlePitchEventClick}
+            highlightedEventId={highlightedEventId}
+          />
+        </div>
       </div>
 
-      {/* Events Table */}
-      <div id="events-table" className="mt-2">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-semibold tracking-tight text-white/90">Events</h2>
+      {/* Events Table - Tightly integrated with Pitch */}
+      <div id="events-table" className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-white">Event Timeline</h2>
+            <p className="text-xs text-slate-400">Synced with pitch selection</p>
+          </div>
 
-          <div className="flex items-center gap-4">
+
+
+          <div className="flex items-center gap-3">
             {eventTypes.length > 0 && (
-              <div className="w-56">
+              <div className="w-48">
                 <Select
                   value={selectedEventType}
                   onValueChange={handleFilterChange}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by event type" />
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Filter events" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Event Types</SelectItem>
@@ -370,8 +405,8 @@ export default function MatchDetailPage() {
             )}
 
             {eventsData && (
-              <div className="text-body-sm text-muted-foreground whitespace-nowrap">
-                Page {currentPage} of {totalPages}
+              <div className="text-xs text-slate-400 whitespace-nowrap tabular-nums">
+                {eventsData.total} total
               </div>
             )}
           </div>
@@ -390,7 +425,7 @@ export default function MatchDetailPage() {
           </div>
         ) : eventsData && eventsData.events.length > 0 ? (
           <>
-            <Card className="border-slate-700 bg-slate-800">
+            <Card className="border-slate-700/70 bg-slate-900 elevation-2">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -404,9 +439,16 @@ export default function MatchDetailPage() {
                   {eventsData.events.map((event) => (
                     <TableRow
                       key={event.id}
+                      data-event-id={event.id}
                       tabIndex={0}
                       role="button"
                       className={highlightedEventId === event.id ? "selected min-h-[52px]" : "min-h-[52px]"}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handlePitchEventClick(event);
+                        }
+                      }}
                     >
                       <TableCell className="font-mono">
                         {event.minute ?? "-"}:
@@ -432,25 +474,25 @@ export default function MatchDetailPage() {
             </Card>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center justify-between mt-3 text-sm">
               <Button
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                Previous
+                ← Prev
               </Button>
-              <div className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * pageSize + 1}–
-                {Math.min(currentPage * pageSize, eventsData.total)} of{" "}
-                {eventsData.total}
+              <div className="text-xs text-slate-400 tabular-nums">
+                Page {currentPage} of {totalPages}
               </div>
               <Button
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                Next
+                Next →
               </Button>
             </div>
           </>
@@ -476,77 +518,80 @@ export default function MatchDetailPage() {
         open={!!selectedEvent}
         onOpenChange={(open) => !open && setSelectedEvent(null)}
       >
-        <SheetContent className="w-full max-w-[420px] sm:w-[420px] bg-slate-900 border-l border-slate-700 p-0 flex flex-col">
+        <SheetContent className="w-full max-w-[420px] sm:w-[420px] bg-slate-900 border-l border-slate-700/70 p-0 flex flex-col elevation-4">
           {/* Header */}
-          <SheetHeader className="px-6 pt-6 pb-4 border-b border-slate-700">
+          <SheetHeader className="px-6 pt-5 pb-4 border-b border-slate-700 bg-slate-950/40">
             <div className="flex items-start justify-between">
               <div>
-                <SheetTitle className="text-xl text-white">
-                  Event Details
+                <SheetTitle className="text-lg font-semibold tracking-tight text-white">
+                  {selectedEvent?.event_type || "Event"}
                 </SheetTitle>
-                <SheetDescription className="text-slate-400 mt-1">
-                  {selectedEvent?.event_type} • Minute {selectedEvent?.minute}
-                  {selectedEvent?.second !== null &&
-                    `:${selectedEvent?.second.toString().padStart(2, "0")}`}
+                <SheetDescription className="text-xs text-slate-400 mt-0.5">
+                  Minute {selectedEvent?.minute}:
+                  {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
                 </SheetDescription>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSelectedEvent(null)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-white -mr-2 -mt-1"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </SheetHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-7">
             {/* Event Type */}
             <div>
-              <div className="text-label mb-1">
-                Event Type
-              </div>
-              <div className="text-lg font-semibold text-white">
-                {selectedEvent?.event_type}
+              <div className="text-label mb-1">Event Type</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-semibold text-white">
+                  {selectedEvent?.event_type}
+                </span>
+                <span className="rounded bg-slate-800 px-2 py-px text-[10px] font-medium tracking-wider text-slate-400">
+                  {selectedEvent?.event_type?.slice(0, 4).toUpperCase()}
+                </span>
               </div>
             </div>
 
             {/* Time */}
             <div>
-              <div className="text-label mb-1">
-                Time
-              </div>
-              <div className="text-white font-mono text-lg">
+              <div className="text-label mb-1">Time</div>
+              <div className="font-mono text-3xl font-semibold text-white tabular-nums">
                 {selectedEvent?.minute}:
-                {selectedEvent?.second?.toString().padStart(2, "0")}
+                {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
               </div>
             </div>
 
             {/* Location */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-label mb-1">
-                  Start Location
-                </div>
-                <div className="font-mono text-white">
-                  ({selectedEvent?.x?.toFixed(1)},{" "}
-                  {selectedEvent?.y?.toFixed(1)})
+                <div className="text-label mb-1">Start Location</div>
+                <div className="font-mono text-xl text-white">
+                  ({selectedEvent?.x?.toFixed(1)}, {selectedEvent?.y?.toFixed(1)})
                 </div>
               </div>
 
               {(selectedEvent?.end_x || selectedEvent?.end_y) && (
                 <div>
-                  <div className="text-label mb-1">
-                    End Location
-                  </div>
-                  <div className="font-mono text-white">
-                    ({selectedEvent?.end_x?.toFixed(1)},{" "}
-                    {selectedEvent?.end_y?.toFixed(1)})
+                  <div className="text-label mb-1">End Location</div>
+                  <div className="font-mono text-xl text-white">
+                    ({selectedEvent?.end_x?.toFixed(1)}, {selectedEvent?.end_y?.toFixed(1)})
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="text-[11px] text-slate-500">
+              This event is synchronized with both the pitch and the timeline below.
+            </div>
+
+            {/* Richer context placeholder (data-limited) */}
+            <div className="pt-2 text-[10px] text-slate-400 border-t border-slate-700/60">
+              Player context and advanced metrics would appear here with richer event data (e.g. player name, pass recipient, pressure intensity).
             </div>
           </div>
 

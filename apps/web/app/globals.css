@@ -209,12 +209,13 @@ th[role="columnheader"]:hover,
   color: hsl(var(--foreground));
 }
 
-/* Selected / highlighted row (match events detail, etc.) */
+/* Selected / highlighted row (match events detail, etc.) — Advanced treatment */
 .TableRow.selected,
 tbody tr.selected,
 tr[data-selected="true"] {
-  background-color: hsl(var(--primary) / 0.12) !important;
-  border-left: 3px solid hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.15) !important;
+  border-left: 3px solid hsl(var(--accent));
+  box-shadow: inset 0 0 0 1px hsl(var(--accent) / 0.2);
 }
 
 /* Professional Card Elevation (Driblab + modern sports analytics) */
