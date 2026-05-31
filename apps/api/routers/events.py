@@ -1,12 +1,12 @@
 import logging
 
-from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi import APIRouter, Query, Depends
 from typing import Optional
 from supabase import Client
 
 from core.supabase_client import get_supabase
 from schemas.event import EventListResponse
-from schemas.error import ErrorResponse, ErrorCode, COMMON_ERROR_RESPONSES
+from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ def get_events(
     supabase: Client = Depends(get_supabase),
     match_id: int = Query(..., description="Database match ID"),
     event_type: Optional[str] = Query(None, description="Filter by event type (e.g. Pass, Shot)"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(100, le=500)
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(100, ge=1, le=500, description="Number of events per page")
 ) -> EventListResponse:
     """Get paginated events for a match, optionally filtered by event_type."""
     try:
@@ -58,10 +58,8 @@ def get_events(
 
     except Exception:
         logger.exception("Error in get_events")
-        raise HTTPException(
+        raise_http_exception(
             status_code=500,
-            detail=ErrorResponse(
-                detail="Failed to fetch events",
-                code=ErrorCode.INTERNAL_SERVER_ERROR
-            ).dict()
+            detail="Failed to fetch events",
+            code=ErrorCode.INTERNAL_SERVER_ERROR
         )
