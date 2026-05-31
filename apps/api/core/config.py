@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # CORS - comma-separated list of allowed origins
     CORS_ORIGINS: str = "http://localhost:3000"
 
+    # Environment (used in health checks and observability)
+    ENVIRONMENT: str = "development"   # development | staging | production
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Return CORS origins as a clean list."""
