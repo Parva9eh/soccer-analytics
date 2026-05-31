@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import {
   Table,
@@ -22,6 +23,7 @@ interface Player {
 }
 
 export default function PlayersPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -131,15 +133,27 @@ export default function PlayersPage() {
         </p>
       </div>
 
-      {/* Search input with debouncing */}
+      {/* Search input with debouncing + clear button (B) */}
       <div className="mb-4 flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search players by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-600"
-        />
+        <div className="relative w-full max-w-sm">
+          <input
+            type="text"
+            placeholder="Search players by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 pr-10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-600"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
         {search !== debouncedSearch && (
           <span className="text-xs text-slate-400">Searching...</span>
         )}
@@ -163,21 +177,26 @@ export default function PlayersPage() {
           <TableBody>
             {sortedPlayers.length > 0 ? (
               sortedPlayers.map((player) => (
-                <TableRow key={player.id} className="hover:bg-slate-950">
+                <TableRow
+                  key={player.id}
+                  className="cursor-pointer hover:bg-slate-950"
+                  onClick={() => router.push(`/players/${player.id}`)}
+                  onMouseEnter={() => {
+                    queryClient.prefetchQuery({
+                      queryKey: ["player", player.id],
+                      queryFn: async () => {
+                        const res = await apiFetch(`/players/${player.id}`);
+                        if (!res.ok) throw new Error("Failed to fetch player");
+                        return res.json();
+                      },
+                    });
+                  }}
+                >
                   <TableCell className="font-medium text-white">
                     <Link
                       href={`/players/${player.id}`}
                       className="hover:underline hover:text-blue-400 transition-colors"
-                      onMouseEnter={() => {
-                        queryClient.prefetchQuery({
-                          queryKey: ["player", player.id],
-                          queryFn: async () => {
-                            const res = await apiFetch(`/players/${player.id}`);
-                            if (!res.ok) throw new Error("Failed to fetch player");
-                            return res.json();
-                          },
-                        });
-                      }}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {player.name}
                     </Link>
