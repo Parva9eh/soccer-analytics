@@ -4,13 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Trophy, X, ChevronDown } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, X, ChevronDown, Target, ArrowRight, Zap, Move, Swords } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pitch } from "@/components/pitch/Pitch";
+import { ThreeDPitch } from "@/components/pitch/ThreeDPitch";
 
 import {
   Table,
@@ -80,6 +81,8 @@ export default function MatchDetailPage() {
   );
   const [isControlsOpen, setIsControlsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [use3DView, setUse3DView] = useState(false);
+  const [current3DView, setCurrent3DView] = useState<'top' | 'side' | 'goal' | 'iso'>('iso');
 
   const [visibleEventTypes, setVisibleEventTypes] = useState<string[]>([
     "Shot",
@@ -190,6 +193,28 @@ export default function MatchDetailPage() {
   };
 
   // Handle click on pitch (dot or arrow)
+  const getEventColorForTimeline = (eventType: string | null) => {
+    if (!eventType) return "#64748b";
+    const type = eventType.toLowerCase();
+    if (type.includes("shot")) return "#ef4444";
+    if (type.includes("pass")) return "#3b82f6";
+    if (type.includes("pressure")) return "#f59e0b";
+    if (type.includes("carry")) return "#10b981";
+    if (type.includes("duel")) return "#8b5cf6";
+    return "#64748b";
+  };
+
+  const getEventIcon = (eventType: string | null) => {
+    if (!eventType) return <Target className="h-4 w-4" />;
+    const type = eventType.toLowerCase();
+    if (type.includes("shot")) return <Target className="h-4 w-4" />;
+    if (type.includes("pass")) return <ArrowRight className="h-4 w-4" />;
+    if (type.includes("pressure")) return <Zap className="h-4 w-4" />;
+    if (type.includes("carry")) return <Move className="h-4 w-4" />;
+    if (type.includes("duel")) return <Swords className="h-4 w-4" />;
+    return <Target className="h-4 w-4" />;
+  };
+
   const handlePitchEventClick = (event: any) => {
     setHighlightedEventId(event.id);
     setSelectedEvent(event);
@@ -304,7 +329,55 @@ export default function MatchDetailPage() {
             <p className="text-xs text-slate-400">Click events on the pitch to inspect</p>
           </div>
 
-          <div className="relative">
+          <div className="flex items-center gap-2">
+            {/* 2D / 3D View Toggle + Clear selection */}
+            <div className="flex rounded-md border border-slate-700 overflow-hidden text-xs">
+              <button
+                onClick={() => setUse3DView(false)}
+                className={`px-3 py-1 transition-colors ${!use3DView ? "bg-slate-700 text-white" : "hover:bg-slate-800 text-slate-300"}`}
+              >
+                2D
+              </button>
+              <button
+                onClick={() => setUse3DView(true)}
+                className={`px-3 py-1 transition-colors ${use3DView ? "bg-slate-700 text-white" : "hover:bg-slate-800 text-slate-300"}`}
+              >
+                3D
+              </button>
+            </div>
+
+            {highlightedEventId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setHighlightedEventId(null);
+                  setSelectedEvent(null);
+                }}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                Clear selection
+              </Button>
+            )}
+
+            {/* 3D Camera Presets - Advanced feature */}
+            {use3DView && (
+              <div className="flex items-center gap-1 ml-1 text-[10px]">
+                <span className="text-slate-400 mr-1">View:</span>
+                <div className="flex rounded-md border border-slate-700 overflow-hidden">
+                  {(['iso', 'top', 'side', 'goal'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setCurrent3DView(mode)}
+                      className={`px-2 py-0.5 transition-colors capitalize ${current3DView === mode ? "bg-slate-700 text-white" : "hover:bg-slate-800 text-slate-300"}`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
               <CollapsibleTrigger asChild>
                 <Button
@@ -363,12 +436,121 @@ export default function MatchDetailPage() {
           </div>
         </div>
 
-        <div className="elevation-3 rounded-2xl border border-slate-700/60 bg-slate-950/40 p-2 sm:p-3">
-          <Pitch
-            events={filteredPitchEvents}
-            onEventClick={handlePitchEventClick}
-            highlightedEventId={highlightedEventId}
-          />
+        {/* Mini Event Timeline + Density Heatmap (advanced) */}
+        <div className="mb-3 mt-1">
+          <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.5px] text-slate-400">
+            <span>Event Timeline (click to select)</span>
+            <span className="text-slate-500">{filteredPitchEvents.length} events</span>
+          </div>
+          <div className="relative h-6 w-full overflow-hidden rounded border border-slate-700/60 bg-slate-950">
+            {filteredPitchEvents
+              .filter(e => e.minute != null)
+              .map((event, index) => {
+                const minute = event.minute || 0;
+                const progress = Math.min((minute / 95) * 100, 100);
+                const color = getEventColorForTimeline(event.event_type);
+                const isActive = highlightedEventId === event.id;
+
+                return (
+                  <button
+                    key={`${event.id}-${index}`}
+                    onClick={() => handlePitchEventClick(event)}
+                    className={`absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 -translate-x-1/2 rounded-full border border-slate-800 transition-all duration-150 hover:scale-125 ${isActive ? 'scale-125 ring-1 ring-accent' : 'opacity-70 hover:opacity-100'}`}
+                    style={{ left: `${progress}%`, backgroundColor: color }}
+                    title={`${event.event_type} - ${event.minute}'`}
+                  />
+                );
+              })}
+            <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-slate-700/40" />
+          </div>
+        </div>
+
+        {/* Advanced: Event Density Heatmap */}
+        <div className="mb-3">
+          <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.5px] text-slate-400">
+            <span>Event Density (per minute)</span>
+          </div>
+          <div className="flex h-3 w-full gap-px overflow-hidden rounded bg-slate-950 border border-slate-700/60">
+            {Array.from({ length: 95 }, (_, min) => {
+              const count = filteredPitchEvents.filter(e => e.minute === min).length;
+              const intensity = Math.min(count / 4, 1);
+              const bg = intensity > 0 ? `rgba(163, 163, 172, ${0.2 + intensity * 0.7})` : 'rgba(15, 23, 42, 0.6)';
+              return <div key={min} className="flex-1" style={{ backgroundColor: bg }} title={`Minute ${min}: ${count} events`} />;
+            })}
+          </div>
+          <div className="mt-0.5 flex justify-between text-[9px] text-slate-500">
+            <span>0'</span><span>45'</span><span>90'+</span>
+          </div>
+        </div>
+
+        <div 
+          className={`elevation-3 rounded-2xl border border-slate-700/60 bg-slate-950/40 p-2 sm:p-3 transition-all ${use3DView ? 'h-[720px] md:h-[780px] lg:h-[820px]' : 'h-auto'}`}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (!filteredPitchEvents.length) return;
+            const currentIndex = filteredPitchEvents.findIndex(e => e.id === highlightedEventId);
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % filteredPitchEvents.length : 0;
+              const nextEvent = filteredPitchEvents[nextIndex];
+              handlePitchEventClick(nextEvent);
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              const prevIndex = currentIndex >= 0 ? (currentIndex - 1 + filteredPitchEvents.length) % filteredPitchEvents.length : filteredPitchEvents.length - 1;
+              const prevEvent = filteredPitchEvents[prevIndex];
+              handlePitchEventClick(prevEvent);
+            }
+            if (e.key === 'Escape') {
+              setHighlightedEventId(null);
+              setSelectedEvent(null);
+            }
+          }}
+        >
+          {use3DView ? (
+            <>
+              <ThreeDPitch
+                events={filteredPitchEvents}
+                onEventClick={handlePitchEventClick}
+                highlightedEventId={highlightedEventId}
+                selectedEventIds={highlightedEventId ? [highlightedEventId] : []}
+                viewMode={current3DView}
+                onSelectionChange={(selectedIds) => {
+                  if (selectedIds.length > 0) {
+                    setHighlightedEventId(selectedIds[0]);
+                    const first = filteredPitchEvents.find(e => e.id === selectedIds[0]);
+                    if (first) setSelectedEvent(first);
+                  }
+                }}
+              />
+              {/* 3D-specific advanced toolbar (immersive overlay) */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 bg-black/70 backdrop-blur-sm rounded-lg p-1 text-xs border border-white/10 z-10">
+                {(['iso', 'top', 'side', 'goal'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setCurrent3DView(mode)}
+                    className={`px-3 py-1 rounded transition-all capitalize ${current3DView === mode ? 'bg-white/90 text-black font-medium' : 'text-white/80 hover:bg-white/20 hover:text-white'}`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <Pitch
+              events={filteredPitchEvents}
+              onEventClick={handlePitchEventClick}
+              highlightedEventId={highlightedEventId}
+              selectedEventIds={highlightedEventId ? [highlightedEventId] : []}
+              onSelectionChange={(selectedIds) => {
+                if (selectedIds.length > 0) {
+                  setHighlightedEventId(selectedIds[0]);
+                  const first = filteredPitchEvents.find(e => e.id === selectedIds[0]);
+                  if (first) setSelectedEvent(first);
+                }
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -570,8 +752,9 @@ export default function MatchDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-label mb-1">Start Location</div>
-                <div className="font-mono text-xl text-white">
+                <div className="font-mono text-xl text-white flex items-center gap-2">
                   ({selectedEvent?.x?.toFixed(1)}, {selectedEvent?.y?.toFixed(1)})
+                  <span className="text-[10px] text-slate-500">(on pitch)</span>
                 </div>
               </div>
 
@@ -589,9 +772,30 @@ export default function MatchDetailPage() {
               This event is synchronized with both the pitch and the timeline below.
             </div>
 
-            {/* Richer context placeholder (data-limited) */}
+            {/* Mini pitch visual for context (advanced) */}
+            {selectedEvent && (
+              <div>
+                <div className="text-label mb-1">Location on Pitch</div>
+                <div className="relative w-32 h-20 border border-slate-600 bg-slate-950 rounded overflow-hidden">
+                  <svg viewBox="0 0 120 80" className="w-full h-full">
+                    {/* Very simplified pitch outline */}
+                    <rect x="5" y="5" width="110" height="70" fill="none" stroke="#475569" strokeWidth="1"/>
+                    <line x1="60" y1="5" x2="60" y2="75" stroke="#475569" strokeWidth="0.8"/>
+                    {/* Event dot */}
+                    <circle 
+                      cx={selectedEvent.x ?? 60} 
+                      cy={selectedEvent.y ?? 40} 
+                      r="2.5" 
+                      fill={getEventColorForTimeline(selectedEvent.event_type)} 
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
+
+            {/* Richer context placeholder */}
             <div className="pt-2 text-[10px] text-slate-400 border-t border-slate-700/60">
-              Player context and advanced metrics would appear here with richer event data (e.g. player name, pass recipient, pressure intensity).
+              Player context and advanced metrics would appear here with richer event data.
             </div>
           </div>
 

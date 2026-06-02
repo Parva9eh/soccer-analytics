@@ -17,7 +17,7 @@ interface PitchProps {
   events: EventPoint[];
   onEventClick?: (event: EventPoint) => void;
   highlightedEventId?: number | null;
-
+  selectedEventIds?: number[];
 }
 
 const getEventColor = (eventType: string | null): string => {
@@ -55,9 +55,16 @@ export function Pitch({
   events,
   onEventClick,
   highlightedEventId,
+  onSelectionChange,
+  selectedEventIds = [],
 }: PitchProps) {
   const [hoveredEvent, setHoveredEvent] = useState<EventPoint | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Drag-to-select state
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
 
   const width = 880;
   const height = 570;
@@ -68,11 +75,49 @@ export function Pitch({
 
   // Convert SVG coordinates to screen for tooltip positioning
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (isSelecting) { setTooltipPos(null); return; }
     if (!hoveredEvent) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const svgX = ((e.clientX - rect.left) / rect.width) * width;
     const svgY = ((e.clientY - rect.top) / rect.height) * height;
     setTooltipPos({ x: svgX, y: svgY });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * width;
+    const y = ((e.clientY - rect.top) / rect.height) * height;
+    setIsSelecting(true);
+    setSelectionStart({ x, y });
+    setSelectionEnd({ x, y });
+  };
+
+  const handleMouseMoveSelection = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isSelecting || !selectionStart) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * width;
+    const y = ((e.clientY - rect.top) / rect.height) * height;
+    setSelectionEnd({ x, y });
+  };
+
+  const handleMouseUp = () => {
+    if (!isSelecting || !selectionStart || !selectionEnd) {
+      setIsSelecting(false); setSelectionStart(null); setSelectionEnd(null); return;
+    }
+    const minX = Math.min(selectionStart.x, selectionEnd.x);
+    const maxX = Math.max(selectionStart.x, selectionEnd.x);
+    const minY = Math.min(selectionStart.y, selectionEnd.y);
+    const maxY = Math.max(selectionStart.y, selectionEnd.y);
+    if (Math.hypot(maxX - minX, maxY - minY) < 25) {
+      setIsSelecting(false); setSelectionStart(null); setSelectionEnd(null); return;
+    }
+    const selected = events.filter(e => e.x != null && e.y != null).filter(e => {
+      const sx = scaleX(e.x!); const sy = scaleY(e.y!);
+      return sx >= minX && sx <= maxX && sy >= minY && sy <= maxY;
+    }).map(e => e.id);
+    if (selected.length > 0 && onSelectionChange) onSelectionChange(selected);
+    setIsSelecting(false); setSelectionStart(null); setSelectionEnd(null);
   };
 
   return (
@@ -81,10 +126,12 @@ export function Pitch({
         viewBox={`0 0 ${width} ${height}`}
         className="w-full h-auto border border-slate-700/70 rounded-2xl bg-[#0B1120] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
         preserveAspectRatio="xMidYMid meet"
-        onMouseMove={handleMouseMove}
+        onMouseMove={(e) => { handleMouseMove(e); handleMouseMoveSelection(e); }}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         onMouseLeave={() => {
-          setTooltipPos(null);
-          setHoveredEvent(null);
+          setTooltipPos(null); setHoveredEvent(null);
+          if (isSelecting) { setIsSelecting(false); setSelectionStart(null); setSelectionEnd(null); }
         }}
       >
         <defs>
@@ -180,6 +227,20 @@ export function Pitch({
           />
         </g>
 
+        {/* Drag Selection Rectangle */}
+        {isSelecting && selectionStart && selectionEnd && (
+          <rect
+            x={Math.min(selectionStart.x, selectionEnd.x)}
+            y={Math.min(selectionStart.y, selectionEnd.y)}
+            width={Math.abs(selectionEnd.x - selectionStart.x)}
+            height={Math.abs(selectionEnd.y - selectionStart.y)}
+            fill="rgba(163, 172, 194, 0.15)"
+            stroke="#a3aca6"
+            strokeWidth="1"
+            strokeDasharray="4 2"
+          />
+        )}
+
         {/* Event Elements */}
         {events
           .filter((e) => e.x !== null && e.y !== null)
@@ -193,6 +254,10 @@ export function Pitch({
             const isActive = isHighlighted || isHovered;
             const strokeW = isHighlighted ? 3.4 : isHovered ? 2.9 : 2.2;
             const opacity = isActive ? 1 : 0.88;
+
+            const isFaded = selectedEventIds && selectedEventIds.length > 0 && !selectedEventIds.includes(event.id);
+            const finalOpacity = isFaded ? Math.min(opacity, 0.25) : opacity;
+            const finalScale = isFaded ? 0.6 : 1;
 
             // === PASSES (Solid line + properly aligned arrowhead) ===
             if (isPass && event.end_x != null && event.end_y != null) {
@@ -211,9 +276,10 @@ export function Pitch({
                     y2={y2}
                     stroke={getEventColor(event.event_type)}
                     strokeWidth={strokeW}
-                    strokeOpacity={opacity}
+                    strokeOpacity={finalOpacity}
                     filter={isActive ? "url(#eventGlow)" : undefined}
                     className="cursor-pointer transition-all duration-150"
+                    style={{ opacity: finalOpacity }}
                     onMouseEnter={() => setHoveredEvent(event)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     onClick={() => onEventClick?.(event)}
@@ -224,6 +290,7 @@ export function Pitch({
                     fill={getEventColor(event.event_type)}
                     className="cursor-pointer"
                     onClick={() => onEventClick?.(event)}
+                    style={{ opacity: finalOpacity }}
                   />
                 </g>
               );
@@ -246,9 +313,10 @@ export function Pitch({
                     y2={y2}
                     stroke={getEventColor(event.event_type)}
                     strokeWidth={strokeW}
-                    strokeOpacity={opacity}
+                    strokeOpacity={finalOpacity}
                     strokeDasharray="5 3"
                     className="cursor-pointer transition-all duration-150"
+                    style={{ opacity: finalOpacity }}
                     onMouseEnter={() => setHoveredEvent(event)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     onClick={() => onEventClick?.(event)}
@@ -258,6 +326,7 @@ export function Pitch({
                     fill={getEventColor(event.event_type)}
                     className="cursor-pointer"
                     onClick={() => onEventClick?.(event)}
+                    style={{ opacity: finalOpacity }}
                   />
                 </g>
               );
@@ -304,9 +373,10 @@ export function Pitch({
                     fill="#EF4444"
                     stroke={isActive ? "#fff" : "none"}
                     strokeWidth={isActive ? 3 : 0}
-                    strokeOpacity={0.5}
+                    strokeOpacity={finalOpacity}
                     filter={isActive ? "url(#eventGlow)" : undefined}
                     className="cursor-pointer transition-all duration-150"
+                    style={{ opacity: finalOpacity }}
                     onMouseEnter={() => setHoveredEvent(event)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     onClick={() => onEventClick?.(event)}
@@ -326,9 +396,10 @@ export function Pitch({
                 fill={getEventColor(event.event_type)}
                 stroke={isActive ? "#fff" : "none"}
                 strokeWidth={isActive ? 2.4 : 0}
-                strokeOpacity={0.6}
+                strokeOpacity={finalOpacity}
                 filter={isActive ? "url(#eventGlow)" : undefined}
                 className="cursor-pointer transition-all duration-150"
+                style={{ opacity: finalOpacity }}
                 onMouseEnter={() => setHoveredEvent(event)}
                 onMouseLeave={() => setHoveredEvent(null)}
                 onClick={() => onEventClick?.(event)}
