@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getEventColor } from "./utils";
 
 interface EventPoint {
   id: number;
@@ -18,18 +19,9 @@ interface PitchProps {
   onEventClick?: (event: EventPoint) => void;
   highlightedEventId?: number | null;
   selectedEventIds?: number[];
+  onSelectionChange?: (ids: number[]) => void;
 }
 
-const getEventColor = (eventType: string | null): string => {
-  if (!eventType) return "#64748B";
-  const type = eventType.toLowerCase();
-  if (type.includes("shot")) return "#EF4444";
-  if (type.includes("pass")) return "#3B82F6";
-  if (type.includes("pressure")) return "#F59E0B";
-  if (type.includes("carry")) return "#10B981";
-  if (type.includes("duel")) return "#8B5CF6";
-  return "#64748B";
-};
 
 // Helper to calculate angle in degrees
 const getAngle = (x1: number, y1: number, x2: number, y2: number): number => {
@@ -143,6 +135,15 @@ export function Pitch({
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+
+          {/* Advanced mow-stripe grass texture for 2D (matches 3D procedural iconic look) */}
+          <pattern id="grassPattern" patternUnits="userSpaceOnUse" width="14" height="7">
+            <rect width="14" height="7" fill="#0a3d0a" />
+            {/* Stripe variation */}
+            <rect x="0" y="0" width="7" height="7" fill="#0f4d12" opacity="0.12" />
+            <line x1="0" y1="3.5" x2="14" y2="3.5" stroke="#083308" strokeWidth="0.6" opacity="0.25" />
+            <line x1="0" y1="1.2" x2="14" y2="1.2" stroke="#145a14" strokeWidth="0.4" opacity="0.15" />
+          </pattern>
         </defs>
         {/* Pitch Background */}
         <rect
@@ -155,6 +156,29 @@ export function Pitch({
           stroke="#1E2937"
           strokeWidth="2"
         />
+
+        {/* Subtle grass texture fill for advanced field realism (2D) */}
+        <rect
+          x={padding}
+          y={padding}
+          width={width - padding * 2}
+          height={height - padding * 2}
+          fill="url(#grassPattern)"
+          opacity="0.55"
+        />
+
+        {/* Simple stadium stands for 2D real pitch atmosphere (advanced visual) */}
+        <rect x={padding - 25} y={padding - 25} width={width - padding*2 + 50} height={25} fill="#1a2a4a" opacity="0.7" />
+        <rect x={padding - 25} y={height - padding} width={width - padding*2 + 50} height={25} fill="#1a2a4a" opacity="0.7" />
+        <rect x={padding - 25} y={padding - 25} width={25} height={height - padding*2 + 50} fill="#1a2a4a" opacity="0.7" />
+        <rect x={width - padding} y={padding - 25} width={25} height={height - padding*2 + 50} fill="#1a2a4a" opacity="0.7" />
+        {/* Seat lines on stands */}
+        <g stroke="#334455" strokeWidth="1" opacity="0.6">
+          <line x1={padding-20} y1={padding-15} x2={width-padding+20} y2={padding-15} />
+          <line x1={padding-20} y1={height-padding+15} x2={width-padding+20} y2={height-padding+15} />
+          <line x1={padding-15} y1={padding-20} x2={padding-15} y2={height-padding+20} />
+          <line x1={width-padding+15} y1={padding-20} x2={width-padding+15} y2={height-padding+20} />
+        </g>
 
         {/* Pitch Lines */}
         <g
@@ -170,46 +194,62 @@ export function Pitch({
             x2={width / 2}
             y2={height - padding}
           />
-          <circle cx={width / 2} cy={height / 2} r="54" />
+          <circle cx={width / 2} cy={height / 2} r="73" />
           <circle cx={width / 2} cy={height / 2} r="3.2" fill="#475569" />
 
-          {/* Left Penalty Area */}
+          {/* Left Penalty Area - accurate proportions */}
           <rect
             x={padding}
-            y={(height - 248) / 2}
-            width="148"
-            height="248"
+            y={(height - 322) / 2}
+            width="132"
+            height="322"
             rx="3"
           />
           <rect
             x={padding}
-            y={(height - 108) / 2}
-            width="64"
-            height="108"
+            y={(height - 146) / 2}
+            width="44"
+            height="146"
             rx="2"
           />
-          <circle cx={padding + 102} cy={height / 2} r="4.2" fill="#475569" />
+          <circle cx={padding + 120} cy={height / 2} r="4.2" fill="#475569" />
 
           {/* Right Penalty Area */}
           <rect
-            x={width - padding - 148}
-            y={(height - 248) / 2}
-            width="148"
-            height="248"
+            x={width - padding - 132}
+            y={(height - 322) / 2}
+            width="132"
+            height="322"
             rx="3"
           />
           <rect
-            x={width - padding - 64}
-            y={(height - 108) / 2}
-            width="64"
-            height="108"
+            x={width - padding - 44}
+            y={(height - 146) / 2}
+            width="44"
+            height="146"
             rx="2"
           />
           <circle
-            cx={width - padding - 102}
+            cx={width - padding - 120}
             cy={height / 2}
             r="4.2"
             fill="#475569"
+          />
+
+          {/* Penalty D arcs (the "D") - accurate radius ~73px for real proportion */}
+          {/* Left D - curves toward center */}
+          <path
+            d={`M ${padding + 132} ${height / 2 - 73} A 73 73 0 0 1 ${padding + 132} ${height / 2 + 73}`}
+            fill="none"
+            stroke="#475569"
+            strokeWidth="1.7"
+          />
+          {/* Right D */}
+          <path
+            d={`M ${width - padding - 132} ${height / 2 - 73} A 73 73 0 0 0 ${width - padding - 132} ${height / 2 + 73}`}
+            fill="none"
+            stroke="#475569"
+            strokeWidth="1.7"
           />
 
           {/* Corner Arcs */}
@@ -225,6 +265,20 @@ export function Pitch({
           <path
             d={`M ${width - padding - 18} ${height - padding} Q ${width - padding} ${height - padding} ${width - padding} ${height - padding - 18}`}
           />
+
+          {/* Goal posts (advanced visual pop for 2D, matching 3D posts) */}
+          {/* Left goal */}
+          <g stroke="#e2e8f0" strokeWidth="2.5" strokeLinecap="round">
+            <line x1={padding - 4} y1={height / 2 - 38} x2={padding - 4} y2={height / 2 + 38} />
+            <line x1={padding + 4} y1={height / 2 - 38} x2={padding + 4} y2={height / 2 + 38} />
+            <line x1={padding - 4} y1={height / 2 - 38} x2={padding + 4} y2={height / 2 - 38} />
+          </g>
+          {/* Right goal */}
+          <g stroke="#e2e8f0" strokeWidth="2.5" strokeLinecap="round">
+            <line x1={width - padding + 4} y1={height / 2 - 38} x2={width - padding + 4} y2={height / 2 + 38} />
+            <line x1={width - padding - 4} y1={height / 2 - 38} x2={width - padding - 4} y2={height / 2 + 38} />
+            <line x1={width - padding - 4} y1={height / 2 - 38} x2={width - padding + 4} y2={height / 2 - 38} />
+          </g>
         </g>
 
         {/* Drag Selection Rectangle */}
