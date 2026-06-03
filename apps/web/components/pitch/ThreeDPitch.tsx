@@ -8,6 +8,32 @@ import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { getEventColor } from "./utils";
+import {
+  PITCH_LENGTH_W,
+  PITCH_WIDTH_W,
+  HALF_LENGTH_W,
+  HALF_WIDTH_W,
+  LEFT_GOAL_LINE_X,
+  PBOX_FRONT_X_LEFT,
+  PBOX_FRONT_X_RIGHT,
+  PBOX_HALF_Z,
+  PBOX_DEPTH_W,
+  SIXYD_FRONT_X_LEFT,
+  SIXYD_FRONT_X_RIGHT,
+  SIXYD_HALF_Z,
+  SIXYD_DEPTH_W,
+  SPOT_X_LEFT,
+  SPOT_X_RIGHT,
+  D_R_W,
+  CENTER_R_W,
+  CORNER_ARC_W,
+  LINE_COLOR,
+  GRASS_BASE,
+  statsbombToWorld,
+} from "./constants";
+import { StadiumEnvironment3D } from "./StadiumEnvironment3D";
+import { PitchFrame } from "./PitchFrame";
+import { Goals3D } from "./Goal3D";
 
 interface EventPoint {
   id: number;
@@ -56,46 +82,9 @@ export function ThreeDPitch({
   onViewModeChange,
   autoRotate = false,
 }: ThreeDPitchProps) {
-  const PITCH_LENGTH_U = 120;
-  const PITCH_WIDTH_U = 80;
-  const PITCH_LENGTH_W = 16.1;
-  const PITCH_WIDTH_W = 10.75;
-  const SCALE = PITCH_WIDTH_W / PITCH_WIDTH_U; // 0.134375 for accurate proportions
-
-  const HALF_LENGTH_W = PITCH_LENGTH_W / 2; // ~8.05
-  const HALF_WIDTH_W = PITCH_WIDTH_W / 2; // 5.375
-  const GOAL_LINE_X = -HALF_LENGTH_W;
-
-  // Real pitch structure constants (proportions based on FIFA standard 105x68m mapped to 120x80u)
-  // Goal width ~7.32m → ~8.61u → world width
-  const GOAL_WIDTH_W = (7.32 / (68 / PITCH_WIDTH_U)) * SCALE; // ~1.157
-  const GOAL_HALF_Z = GOAL_WIDTH_W / 2;
-  // Penalty box (18yd) depth 16.5m → ~19.41u
-  const PBOX_DEPTH_W = (16.5 / (68 / PITCH_WIDTH_U)) * SCALE; // ~2.607
-  const PBOX_FRONT_X = -HALF_LENGTH_W + PBOX_DEPTH_W; // ~-5.443
-  const PBOX_HALF_Z = (40.3 / (68 / PITCH_WIDTH_U) * SCALE) / 2; // ~3.185
-  // 6yd box depth 5.5m
-  const SIXYD_DEPTH_W = (5.5 / (68 / PITCH_WIDTH_U)) * SCALE; // ~0.87
-  const SIXYD_FRONT_X = -HALF_LENGTH_W + SIXYD_DEPTH_W; // ~-7.18
-  const SIXYD_HALF_Z = (18.32 / (68 / PITCH_WIDTH_U) * SCALE) / 2; // ~1.447
-  // Penalty spot 11m from goal line
-  const SPOT_DIST_W = (11 / (68 / PITCH_WIDTH_U)) * SCALE; // ~1.738
-  const SPOT_X = -HALF_LENGTH_W + SPOT_DIST_W; // ~-6.312
-  // D radius and center circle 9.15m
-  const D_R_W = (9.15 / (68 / PITCH_WIDTH_U)) * SCALE; // ~1.447
-  const CENTER_R_W = D_R_W;
-
-  const height = 1.5; // slight 3D extrusion for field (visual, not to real scale)
-
-  // Convert 2D pitch coords (0-120, 0-80) to Three.js coords - use consistent SCALE for real shape
-  const to3D = (x: number, y: number) => [
-    (x - 60) * SCALE,
-    0.1,
-    (40 - y) * SCALE,
-  ] as const;
-
-  const fieldColor = "#0a3d0a"; // more realistic grass green
-  const lineColor = "#e2e8f0"; // bright white lines for better visibility in 3D
+  const to3D = statsbombToWorld;
+  const fieldColor = GRASS_BASE;
+  const lineColor = LINE_COLOR;
 
   // Bumpy pitch geometry for subtle real-world undulations (not perfectly flat)
   const fieldGeometry = useMemo(() => {
@@ -246,21 +235,21 @@ export function ThreeDPitch({
     // === FULL LEFT PENALTY AREA (18yd box) - all 4 sides ===
     // Front (goal side)
     lines.push(
-      <mesh key="left-penalty-front" position={[PBOX_FRONT_X, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh key="left-penalty-front" position={[PBOX_FRONT_X_LEFT, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[lineRadius, lineRadius, PBOX_HALF_Z * 2, 5]} />
         {lineMat}
       </mesh>
     );
     // Top long side
     lines.push(
-      <mesh key="left-penalty-top" position={[(PBOX_FRONT_X - HALF_LENGTH_W) / 2, lineRadius + 0.015, -PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="left-penalty-top" position={[(PBOX_FRONT_X_LEFT - HALF_LENGTH_W) / 2, lineRadius + 0.015, -PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius, lineRadius, PBOX_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
     );
     // Bottom long side
     lines.push(
-      <mesh key="left-penalty-bottom" position={[(PBOX_FRONT_X - HALF_LENGTH_W) / 2, lineRadius + 0.015, PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="left-penalty-bottom" position={[(PBOX_FRONT_X_LEFT - HALF_LENGTH_W) / 2, lineRadius + 0.015, PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius, lineRadius, PBOX_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
@@ -275,19 +264,19 @@ export function ThreeDPitch({
 
     // === FULL RIGHT PENALTY AREA ===
     lines.push(
-      <mesh key="right-penalty-front" position={[-PBOX_FRONT_X, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh key="right-penalty-front" position={[PBOX_FRONT_X_RIGHT, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[lineRadius, lineRadius, PBOX_HALF_Z * 2, 5]} />
         {lineMat}
       </mesh>
     );
     lines.push(
-      <mesh key="right-penalty-top" position={[(-PBOX_FRONT_X + HALF_LENGTH_W) / 2, lineRadius + 0.015, -PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="right-penalty-top" position={[HALF_LENGTH_W - PBOX_DEPTH_W / 2, lineRadius + 0.015, -PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius, lineRadius, PBOX_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
     );
     lines.push(
-      <mesh key="right-penalty-bottom" position={[(-PBOX_FRONT_X + HALF_LENGTH_W) / 2, lineRadius + 0.015, PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="right-penalty-bottom" position={[HALF_LENGTH_W - PBOX_DEPTH_W / 2, lineRadius + 0.015, PBOX_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius, lineRadius, PBOX_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
@@ -302,19 +291,19 @@ export function ThreeDPitch({
     // === 6-YARD BOXES (goal areas) - full rectangles ===
     // Left 6yd
     lines.push(
-      <mesh key="left-6yard-front" position={[SIXYD_FRONT_X, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh key="left-6yard-front" position={[SIXYD_FRONT_X_LEFT, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[lineRadius * 0.82, lineRadius * 0.82, SIXYD_HALF_Z * 2, 5]} />
         {lineMat}
       </mesh>
     );
     lines.push(
-      <mesh key="left-6yard-top" position={[(SIXYD_FRONT_X - HALF_LENGTH_W) / 2, lineRadius + 0.015, -SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="left-6yard-top" position={[(SIXYD_FRONT_X_LEFT - HALF_LENGTH_W) / 2, lineRadius + 0.015, -SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius * 0.82, lineRadius * 0.82, SIXYD_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
     );
     lines.push(
-      <mesh key="left-6yard-bottom" position={[(SIXYD_FRONT_X - HALF_LENGTH_W) / 2, lineRadius + 0.015, SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="left-6yard-bottom" position={[(SIXYD_FRONT_X_LEFT - HALF_LENGTH_W) / 2, lineRadius + 0.015, SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius * 0.82, lineRadius * 0.82, SIXYD_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
@@ -328,19 +317,19 @@ export function ThreeDPitch({
 
     // Right 6yd
     lines.push(
-      <mesh key="right-6yard-front" position={[-SIXYD_FRONT_X, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh key="right-6yard-front" position={[SIXYD_FRONT_X_RIGHT, lineRadius + 0.015, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[lineRadius * 0.82, lineRadius * 0.82, SIXYD_HALF_Z * 2, 5]} />
         {lineMat}
       </mesh>
     );
     lines.push(
-      <mesh key="right-6yard-top" position={[(-SIXYD_FRONT_X + HALF_LENGTH_W) / 2, lineRadius + 0.015, -SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="right-6yard-top" position={[HALF_LENGTH_W - SIXYD_DEPTH_W / 2, lineRadius + 0.015, -SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius * 0.82, lineRadius * 0.82, SIXYD_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
     );
     lines.push(
-      <mesh key="right-6yard-bottom" position={[(-SIXYD_FRONT_X + HALF_LENGTH_W) / 2, lineRadius + 0.015, SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh key="right-6yard-bottom" position={[HALF_LENGTH_W - SIXYD_DEPTH_W / 2, lineRadius + 0.015, SIXYD_HALF_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[lineRadius * 0.82, lineRadius * 0.82, SIXYD_DEPTH_W, 5]} />
         {lineMat}
       </mesh>
@@ -354,13 +343,13 @@ export function ThreeDPitch({
 
     // Penalty spots (raised small discs)
     lines.push(
-      <mesh key="left-penalty-spot" position={[SPOT_X, lineRadius + 0.055, 0]}>
+      <mesh key="left-penalty-spot" position={[SPOT_X_LEFT, lineRadius + 0.055, 0]}>
         <cylinderGeometry args={[0.13, 0.13, 0.028, 14]} />
         <meshStandardMaterial color={lineColor} roughness={0.7} metalness={0.15} />
       </mesh>
     );
     lines.push(
-      <mesh key="right-penalty-spot" position={[-SPOT_X, lineRadius + 0.055, 0]}>
+      <mesh key="right-penalty-spot" position={[SPOT_X_RIGHT, lineRadius + 0.055, 0]}>
         <cylinderGeometry args={[0.13, 0.13, 0.028, 14]} />
         <meshStandardMaterial color={lineColor} roughness={0.7} metalness={0.15} />
       </mesh>
@@ -377,7 +366,7 @@ export function ThreeDPitch({
     // Left D (curved part outside the box)
     for (let i = 0; i < 11; i++) {
       const a = (-0.72 + i * 0.144) * Math.PI;
-      const px = SPOT_X + Math.cos(a) * D_R_W;
+      const px = SPOT_X_LEFT + Math.cos(a) * D_R_W;
       const pz = Math.sin(a) * D_R_W;
       const rotY = Math.atan2(Math.cos(a), 0);
       lines.push(
@@ -390,7 +379,7 @@ export function ThreeDPitch({
     // Right D
     for (let i = 0; i < 11; i++) {
       const a = (Math.PI - 0.72 + i * 0.144);
-      const px = -SPOT_X + Math.cos(a) * D_R_W;
+      const px = SPOT_X_RIGHT + Math.cos(a) * D_R_W;
       const pz = Math.sin(a) * D_R_W;
       const rotY = Math.atan2(Math.cos(a), 0);
       lines.push(
@@ -430,17 +419,16 @@ export function ThreeDPitch({
     );
 
     // Corner arcs (small 3D tori segments for rounded corners - parity with 2D)
-    const cornerR = 0.55;
     const cPositions = [
-      [-halfL + 0.1, lineRadius + 0.015, -halfW + 0.1],
-      [-halfL + 0.1, lineRadius + 0.015, halfW - 0.1],
-      [halfL - 0.1, lineRadius + 0.015, -halfW + 0.1],
-      [halfL - 0.1, lineRadius + 0.015, halfW - 0.1],
+      [-halfL, lineRadius + 0.015, -halfW],
+      [-halfL, lineRadius + 0.015, halfW],
+      [halfL, lineRadius + 0.015, -halfW],
+      [halfL, lineRadius + 0.015, halfW],
     ];
     cPositions.forEach((cp, ci) => {
       lines.push(
-        <mesh key={`corner-arc-${ci}`} position={cp as [number,number,number]} rotation={[Math.PI / 2, ci * (Math.PI / 2), 0]}>
-          <torusGeometry args={[cornerR * 0.3, lineRadius * 0.6, 4, 12, Math.PI / 2]} />
+        <mesh key={`corner-arc-${ci}`} position={cp as [number, number, number]} rotation={[Math.PI / 2, ci * (Math.PI / 2), 0]}>
+          <torusGeometry args={[CORNER_ARC_W, lineRadius * 0.65, 4, 10, Math.PI / 2]} />
           {lineMat}
         </mesh>
       );
@@ -449,149 +437,16 @@ export function ThreeDPitch({
     return lines;
   }, [lineColor]);
 
-  // Photorealistic 3D goals with proper posts + authentic net grid (tensioned string look)
-  const goalPosts = useMemo(() => {
-    const goals: React.ReactElement[] = [];
-    const postR = 0.095;
-    const barR = 0.085;
-    const netColor = "#9aa5b8";
-    const postColor = "#f4f6f9";
-    const netMat = (opacity = 0.82) => (
-      <meshStandardMaterial color={netColor} roughness={0.95} metalness={0.08} transparent opacity={opacity} />
-    );
-
-    function makeNetGrid(backX: number, centerZ: number, isLeft: boolean, depth: number) {
-      const els: React.ReactElement[] = [];
-      const w = 3.72; // goal mouth width
-      const h = 1.82;
-      const d = depth; // net depth
-      const vCount = 7; // vertical strings
-      const hCount = 6; // horizontal
-
-      const backXOff = isLeft ? -0.08 : 0.08;
-      const sideTilt = isLeft ? 0.18 : -0.18;
-
-      // Back plane grid (the main visible net)
-      for (let i = 0; i < vCount; i++) {
-        const frac = i / (vCount - 1);
-        const lx = backX + backXOff + (isLeft ? -d * 0.08 : d * 0.08);
-        const lz = centerZ - w / 2 + frac * w;
-        // vertical string (top to bottom)
-        els.push(
-          <mesh key={`v-${i}`} position={[lx, h * 0.5, lz]} rotation={[0, sideTilt, 0]}>
-            <cylinderGeometry args={[0.014, 0.014, h, 3]} />
-            {netMat(0.78)}
-          </mesh>
-        );
-      }
-      for (let j = 0; j < hCount; j++) {
-        const fy = (j / (hCount - 1)) * h;
-        const bz = centerZ;
-        // Slight sag on horizontal strings for authentic net tension (realistic catenary)
-        const sag = Math.sin((j / (hCount - 1)) * Math.PI) * 0.04;
-        els.push(
-          <mesh key={`h-${j}`} position={[backX + backXOff * 0.6, fy - sag, bz]} rotation={[0, sideTilt * 0.6, Math.PI / 2]}>
-            <cylinderGeometry args={[0.014, 0.014, w * 0.995, 3]} />
-            {netMat(0.72)}
-          </mesh>
-        );
-      }
-
-      // Left side wing net (angled)
-      for (let k = 0; k < 5; k++) {
-        const f = k / 4;
-        const y = f * h * 0.98;
-        els.push(
-          <mesh key={`sideL-${k}`} position={[backX - d * 0.42, y, centerZ - w * 0.5 - 0.06]} rotation={[0, sideTilt + (isLeft ? -0.6 : 0.6), 0]}>
-            <cylinderGeometry args={[0.012, 0.012, d * 0.92, 3]} />
-            {netMat(0.65)}
-          </mesh>
-        );
-      }
-      // Right side wing net
-      for (let k = 0; k < 5; k++) {
-        const f = k / 4;
-        const y = f * h * 0.98;
-        els.push(
-          <mesh key={`sideR-${k}`} position={[backX - d * 0.42, y, centerZ + w * 0.5 + 0.06]} rotation={[0, sideTilt + (isLeft ? 0.6 : -0.6), 0]}>
-            <cylinderGeometry args={[0.012, 0.012, d * 0.92, 3]} />
-            {netMat(0.65)}
-          </mesh>
-        );
-      }
-
-      // Top tension strings (roof of net)
-      for (let t = 0; t < 4; t++) {
-        const f = (t + 1) / 5;
-        els.push(
-          <mesh key={`top-${t}`} position={[backX - d * 0.32, h + 0.02, centerZ - w * 0.5 + f * w]} rotation={[0, sideTilt * 0.7, Math.PI / 2]}>
-            <cylinderGeometry args={[0.011, 0.011, d * 0.86, 3]} />
-            {netMat(0.6)}
-          </mesh>
-        );
-      }
-      return els;
-    }
-
-    // LEFT GOAL - accurate FIFA proportions (goal 7.32m wide, visual height for presence)
-    const leftGoal = (
-      <group key="left-goal" position={[GOAL_LINE_X, 0.02, 0]}>
-        {/* Left upright */}
-        <mesh position={[0.02, 0.91, -GOAL_HALF_Z]} castShadow receiveShadow>
-          <cylinderGeometry args={[postR, postR, 1.82, 9]} />
-          <meshPhysicalMaterial color={postColor} metalness={0.6} roughness={0.35} clearcoat={0.5} />
-        </mesh>
-        {/* Right upright */}
-        <mesh position={[0.02, 0.91, GOAL_HALF_Z]} castShadow receiveShadow>
-          <cylinderGeometry args={[postR, postR, 1.82, 9]} />
-          <meshPhysicalMaterial color={postColor} metalness={0.6} roughness={0.35} clearcoat={0.5} />
-        </mesh>
-        {/* Crossbar */}
-        <mesh position={[0.02, 1.82, 0]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-          <cylinderGeometry args={[barR, barR, GOAL_WIDTH_W, 9]} />
-          <meshPhysicalMaterial color={postColor} metalness={0.6} roughness={0.35} clearcoat={0.5} />
-        </mesh>
-
-        {/* Net grid (detailed string lines) */}
-        {makeNetGrid(GOAL_LINE_X - 0.12, 0, true, 0.95)}
-      </group>
-    );
-    goals.push(leftGoal);
-
-    // RIGHT GOAL
-    const rightGoal = (
-      <group key="right-goal" position={[-GOAL_LINE_X, 0.02, 0]}>
-        <mesh position={[-0.02, 0.91, -GOAL_HALF_Z]} castShadow receiveShadow>
-          <cylinderGeometry args={[postR, postR, 1.82, 9]} />
-          <meshPhysicalMaterial color={postColor} metalness={0.6} roughness={0.35} clearcoat={0.5} />
-        </mesh>
-        <mesh position={[-0.02, 0.91, GOAL_HALF_Z]} castShadow receiveShadow>
-          <cylinderGeometry args={[postR, postR, 1.82, 9]} />
-          <meshPhysicalMaterial color={postColor} metalness={0.6} roughness={0.35} clearcoat={0.5} />
-        </mesh>
-        <mesh position={[-0.02, 1.82, 0]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-          <cylinderGeometry args={[barR, barR, GOAL_WIDTH_W, 9]} />
-          <meshPhysicalMaterial color={postColor} metalness={0.6} roughness={0.35} clearcoat={0.5} />
-        </mesh>
-
-        {makeNetGrid(-GOAL_LINE_X + 0.12, 0, false, 0.95)}
-      </group>
-    );
-    goals.push(rightGoal);
-
-    return goals;
-  }, [lineColor]);
-
   // 3D corner flags for broadcast-level pitch detail (small poles + flags)
   const cornerFlags = useMemo(() => {
     const flags: React.ReactElement[] = [];
     const poleR = 0.04;
     const flagH = 0.7;
     const positions = [
-      [GOAL_LINE_X, 0.05, -HALF_WIDTH_W], // left bottom (near left goal)
-      [GOAL_LINE_X, 0.05, HALF_WIDTH_W],  // left top
-      [-GOAL_LINE_X, 0.05, -HALF_WIDTH_W], // right bottom
-      [-GOAL_LINE_X, 0.05, HALF_WIDTH_W],  // right top
+      [LEFT_GOAL_LINE_X, 0.05, -HALF_WIDTH_W],
+      [LEFT_GOAL_LINE_X, 0.05, HALF_WIDTH_W],
+      [HALF_LENGTH_W, 0.05, -HALF_WIDTH_W],
+      [HALF_LENGTH_W, 0.05, HALF_WIDTH_W],
     ];
     positions.forEach((p, i) => {
       // Pole
@@ -611,98 +466,6 @@ export function ThreeDPitch({
       );
     });
     return flags;
-  }, []);
-
-  // Stadium environment for real stadium feel: stands, hoardings, floodlights
-  const stadiumFeatures = useMemo(() => {
-    const features: React.ReactElement[] = [];
-    const standHeight = 2.5;
-    const standDist = 9.5; // outside pitch
-    const standDepth = 3;
-
-    // Simple stands as raised platforms around (4 sides, low poly for perf)
-    const standColors = ["#1e3a5f", "#2a4a6f", "#1e3a5f", "#2a4a6f"]; // alternating seat colors
-    const standPos = [
-      [0, standHeight/2, -standDist], // north
-      [0, standHeight/2, standDist],  // south
-      [-standDist, standHeight/2, 0], // west
-      [standDist, standHeight/2, 0],  // east
-    ];
-    const standSizes = [
-      [PITCH_LENGTH_W * 1.3, standHeight, standDepth],
-      [PITCH_LENGTH_W * 1.3, standHeight, standDepth],
-      [standDepth, standHeight, PITCH_WIDTH_W * 1.3],
-      [standDepth, standHeight, PITCH_WIDTH_W * 1.3],
-    ];
-    standPos.forEach((pos, i) => {
-      features.push(
-        <mesh key={`stand-${i}`} position={pos as [number, number, number]} receiveShadow>
-          <boxGeometry args={standSizes[i] as [number, number, number]} />
-          <meshLambertMaterial color={standColors[i]} />
-        </mesh>
-      );
-      // Seat detail lines on stands
-      for (let s = -1; s <= 1; s += 0.5) {
-        features.push(
-          <mesh key={`seat-${i}-${s}`} position={[pos[0] + (i>1 ? s*2 : 0), pos[1]+0.1, pos[2] + (i<2 ? s*2 : 0)] } >
-            <boxGeometry args={i<2 ? [PITCH_LENGTH_W*1.2, 0.1, 0.2] : [0.2, 0.1, PITCH_WIDTH_W*1.2]} />
-            <meshLambertMaterial color="#334455" />
-          </mesh>
-        );
-      }
-    });
-
-    // Advertising hoardings (perimeter boards) - thin raised boxes with color
-    const hoardDist = HALF_WIDTH_W + 0.3;
-    const hoardH = 0.4;
-    const hoardColors = ["#ffcc00", "#0066cc", "#cc0000", "#00aa00", "#ff6600"];
-    for (let side = 0; side < 4; side++) {
-      const isLong = side < 2;
-      const len = isLong ? PITCH_LENGTH_W : PITCH_WIDTH_W;
-      const hx = isLong ? 0 : (side === 2 ? -hoardDist : hoardDist);
-      const hz = isLong ? (side === 0 ? -hoardDist : hoardDist) : 0;
-      for (let j = 0; j < 5; j++) {
-        const offset = (j - 2) * (len / 5);
-        const posX = isLong ? offset : hx;
-        const posZ = isLong ? hz : offset;
-        features.push(
-          <mesh key={`hoard-${side}-${j}`} position={[posX, hoardH/2, posZ]} >
-            <boxGeometry args={isLong ? [len/5 - 0.1, hoardH, 0.15] : [0.15, hoardH, len/5 - 0.1]} />
-            <meshLambertMaterial color={hoardColors[(side + j) % hoardColors.length]} />
-          </mesh>
-        );
-      }
-    }
-
-    // Floodlight poles (4 corners) with bright lights for stadium night feel
-    const lightPositions = [
-      [GOAL_LINE_X - 1, 4, -HALF_WIDTH_W - 1],
-      [GOAL_LINE_X - 1, 4, HALF_WIDTH_W + 1],
-      [-GOAL_LINE_X + 1, 4, -HALF_WIDTH_W - 1],
-      [-GOAL_LINE_X + 1, 4, HALF_WIDTH_W + 1],
-    ];
-    lightPositions.forEach((lp, li) => {
-      // Pole
-      features.push(
-        <mesh key={`lightpole-${li}`} position={[lp[0], 2, lp[2]]}>
-          <cylinderGeometry args={[0.08, 0.08, 4, 6]} />
-          <meshLambertMaterial color="#555555" />
-        </mesh>
-      );
-      // Light head
-      features.push(
-        <mesh key={`lighthead-${li}`} position={[lp[0], 4.2, lp[2]]}>
-          <boxGeometry args={[0.6, 0.3, 0.4]} />
-          <meshLambertMaterial color="#333333" />
-        </mesh>
-      );
-      // Bright point light for illumination
-      features.push(
-        <pointLight key={`light-${li}`} position={[lp[0], 4, lp[2]]} intensity={0.8} color="#fff8e1" distance={25} />
-      );
-    });
-
-    return features;
   }, []);
 
   // Refs for advanced interactions (drag select projection + camera control)
@@ -834,50 +597,50 @@ export function ThreeDPitch({
   }
 
   return (
+    <PitchFrame mode="3d" className="w-full max-w-[960px] mx-auto select-none">
     <div
       ref={containerRef}
-      className="relative w-full aspect-[120/80] max-w-[920px] mx-auto rounded-2xl overflow-hidden border border-slate-700/70 bg-[#0B1120] select-none"
+      className="relative w-full aspect-[120/80] min-h-[420px]"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
     >
       <Canvas
-        camera={{ position: [0, 19.5, 23.5], fov: 43 }}
-        style={{ background: "#0B1120" }}
+        camera={{ position: [0, 20, 24], fov: 42 }}
         shadows={{ type: THREE.PCFShadowMap }}
-        gl={{ 
-          preserveDrawingBuffer: true, 
-          antialias: true, 
+        gl={{
+          preserveDrawingBuffer: true,
+          antialias: true,
           alpha: false,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.15
+          toneMappingExposure: 1.08,
+        }}
+        onCreated={({ scene }) => {
+          scene.background = new THREE.Color("#071018");
         }}
       >
-        <ambientLight intensity={0.38} />
+        <ambientLight intensity={0.28} color="#c7d2fe" />
         <directionalLight
-          position={[13, 27, 9]}
-          intensity={1.25}
+          position={[14, 28, 10]}
+          intensity={1.35}
+          color="#fffbeb"
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
           shadow-camera-near={0.4}
-          shadow-camera-far={62}
-          shadow-camera-left={-13}
-          shadow-camera-right={13}
-          shadow-camera-top={13}
-          shadow-camera-bottom={-13}
-          shadow-bias={-0.0006}
+          shadow-camera-far={65}
+          shadow-camera-left={-16}
+          shadow-camera-right={16}
+          shadow-camera-top={16}
+          shadow-camera-bottom={-16}
+          shadow-bias={-0.0004}
         />
-        {/* Soft fill + sky/ground hemisphere for outdoor broadcast realism */}
-        <hemisphereLight args={["#9fd4a8", "#122a12", 0.72]} />
-        {/* Very subtle rim/fill */}
-        <directionalLight position={[-18, 9, -22]} intensity={0.22} />
-        {/* Extra soft fill for realistic outdoor ambient on pitch */}
-        <directionalLight position={[0, 15, -30]} intensity={0.15} />
+        <hemisphereLight args={["#86efac", "#052e16", 0.55]} />
+        <directionalLight position={[-20, 12, -18]} intensity={0.18} color="#93c5fd" />
+        <directionalLight position={[0, 8, 28]} intensity={0.12} color="#fef3c7" />
 
-        {/* Atmospheric fog for depth (stadium haze) */}
-        <fog attach="fog" args={["#0B1120", 19, 46]} />
+        <fog attach="fog" args={["#071018", 22, 52]} />
 
         {/* 3D Pitch Surface - ultra realistic grass + stripes + wear + subtle real pitch undulations */}
         <mesh ref={grassMeshRef} geometry={fieldGeometry} rotation={[-Math.PI * 0.5, 0, 0]} position={[0, 0, 0]} receiveShadow>
@@ -889,34 +652,17 @@ export function ThreeDPitch({
           />
         </mesh>
         <GrassWind grassMeshRef={grassMeshRef} />
-        {/* Surrounding darker apron / cut grass */}
-        <mesh rotation={[-Math.PI * 0.5, 0, 0]} position={[0, -0.012, 0]} receiveShadow>
-          <planeGeometry args={[PITCH_LENGTH_W * 1.15, PITCH_WIDTH_W * 1.2]} />
-          <meshLambertMaterial color="#052605" />
+        {/* Pitch surround apron */}
+        <mesh rotation={[-Math.PI * 0.5, 0, 0]} position={[0, -0.018, 0]} receiveShadow>
+          <planeGeometry args={[PITCH_LENGTH_W * 1.08, PITCH_WIDTH_W * 1.08]} />
+          <meshStandardMaterial color="#052e16" roughness={1} />
         </mesh>
 
-        {/* Turf lip / raised border (real stadium pitch edge) */}
-        <mesh position={[0, 0.13, 0]} receiveShadow>
-          <boxGeometry args={[PITCH_LENGTH_W * 0.96, 0.22, PITCH_WIDTH_W * 0.97]} />
-          <meshLambertMaterial color="#132f13" />
-        </mesh>
-
-        {/* Field Lines (complete accurate) */}
         {fieldLines}
-
-        {/* Goal Posts (photoreal nets) */}
-        {goalPosts}
-
-        {/* Corner flags for extra broadcast realism */}
+        <Goals3D />
         {cornerFlags}
 
-        {/* Stadium stands, hoardings, floodlights for real stadium atmosphere */}
-        {stadiumFeatures}
-
-        {/* 3D sponsor boards / ads for advanced stadium realism (using Text for clarity) */}
-        <Text position={[0, 0.8, -HALF_WIDTH_W - 0.8]} fontSize={0.4} color="#ffcc00" anchorX="center" rotation={[ -0.2, 0, 0 ]}>SPONSOR</Text>
-        <Text position={[0, 0.8, HALF_WIDTH_W + 0.8]} fontSize={0.4} color="#0066cc" anchorX="center" rotation={[ 0.2, Math.PI, 0 ]}>ANALYTICS</Text>
-        <Text position={[GOAL_LINE_X - 1.5, 0.8, 0]} fontSize={0.35} color="#cc0000" anchorX="center" rotation={[0, Math.PI/2, 0]}>LIVE</Text>
+        <StadiumEnvironment3D />
 
         <CameraCapture camRef={cameraRef} />
 
@@ -1142,6 +888,7 @@ export function ThreeDPitch({
         </div>
       )}
     </div>
+    </PitchFrame>
   );
 }
 

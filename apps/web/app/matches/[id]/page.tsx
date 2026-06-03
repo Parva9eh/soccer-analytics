@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Trophy, X, ChevronDown } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Pitch } from "@/components/pitch/Pitch";
 import { ThreeDPitch } from "@/components/pitch/ThreeDPitch";
 import { getEventColor, getEventIcon, EVENT_TYPES } from "@/components/pitch/utils";
+import { PitchLayersPopover } from "@/components/pitch/PitchLayersPopover";
+import { TableEventFilterPopover } from "@/components/pitch/TableEventFilterPopover";
 
 import {
   Table,
@@ -28,25 +30,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-
-import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+
+/** Match timeline scale (0'–90'+); inset keeps edge markers visible. */
+const MATCH_DURATION_MIN = 95;
+const TIMELINE_EDGE_INSET_PCT = 3;
+
+function timelinePercentFromMinute(minute: number): number {
+  const clamped = Math.min(Math.max(minute, 0), MATCH_DURATION_MIN);
+  const t = clamped / MATCH_DURATION_MIN;
+  return TIMELINE_EDGE_INSET_PCT + t * (100 - 2 * TIMELINE_EDGE_INSET_PCT);
+}
 
 interface Match {
   id: number;
@@ -86,6 +86,7 @@ export default function MatchDetailPage() {
     null,
   );
   const [isControlsOpen, setIsControlsOpen] = useState(false);
+  const [isTableFilterOpen, setIsTableFilterOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [use3DView, setUse3DView] = useState(false);
   const [current3DView, setCurrent3DView] = useState<'top' | 'side' | 'goal' | 'iso'>('iso');
@@ -179,6 +180,8 @@ export default function MatchDetailPage() {
     : [];
 
   const totalPages = eventsData ? Math.ceil(eventsData.total / pageSize) : 1;
+  const matchEventTotal = pitchEventsData?.total ?? null;
+  const tableFilterCount = eventsData?.total ?? null;
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -318,7 +321,9 @@ export default function MatchDetailPage() {
               Click events on the pitch to inspect
               {use3DView && <span className="ml-2 text-[10px] text-accent/80">• Shift+drag to box-select</span>}
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Real stadium pitch • ~105×68m (FIFA) • Advanced 3D with stands, lights, hoardings</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              Broadcast stadium view • FIFA 105×68m • Tiered stands, floodlights, LED boards
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -388,61 +393,14 @@ export default function MatchDetailPage() {
               </div>
             )}
 
-            <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 text-xs"
-                >
-                  Filters
-                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isControlsOpen ? "rotate-180" : ""}`} />
-                </Button>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent className="absolute right-0 top-11 z-50 w-full max-w-[260px] sm:w-auto">
-                <Card className="border-slate-700 bg-slate-900 elevation-3">
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {["Shot", "Pass", "Pressure", "Carry", "Duel"].map(
-                        (type) => (
-                          <label
-                            key={type}
-                            className="flex items-center gap-3 text-sm text-slate-200 cursor-pointer hover:bg-slate-700 p-1.5 rounded"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={visibleEventTypes.includes(type)}
-                              onChange={() => toggleEventType(type)}
-                              className="h-4 w-4 accent-teal-500"
-                            />
-                            <span>Show {type}s</span>
-                          </label>
-                        ),
-                      )}
-                      <div className="pt-3 border-t border-slate-700">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setVisibleEventTypes([
-                              "Shot",
-                              "Pass",
-                              "Pressure",
-                              "Carry",
-                              "Duel",
-                            ])
-                          }
-                          className="w-full justify-start text-xs text-slate-300 hover:text-white"
-                        >
-                          Reset All Filters
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </CollapsibleContent>
-            </Collapsible>
+            <PitchLayersPopover
+              open={isControlsOpen}
+              onOpenChange={setIsControlsOpen}
+              visibleTypes={visibleEventTypes}
+              onToggleType={toggleEventType}
+              onSelectAll={() => setVisibleEventTypes([...EVENT_TYPES])}
+              onClearAll={() => setVisibleEventTypes([])}
+            />
           </div>
         </div>
 
@@ -452,26 +410,35 @@ export default function MatchDetailPage() {
             <span>Event Timeline (click to select)</span>
             <span className="text-slate-500">{filteredPitchEvents.length} events</span>
           </div>
-          <div className="relative h-6 w-full overflow-hidden rounded border border-slate-700/60 bg-slate-950">
-            {filteredPitchEvents
-              .filter(e => e.minute != null)
-              .map((event, index) => {
-                const minute = event.minute || 0;
-                const progress = Math.min((minute / 95) * 100, 100);
-                const color = getEventColor(event.event_type);
-                const isActive = highlightedEventId === event.id;
+          <div className="relative h-8 w-full rounded-md border border-slate-700/60 bg-slate-950 px-3">
+            <div className="relative h-full">
+              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-700/50" />
+              {filteredPitchEvents
+                .filter((e) => e.minute != null)
+                .map((event, index) => {
+                  const minute = event.minute ?? 0;
+                  const leftPct = timelinePercentFromMinute(minute);
+                  const color = getEventColor(event.event_type);
+                  const isActive = highlightedEventId === event.id;
 
-                return (
-                  <button
-                    key={`${event.id}-${index}`}
-                    onClick={() => handlePitchEventClick(event)}
-                    className={`absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 -translate-x-1/2 rounded-full border border-slate-800 transition-all duration-150 hover:scale-125 ${isActive ? 'scale-125 ring-1 ring-accent' : 'opacity-70 hover:opacity-100'}`}
-                    style={{ left: `${progress}%`, backgroundColor: color }}
-                    title={`${event.event_type} - ${event.minute}'`}
-                  />
-                );
-              })}
-            <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-slate-700/40" />
+                  return (
+                    <button
+                      key={`${event.id}-${index}`}
+                      type="button"
+                      onClick={() => handlePitchEventClick(event)}
+                      aria-label={`${event.event_type} at ${minute} minutes`}
+                      aria-pressed={isActive}
+                      className={`absolute top-1/2 z-[1] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-950 transition-all duration-150 hover:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 ${
+                        isActive
+                          ? "scale-125 ring-2 ring-accent/60"
+                          : "opacity-80 hover:opacity-100"
+                      }`}
+                      style={{ left: `${leftPct}%`, backgroundColor: color }}
+                      title={`${event.event_type} — ${minute}'`}
+                    />
+                  );
+                })}
+            </div>
           </div>
         </div>
 
@@ -493,9 +460,8 @@ export default function MatchDetailPage() {
           </div>
         </div>
 
-        <div 
-          className={`relative elevation-3 rounded-2xl border border-slate-700/60 bg-slate-950/40 p-2 sm:p-3 transition-all shadow-[inset_0_0_80px_rgba(0,0,0,0.7)] ${use3DView ? 'h-[740px] md:h-[800px] lg:h-[860px]' : 'h-auto'}`}
-          style={{ boxShadow: 'inset 0 0 80px rgba(0,0,0,0.7), 0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+        <div
+          className={`relative transition-all ${use3DView ? "min-h-[740px] md:min-h-[800px] lg:min-h-[860px]" : "h-auto"}`}
           tabIndex={0}
           onKeyDown={(e) => {
             if (!filteredPitchEvents.length) return;
@@ -563,32 +529,17 @@ export default function MatchDetailPage() {
 
 
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {eventTypes.length > 0 && (
-              <div className="w-48">
-                <Select
-                  value={selectedEventType}
-                  onValueChange={handleFilterChange}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Filter events" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Event Types</SelectItem>
-                    {eventTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {eventsData && (
-              <div className="text-xs text-slate-400 whitespace-nowrap tabular-nums">
-                {eventsData.total} total
-              </div>
+              <TableEventFilterPopover
+                open={isTableFilterOpen}
+                onOpenChange={setIsTableFilterOpen}
+                selectedType={selectedEventType}
+                eventTypes={eventTypes}
+                onSelect={handleFilterChange}
+                filteredCount={tableFilterCount}
+                totalCount={matchEventTotal}
+              />
             )}
           </div>
         </div>
@@ -697,15 +648,22 @@ export default function MatchDetailPage() {
       {/* ==================== PREMIUM SIDE PANEL ==================== */}
       <Sheet
         open={!!selectedEvent}
-        onOpenChange={(open) => !open && setSelectedEvent(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedEvent(null);
+            setHighlightedEventId(null);
+          }
+        }}
       >
-        <SheetContent className="w-full max-w-[420px] sm:w-[420px] bg-slate-900 border-l border-slate-700/70 p-0 flex flex-col elevation-4">
-          {/* Header */}
-          <SheetHeader className="px-6 pt-5 pb-4 border-b border-slate-700 bg-slate-950/40">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="text-accent">
+        <SheetContent
+          showCloseButton={false}
+          className="w-full max-w-[420px] sm:w-[420px] bg-slate-900 border-l border-slate-700/70 p-0 flex flex-col elevation-4"
+        >
+          <SheetHeader className="px-6 pt-5 pb-4 border-b border-slate-700 bg-slate-950/40 text-left">
+            <div className="flex items-start justify-between gap-3 pr-1">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <div className="text-accent shrink-0">
                     {getEventIcon(selectedEvent?.event_type)}
                   </div>
                   <SheetTitle className="text-lg font-semibold tracking-tight text-white">
@@ -717,14 +675,16 @@ export default function MatchDetailPage() {
                   {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
                 </SheetDescription>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedEvent(null)}
-                className="text-slate-400 hover:text-white -mr-2 -mt-1"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <SheetClose asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 text-slate-400 hover:text-white"
+                  aria-label="Close event details"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </SheetClose>
             </div>
           </SheetHeader>
 
@@ -773,7 +733,7 @@ export default function MatchDetailPage() {
             </div>
 
             <div className="text-[11px] text-slate-500">
-              This event is synchronized with both the pitch and the timeline below.
+              Synced with the pitch view and event table. Press Escape to dismiss.
             </div>
 
             {/* Richer data presentation */}
@@ -812,20 +772,9 @@ export default function MatchDetailPage() {
             )}
 
             {/* Richer context placeholder */}
-            <div className="pt-2 text-[10px] text-slate-400 border-t border-slate-700/60">
+            <div className="border-t border-slate-700/60 pt-2 text-[10px] text-slate-400">
               Player context and advanced metrics would appear here with richer event data.
             </div>
-          </div>
-
-          {/* Footer */}
-          <div className="p-6 border-t border-slate-700">
-            <Button
-              variant="outline"
-              onClick={() => setSelectedEvent(null)}
-              className="w-full"
-            >
-              Close
-            </Button>
           </div>
         </SheetContent>
       </Sheet>
