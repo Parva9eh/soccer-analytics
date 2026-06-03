@@ -1,10 +1,15 @@
 "use client";
 
+// IMPORTANT: Patch THREE.Clock BEFORE any import that pulls in @react-three/fiber.
+// This must be the first import so that when fiber's internal store does
+// `new THREE.Clock()` (in its events bundles), it gets our non-deprecated shim.
+import "@/lib/three-patch";
+
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Trophy, X, ChevronDown, Target, ArrowRight, Zap, Move, Swords } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, X, ChevronDown } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pitch } from "@/components/pitch/Pitch";
 import { ThreeDPitch } from "@/components/pitch/ThreeDPitch";
+import { getEventColor, getEventIcon, EVENT_TYPES } from "@/components/pitch/utils";
 
 import {
   Table,
@@ -83,6 +89,7 @@ export default function MatchDetailPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [use3DView, setUse3DView] = useState(false);
   const [current3DView, setCurrent3DView] = useState<'top' | 'side' | 'goal' | 'iso'>('iso');
+  const [autoOrbit3D, setAutoOrbit3D] = useState(false); // advanced interactivity for 3D stadium tour feel
 
   const [visibleEventTypes, setVisibleEventTypes] = useState<string[]>([
     "Shot",
@@ -193,27 +200,8 @@ export default function MatchDetailPage() {
   };
 
   // Handle click on pitch (dot or arrow)
-  const getEventColorForTimeline = (eventType: string | null) => {
-    if (!eventType) return "#64748b";
-    const type = eventType.toLowerCase();
-    if (type.includes("shot")) return "#ef4444";
-    if (type.includes("pass")) return "#3b82f6";
-    if (type.includes("pressure")) return "#f59e0b";
-    if (type.includes("carry")) return "#10b981";
-    if (type.includes("duel")) return "#8b5cf6";
-    return "#64748b";
-  };
-
-  const getEventIcon = (eventType: string | null) => {
-    if (!eventType) return <Target className="h-4 w-4" />;
-    const type = eventType.toLowerCase();
-    if (type.includes("shot")) return <Target className="h-4 w-4" />;
-    if (type.includes("pass")) return <ArrowRight className="h-4 w-4" />;
-    if (type.includes("pressure")) return <Zap className="h-4 w-4" />;
-    if (type.includes("carry")) return <Move className="h-4 w-4" />;
-    if (type.includes("duel")) return <Swords className="h-4 w-4" />;
-    return <Target className="h-4 w-4" />;
-  };
+  // getEventColor and getEventIcon are now shared in @/components/pitch/utils
+  // for consistency between 2D/3D and UI (legend, timeline, sheet, tooltips).
 
   const handlePitchEventClick = (event: any) => {
     setHighlightedEventId(event.id);
@@ -326,7 +314,11 @@ export default function MatchDetailPage() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-white">Pitch View</h2>
-            <p className="text-xs text-slate-400">Click events on the pitch to inspect</p>
+            <p className="text-xs text-slate-400">
+              Click events on the pitch to inspect
+              {use3DView && <span className="ml-2 text-[10px] text-accent/80">• Shift+drag to box-select</span>}
+            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Real stadium pitch • ~105×68m (FIFA) • Advanced 3D with stands, lights, hoardings</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -344,6 +336,16 @@ export default function MatchDetailPage() {
               >
                 3D
               </button>
+            </div>
+
+            {/* Advanced compact legend for event types (shared colors for 2D/3D consistency) */}
+            <div className="hidden sm:flex items-center gap-1.5 ml-2 text-[9px] uppercase tracking-[0.5px] text-slate-400 border-l border-slate-700 pl-2">
+              {EVENT_TYPES.map((t) => (
+                <span key={t} className="inline-flex items-center gap-0.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getEventColor(t) }} />
+                  {t}
+                </span>
+              ))}
             </div>
 
             {highlightedEventId && (
@@ -375,6 +377,14 @@ export default function MatchDetailPage() {
                     </button>
                   ))}
                 </div>
+                {/* Advanced auto-orbit for stadium tour interactivity */}
+                <button
+                  onClick={() => setAutoOrbit3D(!autoOrbit3D)}
+                  className={`ml-1 px-2 py-0.5 rounded border text-[9px] ${autoOrbit3D ? "bg-accent text-black border-accent" : "border-slate-700 hover:bg-slate-800 text-slate-300"}`}
+                  title="Toggle auto-rotate for immersive stadium view"
+                >
+                  {autoOrbit3D ? "Stop Orbit" : "Auto Orbit"}
+                </button>
               </div>
             )}
 
@@ -448,7 +458,7 @@ export default function MatchDetailPage() {
               .map((event, index) => {
                 const minute = event.minute || 0;
                 const progress = Math.min((minute / 95) * 100, 100);
-                const color = getEventColorForTimeline(event.event_type);
+                const color = getEventColor(event.event_type);
                 const isActive = highlightedEventId === event.id;
 
                 return (
@@ -484,7 +494,8 @@ export default function MatchDetailPage() {
         </div>
 
         <div 
-          className={`elevation-3 rounded-2xl border border-slate-700/60 bg-slate-950/40 p-2 sm:p-3 transition-all ${use3DView ? 'h-[720px] md:h-[780px] lg:h-[820px]' : 'h-auto'}`}
+          className={`relative elevation-3 rounded-2xl border border-slate-700/60 bg-slate-950/40 p-2 sm:p-3 transition-all shadow-[inset_0_0_80px_rgba(0,0,0,0.7)] ${use3DView ? 'h-[740px] md:h-[800px] lg:h-[860px]' : 'h-auto'}`}
+          style={{ boxShadow: 'inset 0 0 80px rgba(0,0,0,0.7), 0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
           tabIndex={0}
           onKeyDown={(e) => {
             if (!filteredPitchEvents.length) return;
@@ -508,34 +519,22 @@ export default function MatchDetailPage() {
           }}
         >
           {use3DView ? (
-            <>
-              <ThreeDPitch
-                events={filteredPitchEvents}
-                onEventClick={handlePitchEventClick}
-                highlightedEventId={highlightedEventId}
-                selectedEventIds={highlightedEventId ? [highlightedEventId] : []}
-                viewMode={current3DView}
-                onSelectionChange={(selectedIds) => {
-                  if (selectedIds.length > 0) {
-                    setHighlightedEventId(selectedIds[0]);
-                    const first = filteredPitchEvents.find(e => e.id === selectedIds[0]);
-                    if (first) setSelectedEvent(first);
-                  }
-                }}
-              />
-              {/* 3D-specific advanced toolbar (immersive overlay) */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 bg-black/70 backdrop-blur-sm rounded-lg p-1 text-xs border border-white/10 z-10">
-                {(['iso', 'top', 'side', 'goal'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setCurrent3DView(mode)}
-                    className={`px-3 py-1 rounded transition-all capitalize ${current3DView === mode ? 'bg-white/90 text-black font-medium' : 'text-white/80 hover:bg-white/20 hover:text-white'}`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </>
+            <ThreeDPitch
+              events={filteredPitchEvents}
+              onEventClick={handlePitchEventClick}
+              highlightedEventId={highlightedEventId}
+              selectedEventIds={highlightedEventId ? [highlightedEventId] : []}
+              viewMode={current3DView}
+              onViewModeChange={(mode) => setCurrent3DView(mode)}
+              autoRotate={autoOrbit3D}
+              onSelectionChange={(selectedIds) => {
+                if (selectedIds.length > 0) {
+                  setHighlightedEventId(selectedIds[0]);
+                  const first = filteredPitchEvents.find(e => e.id === selectedIds[0]);
+                  if (first) setSelectedEvent(first);
+                }
+              }}
+            />
           ) : (
             <Pitch
               events={filteredPitchEvents}
@@ -705,9 +704,14 @@ export default function MatchDetailPage() {
           <SheetHeader className="px-6 pt-5 pb-4 border-b border-slate-700 bg-slate-950/40">
             <div className="flex items-start justify-between">
               <div>
-                <SheetTitle className="text-lg font-semibold tracking-tight text-white">
-                  {selectedEvent?.event_type || "Event"}
-                </SheetTitle>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="text-accent">
+                    {getEventIcon(selectedEvent?.event_type)}
+                  </div>
+                  <SheetTitle className="text-lg font-semibold tracking-tight text-white">
+                    {selectedEvent?.event_type || "Event"}
+                  </SheetTitle>
+                </div>
                 <SheetDescription className="text-xs text-slate-400 mt-0.5">
                   Minute {selectedEvent?.minute}:
                   {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
@@ -772,6 +776,20 @@ export default function MatchDetailPage() {
               This event is synchronized with both the pitch and the timeline below.
             </div>
 
+            {/* Richer data presentation */}
+            {selectedEvent && (
+              <div className="pt-2 border-t border-slate-700/50 text-[10px]">
+                <div className="flex justify-between text-slate-400">
+                  <span>Distance</span>
+                  <span className="text-white font-mono">
+                    {selectedEvent.end_x && selectedEvent.end_y 
+                      ? Math.hypot((selectedEvent.end_x - (selectedEvent.x || 0)), (selectedEvent.end_y - (selectedEvent.y || 0))).toFixed(1) 
+                      : '—'} units
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Mini pitch visual for context (advanced) */}
             {selectedEvent && (
               <div>
@@ -786,7 +804,7 @@ export default function MatchDetailPage() {
                       cx={selectedEvent.x ?? 60} 
                       cy={selectedEvent.y ?? 40} 
                       r="2.5" 
-                      fill={getEventColorForTimeline(selectedEvent.event_type)} 
+                      fill={getEventColor(selectedEvent.event_type)} 
                     />
                   </svg>
                 </div>
