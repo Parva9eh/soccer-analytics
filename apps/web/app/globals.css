@@ -66,24 +66,35 @@ h1, h2, h3 {
 
 /* === Better Dropdown / Select Styling === */
 .SelectContent,
-[role="listbox"],
-[role="menu"] {
+[role="listbox"]:not([data-event-filter-list]),
+[role="menu"]:not([data-event-filter-menu]) {
   background-color: hsl(var(--card)) !important;
   border: 1px solid hsl(var(--border)) !important;
   color: hsl(var(--foreground)) !important;
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
 }
 
-.SelectItem,
-[role="option"] {
+.SelectItem {
   color: hsl(var(--foreground)) !important;
 }
 
 .SelectItem:hover,
-.SelectItem[data-highlighted],
-[role="option"]:hover {
+.SelectItem[data-highlighted] {
   background-color: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Pitch/table event filter popovers — component classes own all surfaces */
+[data-event-filter-menu] {
+  background-color: rgb(15 23 42) !important;
+  border-color: rgb(51 65 85) !important;
+  color: rgb(241 245 249) !important;
+}
+
+[data-event-filter-menu] [data-event-filter-list] {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Premium Focus States (Advanced Accessibility) */

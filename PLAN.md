@@ -1,7 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 1 Complete (as of May 2026)
+**Current Phase:** Phase 2 in progress (June 2026)  
+**Active Branch:** `phase2/frontend-completion`
 
 ---
 
@@ -17,7 +18,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 - **Professional Quality First**: Prioritize code quality, consistency, observability, and maintainability over rapid feature development.
 - **Supabase as the Platform**: Use Supabase (Postgres + Auth + Realtime + Storage) as the primary backend platform.
-- **Full Auth + RLS from the Start**: No public demo fallback. Authentication and Row Level Security are core architectural requirements.
+- **Production Auth Model**: No anonymous production API; Row Level Security enforced in Supabase; service role limited to ETL and admin operations. Phases 0–2 use open API access with the service-role client for development velocity. Auth and RLS are enforced starting Phase 3, before any production deployment.
 - **Multi-Competition Support**: Design schema, queries, UI, and data models to support multiple competitions from day one.
 - **Free-Tier Friendly Initially**: Target Vercel (frontend) + Render/Railway (backend) for early hosting, with awareness of limitations.
 - **Incremental & Reviewable**: All work is done in small, reviewable increments on dedicated branches with explicit approval gates.
@@ -33,7 +34,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 **Key Deliverables:**
 - Removal of legacy `src/` boilerplate and duplicate components in the Next.js app
-- Python version downgrade from 3.14 → 3.11 for better ecosystem compatibility
+- Lowered minimum Python requirement in `apps/api/pyproject.toml` from `>=3.14` to `>=3.11` for better ecosystem compatibility
 - Proper monorepo tooling (root `package.json` with convenient scripts)
 - Centralized API URL handling in the frontend (`apps/web/lib/api.ts`)
 - Corrected shadcn/ui configuration and removal of misplaced `pnpm-workspace.yaml`
@@ -85,17 +86,46 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 ---
 
-### Phase 2: Frontend Completion (Planned)
+### Phase 2: Frontend Completion (In Progress)
 
-**Goal:** Deliver a complete and polished user experience on the frontend.
+**Goal:** Deliver a complete and polished user experience on the frontend, backed by the existing API.
 
-**Planned Work:**
-- Implement the missing `/players` and `/analytics` pages
-- Robust data fetching, loading states, error handling, and empty states using TanStack Query
-- Consistent use of the centralized API client
-- Enhanced visualizations and interactions on existing pages
-- Responsive design and accessibility improvements
-- Error boundaries and graceful degradation
+**Branch:** `phase2/frontend-completion`
+
+#### Completed (current branch)
+
+**Pages & data fetching**
+- Dashboard (`/`) with summary KPIs via TanStack Query
+- Matches list (`/matches`) and match detail (`/matches/[id]`) with event table, filters, and pitch visualizations
+- Players list (`/players`) with debounced search, sorting, skeletons, prefetch, and empty search state
+- Player detail (`/players/[id]`) with loading and error states
+- Analytics (`/analytics`) as a KPI dashboard with placeholder modules for Phase 4 features
+- TanStack Query and centralized `apiFetch` used across all data pages
+
+**Backend support (Phase 2)**
+- `GET /players/` — list with optional name search and limit
+- `GET /players/{id}` — single player detail
+
+**UX & visualizations**
+- 2D pitch and advanced 3D pitch on match detail (camera presets, event highlighting, keyboard navigation)
+- Design system refinements (`globals.css`), motion, and responsive layout (sidebar + mobile header)
+- Partial accessibility pass (`aria-label`s, focus-visible styles, keyboard-friendly tables)
+
+#### Remaining (to close Phase 2)
+
+- App- and route-level error boundaries (`error.tsx` / React error boundaries)
+- Shared query error and empty-state components (replace per-page ad hoc messages)
+- Richer `apiFetch` — parse API `ErrorResponse`, surface `X-Request-ID` where useful
+- Matches list empty state; analytics error state when summary fetch fails
+- Layout consistency across pages (shared `content` / typography patterns)
+- Competition/season selector in the UI, wired to existing `/matches` API filters
+- `PHASE2_SUMMARY.md` when the phase is complete
+
+#### Explicitly not Phase 2
+
+- Real analytics (xG, passing networks, possession chains, comparisons) → Phase 4
+- Authentication, RLS, workspaces → Phase 3
+- Automated tests, CI/CD, production deployment → Phase 5
 
 ---
 
@@ -104,8 +134,17 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 **Goal:** Implement secure access control and collaboration features.
 
 **Planned Work:**
-- Full Supabase Auth integration (email + social providers)
-- Row Level Security (RLS) policies across all tables
+
+**Phase 3.1 — Authentication**
+- Supabase Auth on the frontend (email first; OAuth providers afterward)
+- Next.js session handling and protected routes
+- FastAPI JWT validation; user-scoped Supabase client for app reads (service role for ETL/admin only)
+
+**Phase 3.2 — RLS & schema**
+- Versioned database migrations in the repo (e.g. `supabase/migrations/`)
+- Row Level Security policies across application tables
+
+**Phase 3.3 — Collaboration**
 - User workspaces / teams
 - Role-based access (coach, analyst, viewer, admin)
 - Private saved analyses, reports, and dashboards
@@ -132,12 +171,12 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 **Goal:** Make the system reliable, testable, and deployable.
 
 **Planned Work:**
-- Automated testing (unit, integration, API contract tests)
+- Automated testing (unit, integration, API contract tests; auth/RLS smoke tests may start in Phase 3)
 - CI/CD pipeline
 - Performance optimization (caching, query optimization, materialized views)
 - Monitoring, alerting, and logging improvements
 - Containerization (Docker) and infrastructure as code
-- Deployment to chosen hosting platforms
+- Deployment to chosen hosting platforms (after Phase 3 auth/RLS)
 - Cost and performance monitoring
 
 ---
@@ -145,7 +184,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 ### Future / Stretch Goals
 
 - Real-time features using Supabase Realtime (live match updates, collaborative analysis)
-- Mobile-responsive experience or dedicated mobile app
+- Dedicated native mobile app (responsive web layout is largely covered in Phase 2)
 - Export capabilities (PDF reports, CSV, images)
 - Advanced sharing and embedding features
 - Integration with additional data sources
@@ -153,24 +192,24 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 ---
 
-## Current Status (as of May 2026)
+## Current Status (as of June 2026)
 
-| Phase | Status      | Notes |
-|-------|-------------|-------|
+| Phase | Status | Notes |
+|-------|--------|-------|
 | Phase 0 | ✅ Completed | Monorepo hygiene and foundation |
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
-| Phase 2 | Planned     | Frontend pages and UX |
-| Phase 3 | Planned     | Auth, RLS, and workspaces |
-| Phase 4 | Planned     | Real analytics features |
-| Phase 5 | Planned     | Testing, CI, and deployment |
+| Phase 2 | 🚧 In progress | Frontend UX on `phase2/frontend-completion` — see completed/remaining above |
+| Phase 3 | Planned | Auth, RLS, collaboration (sub-phases 3.1–3.3) |
+| Phase 4 | Planned | Real analytics features |
+| Phase 5 | Planned | Testing, CI, and deployment |
 
-Detailed summaries for completed phases are available in the linked documents above.
+Detailed summaries for completed phases are available in the linked documents above. `PHASE2_SUMMARY.md` will be added when Phase 2 is complete.
 
 ---
 
 ## How to Contribute / Review
 
-- All major work happens on dedicated feature branches (e.g., `phase0/housekeeping`, `phase1/backend-hardening`).
+- All major work happens on dedicated feature branches (e.g. `phase0/housekeeping`, `phase1/backend-hardening`, `phase2/frontend-completion`).
 - Changes are kept small and reviewable where possible.
 - Significant architectural decisions are discussed before implementation.
 
