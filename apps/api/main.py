@@ -12,7 +12,7 @@ from routers.matches import router as matches_router
 from routers.events import router as events_router
 from routers.summary import router as summary_router
 from routers.players import router as players_router
-from routers.players import router as players_router
+from routers.competitions import router as competitions_router
 
 from schemas.error import ErrorResponse, ErrorCode
 
@@ -60,7 +60,8 @@ app.include_router(health_router)
 app.include_router(matches_router)
 app.include_router(events_router)
 app.include_router(summary_router)
-app.include_router(players_router)   # ← New
+app.include_router(players_router)
+app.include_router(competitions_router)
 
 # Add request logging middleware (after routers are included is fine)
 add_request_logging_middleware(app)
