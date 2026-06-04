@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { apiFetchJson } from "@/lib/api";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,11 @@ import { PitchLayersPopover } from "@/components/pitch/PitchLayersPopover";
 import { TableEventFilterPopover } from "@/components/pitch/TableEventFilterPopover";
 import { SectionHeader } from "@/components/ui/section-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { PageShell } from "@/components/ui/page-shell";
+import { QueryErrorState } from "@/components/ui/query-error-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TableContainer } from "@/components/ui/table-container";
+import { MapPin } from "lucide-react";
 
 import {
   Table,
@@ -125,13 +130,14 @@ export default function MatchDetailPage() {
   }, [highlightedEventId]);
 
   // Fetch match details
-  const { data: match, isLoading: matchLoading } = useQuery<Match>({
+  const {
+    data: match,
+    isLoading: matchLoading,
+    error: matchError,
+    refetch: refetchMatch,
+  } = useQuery<Match>({
     queryKey: ["match", matchId],
-    queryFn: async () => {
-      const res = await apiFetch(`/matches/${matchId}`);
-      if (!res.ok) throw new Error("Match not found");
-      return res.json();
-    },
+    queryFn: () => apiFetchJson<Match>(`/matches/${matchId}`),
     enabled: !!matchId,
   });
 
@@ -142,11 +148,9 @@ export default function MatchDetailPage() {
       queryFn: async () => {
         const eventTypeParam =
           selectedEventType === "all" ? "" : `&event_type=${selectedEventType}`;
-        const res = await apiFetch(
+        return apiFetchJson<EventsResponse>(
           `/events/?match_id=${matchId}&page=${currentPage}&page_size=${pageSize}${eventTypeParam}`,
         );
-        if (!res.ok) throw new Error("Failed to fetch events");
-        return res.json();
       },
       enabled: !!matchId,
     });
@@ -155,11 +159,13 @@ export default function MatchDetailPage() {
   const { data: pitchEventsData } = useQuery<EventsResponse>({
     queryKey: ["pitch-events", matchId],
     queryFn: async () => {
-      const res = await apiFetch(
-        `/events/?match_id=${matchId}&page=1&page_size=500`,
-      );
-      if (!res.ok) return { events: [] };
-      return res.json();
+      try {
+        return await apiFetchJson<EventsResponse>(
+          `/events/?match_id=${matchId}&page=1&page_size=500`,
+        );
+      } catch {
+        return { events: [], total: 0, page: 1, page_size: 500 };
+      }
     },
     enabled: !!matchId,
   });
@@ -230,19 +236,37 @@ export default function MatchDetailPage() {
   };
 
   if (matchLoading) {
-    return <div className="p-8">Loading match...</div>;
+    return (
+      <PageShell wide>
+        <div className="mb-4 h-4 w-24 animate-pulse rounded bg-muted/50" />
+        <div className="mb-6 h-10 w-full max-w-md animate-pulse rounded bg-muted/50" />
+        <div className="surface-card mb-8 h-28 animate-pulse rounded-xl border" />
+        <div className="surface-card min-h-[280px] animate-pulse rounded-xl border sm:min-h-[400px]" />
+      </PageShell>
+    );
   }
 
-  if (!match) {
+  if (matchError || !match) {
     return (
-      <div className="p-8">
-        <p className="text-red-500">Match not found.</p>
-        <Link href="/matches">
-          <Button variant="outline" className="mt-4">
-            Back to Matches
-          </Button>
+      <PageShell wide>
+        <Link
+          href="/matches"
+          className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to matches
         </Link>
-      </div>
+        <QueryErrorState
+          error={matchError ?? new Error("Match not found")}
+          title="Match not found"
+          onRetry={() => refetchMatch()}
+          action={
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/matches">All matches</Link>
+            </Button>
+          }
+        />
+      </PageShell>
     );
   }
 
@@ -254,7 +278,7 @@ export default function MatchDetailPage() {
   });
 
   return (
-    <div className="content max-w-7xl mx-auto">
+    <PageShell wide>
       {/* Back Button */}
       <Link
         href="/matches"
@@ -266,35 +290,35 @@ export default function MatchDetailPage() {
 
       {/* Match Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-page-title">
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <h1 className="text-page-title min-w-0 break-words">
             {match.home_team} vs {match.away_team}
           </h1>
-          {match.match_week && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+          {match.match_week != null && (
+            <Badge variant="secondary" className="w-fit shrink-0 gap-1">
               <Trophy className="h-3 w-3" /> Week {match.match_week}
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          {formattedDate}
+        <div className="flex items-center gap-2 text-caption sm:text-muted-foreground">
+          <Calendar className="h-4 w-4 shrink-0" />
+          <span>{formattedDate}</span>
         </div>
       </div>
 
       {/* Compact Score Header - Advanced layout */}
       <Card className="surface-panel mb-8">
         <CardContent className="py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className="text-right">
-                <div className="text-label">{match.home_team}</div>
-                <div className="metric-value text-5xl tracking-tighter text-foreground">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex w-full items-center justify-center gap-3 sm:gap-6 md:gap-8">
+              <div className="min-w-0 flex-1 text-center sm:text-right">
+                <div className="text-label truncate">{match.home_team}</div>
+                <div className="metric-value text-4xl tracking-tighter text-foreground sm:text-5xl">
                   {match.home_score ?? "–"}
                 </div>
               </div>
 
-              <div className="flex flex-col items-center px-2 text-center">
+              <div className="flex shrink-0 flex-col items-center px-1 text-center">
                 <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   vs
                 </div>
@@ -303,17 +327,15 @@ export default function MatchDetailPage() {
                 )}
               </div>
 
-              <div>
-                <div className="text-label">{match.away_team}</div>
-                <div className="metric-value text-5xl tracking-tighter text-foreground">
+              <div className="min-w-0 flex-1 text-center sm:text-left">
+                <div className="text-label truncate">{match.away_team}</div>
+                <div className="metric-value text-4xl tracking-tighter text-foreground sm:text-5xl">
                   {match.away_score ?? "–"}
                 </div>
               </div>
             </div>
 
-            <div className="hidden text-right text-caption sm:block">
-              {formattedDate}
-            </div>
+            <p className="text-center text-caption sm:hidden">{formattedDate}</p>
           </div>
         </CardContent>
       </Card>
@@ -397,6 +419,21 @@ export default function MatchDetailPage() {
           }
         />
 
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:hidden">
+          {EVENT_TYPES.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: getEventColor(t) }}
+              />
+              {t}
+            </span>
+          ))}
+        </div>
+
         <div className="mb-3 mt-1">
           <div className="mb-1.5 flex items-center justify-between text-label">
             <span>Event timeline</span>
@@ -455,7 +492,7 @@ export default function MatchDetailPage() {
         </div>
 
         <div
-          className={`relative transition-all ${use3DView ? "min-h-[740px] md:min-h-[800px] lg:min-h-[860px]" : "h-auto"}`}
+          className={`relative transition-all ${use3DView ? "min-h-[min(420px,58vh)] sm:min-h-[560px] md:min-h-[720px] lg:min-h-[800px]" : "h-auto"}`}
           tabIndex={0}
           onKeyDown={(e) => {
             if (!filteredPitchEvents.length) return;
@@ -550,6 +587,7 @@ export default function MatchDetailPage() {
         ) : eventsData && eventsData.events.length > 0 ? (
           <>
             <Card className="surface-card elevation-2">
+              <TableContainer>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -595,10 +633,10 @@ export default function MatchDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </TableContainer>
             </Card>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-3 text-sm">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <Button
                 variant="ghost"
                 size="sm"
@@ -621,19 +659,22 @@ export default function MatchDetailPage() {
             </div>
           </>
         ) : (
-          <Card className="surface-card">
-            <CardContent className="py-14 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/40">
-                <span className="text-xl">📍</span>
-              </div>
-              <p className="text-sm font-medium text-foreground">
-                No events recorded for this match
-              </p>
-              <p className="text-caption mt-1">
-                This match may not have event data available yet.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={MapPin}
+            title="No events for this match"
+            description="This fixture may not have event data loaded yet, or your filter excludes all types."
+            action={
+              selectedEventType !== "all" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFilterChange("all")}
+                >
+                  Show all types
+                </Button>
+              ) : undefined
+            }
+          />
         )}
       </div>
 
@@ -783,6 +824,6 @@ export default function MatchDetailPage() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </PageShell>
   );
 }

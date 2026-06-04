@@ -29,7 +29,11 @@ export function PageHeader({
           <p className="text-page-description max-w-2xl">{description}</p>
         )}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && (
+        <div className="flex w-full min-w-0 flex-wrap gap-2 sm:w-auto sm:justify-end">
+          {action}
+        </div>
+      )}
     </header>
   );
 }

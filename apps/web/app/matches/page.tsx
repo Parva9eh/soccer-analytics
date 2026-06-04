@@ -1,9 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import { apiFetchJson } from "@/lib/api";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { PageHeader } from "@/components/ui/page-header";
-import { apiFetch } from "@/lib/api";
+import { PageShell } from "@/components/ui/page-shell";
+import { QueryErrorState } from "@/components/ui/query-error-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 
 interface Match {
   id: number;
@@ -20,26 +26,29 @@ export default function MatchesPage() {
     data: matches,
     isLoading,
     error,
+    refetch,
   } = useQuery<Match[]>({
     queryKey: ["matches"],
-    queryFn: async () => {
-      const res = await apiFetch("/matches/?limit=100");
-      if (!res.ok) throw new Error("Failed to fetch matches");
-      return res.json();
-    },
+    queryFn: () => apiFetchJson<Match[]>("/matches/?limit=100"),
   });
 
   if (error) {
     return (
-      <div className="content">
+      <PageShell>
         <PageHeader title="Matches" />
-        <p className="text-destructive">Failed to load matches. Please check the backend.</p>
-      </div>
+        <QueryErrorState
+          error={error}
+          fallbackMessage="Could not load matches."
+          onRetry={() => refetch()}
+        />
+      </PageShell>
     );
   }
 
+  const isEmpty = !isLoading && matches && matches.length === 0;
+
   return (
-    <div className="content">
+    <PageShell>
       <PageHeader
         eyebrow="Competition"
         title="Matches"
@@ -47,7 +56,7 @@ export default function MatchesPage() {
       />
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -70,13 +79,24 @@ export default function MatchesPage() {
             </div>
           ))}
         </div>
+      ) : isEmpty ? (
+        <EmptyState
+          icon={CalendarDays}
+          title="No matches yet"
+          description="When fixtures are loaded into the database, they will appear here."
+          action={
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/">Back to dashboard</Link>
+            </Button>
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {matches?.map((match) => (
             <MatchCard key={match.id} match={match} hasEvents={false} />
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetchJson } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 import { StatCard } from "@/components/ui/stat-card";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import {
   Target,
   GitBranch,
@@ -23,13 +25,14 @@ interface SummaryData {
 }
 
 export default function AnalyticsPage() {
-  const { data: summary, isLoading: summaryLoading } = useQuery<SummaryData>({
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    error,
+    refetch,
+  } = useQuery<SummaryData>({
     queryKey: ["summary"],
-    queryFn: async () => {
-      const res = await apiFetch("/summary/");
-      if (!res.ok) throw new Error("Failed to fetch summary");
-      return res.json();
-    },
+    queryFn: () => apiFetchJson<SummaryData>("/summary/"),
   });
 
   const roadmap = [
@@ -60,15 +63,28 @@ export default function AnalyticsPage() {
     },
   ];
 
+  if (error) {
+    return (
+      <PageShell>
+        <PageHeader title="Analytics" eyebrow="Tactical analysis" />
+        <QueryErrorState
+          error={error}
+          fallbackMessage="Could not load analytics summary."
+          onRetry={() => refetch()}
+        />
+      </PageShell>
+    );
+  }
+
   return (
-    <div className="content">
+    <PageShell>
       <PageHeader
         eyebrow="Tactical analysis"
         title="Analytics"
         description="Advanced metrics and visualizations for La Liga 2020/21."
       />
 
-      <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <StatCard
           label="Matches analyzed"
           value={summary?.total_matches ?? "—"}
@@ -92,15 +108,16 @@ export default function AnalyticsPage() {
           value="La Liga"
           hint="2020/21 season"
           icon={BarChart3}
+          className="col-span-2 lg:col-span-1"
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {roadmap.map(({ title, icon: Icon, body }) => (
           <Card key={title} className="surface-card card-compact">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Icon className="h-5 w-5 text-primary" />
+                <Icon className="h-5 w-5 shrink-0 text-primary" />
                 {title}
               </CardTitle>
             </CardHeader>
@@ -116,6 +133,6 @@ export default function AnalyticsPage() {
       <p className="text-caption mt-8">
         Interactive charts and filters are planned for the next development increment.
       </p>
-    </div>
+    </PageShell>
   );
 }

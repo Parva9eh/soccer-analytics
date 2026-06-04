@@ -113,11 +113,12 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 #### Remaining (to close Phase 2)
 
-- App- and route-level error boundaries (`error.tsx` / React error boundaries)
-- Shared query error and empty-state components (replace per-page ad hoc messages)
-- Richer `apiFetch` — parse API `ErrorResponse`, surface `X-Request-ID` where useful
-- Matches list empty state; analytics error state when summary fetch fails
-- Layout consistency across pages (shared `content` / typography patterns)
+- App-level `error.tsx` (done); optional per-route error boundaries for finer-grained recovery
+- ~~Shared query error and empty-state components~~ ✅ `QueryErrorState`, `EmptyState`
+- ~~Richer `apiFetch` — parse API `ErrorResponse`, surface `X-Request-ID`~~ ✅ `ApiError`, `apiFetchJson`
+- ~~Matches list empty state; analytics error state when summary fetch fails~~ ✅
+- ~~Layout consistency across pages (shared `content` / typography patterns)~~ ✅ `PageShell`, `PageHeader`, responsive pass
+- Responsive polish audit on pitch-only overlays (ongoing; main pages and tables done)
 - Competition/season selector in the UI, wired to existing `/matches` API filters
 - `PHASE2_SUMMARY.md` when the phase is complete
 
