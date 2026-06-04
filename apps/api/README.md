@@ -28,6 +28,16 @@ The API will be available at `http://localhost:8000`.
 - `GET /matches` — List matches (supports `competition`, `season`, and `limit`)
 - `GET /events` — Paginated events for a match (`match_id` required, supports `event_type`, `page`, `page_size`)
 - `GET /summary` — High-level data counts
+- `GET /auth/me` — Current user (requires `Authorization: Bearer <token>` when `REQUIRE_AUTH` is used)
+
+## Authentication (Phase 3)
+
+- **`REQUIRE_AUTH=false`** (default): Routes use the service-role client when no Bearer token is sent (local dev).
+- **`REQUIRE_AUTH=true`**: All data routes require a valid Supabase JWT; the API uses an anon client with `postgrest.auth(token)` so Row Level Security applies.
+- Set **`SUPABASE_JWT_SECRET`** from Supabase → Settings → API → JWT Secret.
+- ETL and admin scripts should call `get_supabase_service_client()` directly, not the route dependency.
+
+See [supabase/README.md](../../supabase/README.md) for enabling auth on the web app.
 
 ## Configuration
 

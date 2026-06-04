@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 2 complete — Phase 3 next (June 2026)  
-**Latest branch:** `phase2/frontend-completion` (ready to merge)
+**Current Phase:** Phase 3.1 in progress (June 2026)  
+**Active branch:** `phase3/auth-foundation`
 
 ---
 
@@ -128,16 +128,21 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 ---
 
-### Phase 3: Authentication, Authorization & Collaboration (Planned)
+### Phase 3: Authentication, Authorization & Collaboration (In Progress)
 
 **Goal:** Implement secure access control and collaboration features.
 
-**Planned Work:**
+**Branch:** `phase3/auth-foundation`
 
-**Phase 3.1 — Authentication**
-- Supabase Auth on the frontend (email first; OAuth providers afterward)
-- Next.js session handling and protected routes
-- FastAPI JWT validation; user-scoped Supabase client for app reads (service role for ETL/admin only)
+**Phase 3.1 — Authentication (in progress)**
+- ✅ Supabase Auth (email/password) — login, signup, `/auth/callback`, `@supabase/ssr` session proxy
+- ✅ Optional route protection via `NEXT_PUBLIC_AUTH_ENABLED` (default off for local dev)
+- ✅ `apiFetch` attaches Bearer token when auth is enabled
+- ✅ FastAPI JWT validation (`SUPABASE_JWT_SECRET`), `GET /auth/me`, user-scoped Supabase client when token present
+- ✅ `REQUIRE_AUTH` flag on API (default off); ETL continues to use service role directly
+- ⏳ OAuth providers; dedicated auth layout without app chrome
+
+**Planned Work (remaining):**
 
 **Phase 3.2 — RLS & schema**
 - Versioned database migrations in the repo (e.g. `supabase/migrations/`)
@@ -198,7 +203,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 | Phase 0 | ✅ Completed | Monorepo hygiene and foundation |
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
-| Phase 3 | Planned | Auth, RLS, collaboration (sub-phases 3.1–3.3) |
+| Phase 3 | 🚧 In progress | 3.1 auth on `phase3/auth-foundation`; 3.2 RLS migrations next |
 | Phase 4 | Planned | Real analytics features |
 | Phase 5 | Planned | Testing, CI, and deployment |
 

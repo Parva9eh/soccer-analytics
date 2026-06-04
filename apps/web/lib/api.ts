@@ -1,3 +1,5 @@
+import { getAccessToken } from "@/lib/supabase/session";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -73,7 +75,16 @@ export function getApiUrl(path: string): string {
 }
 
 export async function apiFetch(path: string, init?: RequestInit) {
-  return fetch(getApiUrl(path), init);
+  const headers = new Headers(init?.headers);
+  const token = await getAccessToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  return fetch(getApiUrl(path), {
+    ...init,
+    headers,
+  });
 }
 
 /** Fetch JSON and throw ApiError when the response is not ok. */

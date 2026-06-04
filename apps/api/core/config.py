@@ -8,6 +8,12 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str
     DATABASE_URL: str
 
+    # JWT secret from Supabase project Settings → API → JWT Secret (HS256)
+    SUPABASE_JWT_SECRET: str | None = None
+
+    # When true, API routes require Authorization: Bearer <access_token>
+    REQUIRE_AUTH: bool = False
+
     # Logging configuration
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "text"          # "text" or "json"
