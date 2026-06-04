@@ -20,6 +20,8 @@ import { ThreeDPitch } from "@/components/pitch/ThreeDPitch";
 import { getEventColor, getEventIcon, EVENT_TYPES } from "@/components/pitch/utils";
 import { PitchLayersPopover } from "@/components/pitch/PitchLayersPopover";
 import { TableEventFilterPopover } from "@/components/pitch/TableEventFilterPopover";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 import {
   Table,
@@ -114,9 +116,9 @@ export default function MatchDetailPage() {
         row.scrollIntoView({ behavior: "smooth", block: "center" });
 
         // Add temporary pulse animation
-        row.classList.add("!bg-accent/20", "ring-1", "ring-accent/50");
+        row.classList.add("!bg-primary/15", "ring-1", "ring-primary/40");
         setTimeout(() => {
-          row.classList.remove("!bg-accent/20", "ring-1", "ring-accent/50");
+          row.classList.remove("!bg-primary/15", "ring-1", "ring-primary/40");
         }, 1400);
       }
     }
@@ -256,7 +258,7 @@ export default function MatchDetailPage() {
       {/* Back Button */}
       <Link
         href="/matches"
-        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-4 transition-colors"
+        className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -281,32 +283,36 @@ export default function MatchDetailPage() {
       </div>
 
       {/* Compact Score Header - Advanced layout */}
-      <Card className="mb-8 border-slate-700 bg-slate-900/60">
-        <CardContent className="py-4">
+      <Card className="surface-panel mb-8">
+        <CardContent className="py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 md:gap-6">
               <div className="text-right">
-                <div className="text-xs uppercase tracking-[0.5px] text-slate-400">{match.home_team}</div>
-                <div className="text-5xl font-semibold tabular-nums tracking-tighter text-white">
-                  {match.home_score ?? "-"}
+                <div className="text-label">{match.home_team}</div>
+                <div className="metric-value text-5xl tracking-tighter text-foreground">
+                  {match.home_score ?? "–"}
                 </div>
               </div>
 
-              <div className="flex flex-col items-center text-center px-2">
-                <div className="text-[10px] uppercase tracking-[1px] text-slate-500 font-medium">vs</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">{match.match_week ? `W${match.match_week}` : ''}</div>
+              <div className="flex flex-col items-center px-2 text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  vs
+                </div>
+                {match.match_week != null && (
+                  <div className="text-caption mt-0.5">W{match.match_week}</div>
+                )}
               </div>
 
               <div>
-                <div className="text-xs uppercase tracking-[0.5px] text-slate-400">{match.away_team}</div>
-                <div className="text-5xl font-semibold tabular-nums tracking-tighter text-white">
-                  {match.away_score ?? "-"}
+                <div className="text-label">{match.away_team}</div>
+                <div className="metric-value text-5xl tracking-tighter text-foreground">
+                  {match.away_score ?? "–"}
                 </div>
               </div>
             </div>
 
-            <div className="hidden sm:block text-right text-xs text-slate-400">
-              <div className="font-medium text-slate-300">{formattedDate}</div>
+            <div className="hidden text-right text-caption sm:block">
+              {formattedDate}
             </div>
           </div>
         </CardContent>
@@ -314,37 +320,26 @@ export default function MatchDetailPage() {
 
       {/* Pitch Visualization - Elevated as primary view */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-white">Pitch View</h2>
-            <p className="text-xs text-slate-400">
-              Click events on the pitch to inspect
-              {use3DView && <span className="ml-2 text-[10px] text-accent/80">• Shift+drag to box-select</span>}
-            </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              Broadcast stadium view • FIFA 105×68m • Tiered stands, floodlights, LED boards
-            </p>
-          </div>
+        <SectionHeader
+          title="Pitch view"
+          description={
+            use3DView
+              ? "Click events to inspect • Shift+drag to box-select"
+              : "Click events on the pitch to inspect"
+          }
+          action={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <SegmentedControl
+              aria-label="Pitch view mode"
+              options={[
+                { value: "2d", label: "2D" },
+                { value: "3d", label: "3D" },
+              ]}
+              value={use3DView ? "3d" : "2d"}
+              onChange={(v) => setUse3DView(v === "3d")}
+            />
 
-          <div className="flex items-center gap-2">
-            {/* 2D / 3D View Toggle + Clear selection */}
-            <div className="flex rounded-md border border-slate-700 overflow-hidden text-xs">
-              <button
-                onClick={() => setUse3DView(false)}
-                className={`px-3 py-1 transition-colors ${!use3DView ? "bg-slate-700 text-white" : "hover:bg-slate-800 text-slate-300"}`}
-              >
-                2D
-              </button>
-              <button
-                onClick={() => setUse3DView(true)}
-                className={`px-3 py-1 transition-colors ${use3DView ? "bg-slate-700 text-white" : "hover:bg-slate-800 text-slate-300"}`}
-              >
-                3D
-              </button>
-            </div>
-
-            {/* Advanced compact legend for event types (shared colors for 2D/3D consistency) */}
-            <div className="hidden sm:flex items-center gap-1.5 ml-2 text-[9px] uppercase tracking-[0.5px] text-slate-400 border-l border-slate-700 pl-2">
+            <div className="hidden items-center gap-1.5 border-l border-border pl-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:flex">
               {EVENT_TYPES.map((t) => (
                 <span key={t} className="inline-flex items-center gap-0.5">
                   <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getEventColor(t) }} />
@@ -361,36 +356,33 @@ export default function MatchDetailPage() {
                   setHighlightedEventId(null);
                   setSelectedEvent(null);
                 }}
-                className="text-xs text-slate-400 hover:text-white"
               >
                 Clear selection
               </Button>
             )}
 
-            {/* 3D Camera Presets - Advanced feature */}
             {use3DView && (
-              <div className="flex items-center gap-1 ml-1 text-[10px]">
-                <span className="text-slate-400 mr-1">View:</span>
-                <div className="flex rounded-md border border-slate-700 overflow-hidden">
-                  {(['iso', 'top', 'side', 'goal'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setCurrent3DView(mode)}
-                      className={`px-2 py-0.5 transition-colors capitalize ${current3DView === mode ? "bg-slate-700 text-white" : "hover:bg-slate-800 text-slate-300"}`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
-                {/* Advanced auto-orbit for stadium tour interactivity */}
-                <button
+              <>
+                <SegmentedControl
+                  aria-label="Camera view"
+                  size="sm"
+                  options={(
+                    ["iso", "top", "side", "goal"] as const
+                  ).map((m) => ({ value: m, label: m }))}
+                  value={current3DView}
+                  onChange={setCurrent3DView}
+                />
+                <Button
+                  type="button"
+                  variant={autoOrbit3D ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs"
                   onClick={() => setAutoOrbit3D(!autoOrbit3D)}
-                  className={`ml-1 px-2 py-0.5 rounded border text-[9px] ${autoOrbit3D ? "bg-accent text-black border-accent" : "border-slate-700 hover:bg-slate-800 text-slate-300"}`}
-                  title="Toggle auto-rotate for immersive stadium view"
+                  title="Toggle auto-rotate"
                 >
-                  {autoOrbit3D ? "Stop Orbit" : "Auto Orbit"}
-                </button>
-              </div>
+                  {autoOrbit3D ? "Stop orbit" : "Auto orbit"}
+                </Button>
+              </>
             )}
 
             <PitchLayersPopover
@@ -402,17 +394,19 @@ export default function MatchDetailPage() {
               onClearAll={() => setVisibleEventTypes([])}
             />
           </div>
-        </div>
+          }
+        />
 
-        {/* Mini Event Timeline + Density Heatmap (advanced) */}
         <div className="mb-3 mt-1">
-          <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.5px] text-slate-400">
-            <span>Event Timeline (click to select)</span>
-            <span className="text-slate-500">{filteredPitchEvents.length} events</span>
+          <div className="mb-1.5 flex items-center justify-between text-label">
+            <span>Event timeline</span>
+            <span className="normal-case tracking-normal text-muted-foreground">
+              {filteredPitchEvents.length} events
+            </span>
           </div>
-          <div className="relative h-8 w-full rounded-md border border-slate-700/60 bg-slate-950 px-3">
+          <div className="relative h-8 w-full rounded-md border border-border/80 bg-background px-3">
             <div className="relative h-full">
-              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-700/50" />
+              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border/60" />
               {filteredPitchEvents
                 .filter((e) => e.minute != null)
                 .map((event, index) => {
@@ -428,9 +422,9 @@ export default function MatchDetailPage() {
                       onClick={() => handlePitchEventClick(event)}
                       aria-label={`${event.event_type} at ${minute} minutes`}
                       aria-pressed={isActive}
-                      className={`absolute top-1/2 z-[1] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-950 transition-all duration-150 hover:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/80 ${
+                      className={`absolute top-1/2 z-[1] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background transition-all duration-150 hover:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         isActive
-                          ? "scale-125 ring-2 ring-accent/60"
+                          ? "scale-125 ring-2 ring-primary/50"
                           : "opacity-80 hover:opacity-100"
                       }`}
                       style={{ left: `${leftPct}%`, backgroundColor: color }}
@@ -444,10 +438,10 @@ export default function MatchDetailPage() {
 
         {/* Advanced: Event Density Heatmap */}
         <div className="mb-3">
-          <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.5px] text-slate-400">
-            <span>Event Density (per minute)</span>
+          <div className="mb-1 flex items-center justify-between text-label">
+            <span>Event density (per minute)</span>
           </div>
-          <div className="flex h-3 w-full gap-px overflow-hidden rounded bg-slate-950 border border-slate-700/60">
+          <div className="flex h-3 w-full gap-px overflow-hidden rounded border border-border/80 bg-background">
             {Array.from({ length: 95 }, (_, min) => {
               const count = filteredPitchEvents.filter(e => e.minute === min).length;
               const intensity = Math.min(count / 4, 1);
@@ -455,7 +449,7 @@ export default function MatchDetailPage() {
               return <div key={min} className="flex-1" style={{ backgroundColor: bg }} title={`Minute ${min}: ${count} events`} />;
             })}
           </div>
-          <div className="mt-0.5 flex justify-between text-[9px] text-slate-500">
+          <div className="mt-0.5 flex justify-between text-[9px] text-muted-foreground">
             <span>0'</span><span>45'</span><span>90'+</span>
           </div>
         </div>
@@ -521,43 +515,41 @@ export default function MatchDetailPage() {
 
       {/* Events Table - Tightly integrated with Pitch */}
       <div id="events-table" className="mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-white">Event Timeline</h2>
-            <p className="text-xs text-slate-400">Synced with pitch selection</p>
-          </div>
-
-
-
-          <div className="flex items-center gap-2">
-            {eventTypes.length > 0 && (
-              <TableEventFilterPopover
-                open={isTableFilterOpen}
-                onOpenChange={setIsTableFilterOpen}
-                selectedType={selectedEventType}
-                eventTypes={eventTypes}
-                onSelect={handleFilterChange}
-                filteredCount={tableFilterCount}
-                totalCount={matchEventTotal}
-              />
-            )}
-          </div>
-        </div>
+        <SectionHeader
+          title="Event timeline"
+          description="Synced with pitch selection"
+          className="mb-4"
+          action={
+            <div className="flex items-center gap-2">
+              {eventTypes.length > 0 && (
+                <TableEventFilterPopover
+                  open={isTableFilterOpen}
+                  onOpenChange={setIsTableFilterOpen}
+                  selectedType={selectedEventType}
+                  eventTypes={eventTypes}
+                  onSelect={handleFilterChange}
+                  filteredCount={tableFilterCount}
+                  totalCount={matchEventTotal}
+                />
+              )}
+            </div>
+          }
+        />
 
         {eventsLoading ? (
-          <div className="h-96 rounded-xl border border-slate-700 bg-slate-800 p-6">
-            <div className="mb-4 h-5 w-32 animate-pulse rounded bg-slate-700" />
+          <div className="surface-card h-96 rounded-xl border p-6">
+            <div className="mb-4 h-5 w-32 animate-pulse rounded bg-muted/50" />
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="mb-3 flex items-center gap-4">
-                <div className="h-4 w-12 animate-pulse rounded bg-slate-700" />
-                <div className="h-4 flex-1 animate-pulse rounded bg-slate-700" />
-                <div className="h-4 w-28 animate-pulse rounded bg-slate-700" />
+                <div className="h-4 w-12 animate-pulse rounded bg-muted/50" />
+                <div className="h-4 flex-1 animate-pulse rounded bg-muted/50" />
+                <div className="h-4 w-28 animate-pulse rounded bg-muted/50" />
               </div>
             ))}
           </div>
         ) : eventsData && eventsData.events.length > 0 ? (
           <>
-            <Card className="border-slate-700/70 bg-slate-900 elevation-2">
+            <Card className="surface-card elevation-2">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -591,11 +583,11 @@ export default function MatchDetailPage() {
                           {event.event_type || "Unknown"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-sm text-slate-300">
+                      <TableCell className="font-mono-data text-sm text-muted-foreground">
                         {event.x?.toFixed(1) ?? "-"},{" "}
                         {event.y?.toFixed(1) ?? "-"}
                       </TableCell>
-                      <TableCell className="font-mono text-sm text-slate-300 hidden sm:table-cell">
+                      <TableCell className="font-mono-data hidden text-sm text-muted-foreground sm:table-cell">
                         {event.end_x?.toFixed(1) ?? "-"},{" "}
                         {event.end_y?.toFixed(1) ?? "-"}
                       </TableCell>
@@ -615,7 +607,7 @@ export default function MatchDetailPage() {
               >
                 ← Prev
               </Button>
-              <div className="text-xs text-slate-400 tabular-nums">
+              <div className="text-caption tabular-nums">
                 Page {currentPage} of {totalPages}
               </div>
               <Button
@@ -629,15 +621,15 @@ export default function MatchDetailPage() {
             </div>
           </>
         ) : (
-          <Card className="border-slate-700 bg-slate-800">
+          <Card className="surface-card">
             <CardContent className="py-14 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-700/50">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted/40">
                 <span className="text-xl">📍</span>
               </div>
-              <p className="text-sm font-medium text-slate-300">
+              <p className="text-sm font-medium text-foreground">
                 No events recorded for this match
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="text-caption mt-1">
                 This match may not have event data available yet.
               </p>
             </CardContent>
@@ -657,20 +649,20 @@ export default function MatchDetailPage() {
       >
         <SheetContent
           showCloseButton={false}
-          className="w-full max-w-[420px] sm:w-[420px] bg-slate-900 border-l border-slate-700/70 p-0 flex flex-col elevation-4"
+          className="flex w-full max-w-[420px] flex-col border-border bg-card p-0 elevation-4 sm:w-[420px]"
         >
-          <SheetHeader className="px-6 pt-5 pb-4 border-b border-slate-700 bg-slate-950/40 text-left">
+          <SheetHeader className="border-b border-border bg-background/60 px-6 pb-4 pt-5 text-left">
             <div className="flex items-start justify-between gap-3 pr-1">
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex items-center gap-2">
-                  <div className="text-accent shrink-0">
+                  <div className="shrink-0 text-primary">
                     {getEventIcon(selectedEvent?.event_type)}
                   </div>
-                  <SheetTitle className="text-lg font-semibold tracking-tight text-white">
+                  <SheetTitle className="text-lg tracking-tight">
                     {selectedEvent?.event_type || "Event"}
                   </SheetTitle>
                 </div>
-                <SheetDescription className="text-xs text-slate-400 mt-0.5">
+                <SheetDescription className="mt-0.5 text-xs">
                   Minute {selectedEvent?.minute}:
                   {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
                 </SheetDescription>
@@ -679,7 +671,7 @@ export default function MatchDetailPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="shrink-0 text-slate-400 hover:text-white"
+                  className="shrink-0"
                   aria-label="Close event details"
                 >
                   <X className="h-4 w-4" />
@@ -694,10 +686,10 @@ export default function MatchDetailPage() {
             <div>
               <div className="text-label mb-1">Event Type</div>
               <div className="flex items-center gap-2">
-                <span className="text-xl font-semibold text-white">
+                <span className="text-xl font-semibold text-foreground">
                   {selectedEvent?.event_type}
                 </span>
-                <span className="rounded bg-slate-800 px-2 py-px text-[10px] font-medium tracking-wider text-slate-400">
+                <span className="rounded bg-secondary px-2 py-px text-[10px] font-medium tracking-wider text-muted-foreground">
                   {selectedEvent?.event_type?.slice(0, 4).toUpperCase()}
                 </span>
               </div>
@@ -706,7 +698,7 @@ export default function MatchDetailPage() {
             {/* Time */}
             <div>
               <div className="text-label mb-1">Time</div>
-              <div className="font-mono text-3xl font-semibold text-white tabular-nums">
+              <div className="font-mono-data text-3xl font-semibold tabular-nums text-foreground">
                 {selectedEvent?.minute}:
                 {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
               </div>
@@ -716,32 +708,31 @@ export default function MatchDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-label mb-1">Start Location</div>
-                <div className="font-mono text-xl text-white flex items-center gap-2">
+                <div className="font-mono-data flex items-center gap-2 text-xl text-foreground">
                   ({selectedEvent?.x?.toFixed(1)}, {selectedEvent?.y?.toFixed(1)})
-                  <span className="text-[10px] text-slate-500">(on pitch)</span>
+                  <span className="text-caption">(on pitch)</span>
                 </div>
               </div>
 
               {(selectedEvent?.end_x || selectedEvent?.end_y) && (
                 <div>
                   <div className="text-label mb-1">End Location</div>
-                  <div className="font-mono text-xl text-white">
+                  <div className="font-mono-data text-xl text-foreground">
                     ({selectedEvent?.end_x?.toFixed(1)}, {selectedEvent?.end_y?.toFixed(1)})
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="text-[11px] text-slate-500">
+            <p className="text-caption">
               Synced with the pitch view and event table. Press Escape to dismiss.
-            </div>
+            </p>
 
-            {/* Richer data presentation */}
             {selectedEvent && (
-              <div className="pt-2 border-t border-slate-700/50 text-[10px]">
-                <div className="flex justify-between text-slate-400">
+              <div className="border-t border-border/80 pt-2 text-[10px]">
+                <div className="flex justify-between text-muted-foreground">
                   <span>Distance</span>
-                  <span className="text-white font-mono">
+                  <span className="font-mono-data text-foreground">
                     {selectedEvent.end_x && selectedEvent.end_y 
                       ? Math.hypot((selectedEvent.end_x - (selectedEvent.x || 0)), (selectedEvent.end_y - (selectedEvent.y || 0))).toFixed(1) 
                       : '—'} units
@@ -754,11 +745,25 @@ export default function MatchDetailPage() {
             {selectedEvent && (
               <div>
                 <div className="text-label mb-1">Location on Pitch</div>
-                <div className="relative w-32 h-20 border border-slate-600 bg-slate-950 rounded overflow-hidden">
-                  <svg viewBox="0 0 120 80" className="w-full h-full">
-                    {/* Very simplified pitch outline */}
-                    <rect x="5" y="5" width="110" height="70" fill="none" stroke="#475569" strokeWidth="1"/>
-                    <line x1="60" y1="5" x2="60" y2="75" stroke="#475569" strokeWidth="0.8"/>
+                <div className="relative h-20 w-32 overflow-hidden rounded border border-border bg-background">
+                  <svg viewBox="0 0 120 80" className="h-full w-full">
+                    <rect
+                      x="5"
+                      y="5"
+                      width="110"
+                      height="70"
+                      fill="none"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1="60"
+                      y1="5"
+                      x2="60"
+                      y2="75"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="0.8"
+                    />
                     {/* Event dot */}
                     <circle 
                       cx={selectedEvent.x ?? 60} 
@@ -772,9 +777,9 @@ export default function MatchDetailPage() {
             )}
 
             {/* Richer context placeholder */}
-            <div className="border-t border-slate-700/60 pt-2 text-[10px] text-slate-400">
+            <p className="border-t border-border/80 pt-2 text-caption">
               Player context and advanced metrics would appear here with richer event data.
-            </div>
+            </p>
           </div>
         </SheetContent>
       </Sheet>

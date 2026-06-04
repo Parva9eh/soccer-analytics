@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Calendar, Users, BarChart3 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,23 +21,26 @@ export function NavLinks({ onLinkClick, className = "" }: NavLinksProps) {
   const pathname = usePathname();
 
   return (
-    <nav className={`flex flex-col space-y-1 ${className}`}>
+    <nav className={cn("flex flex-col gap-0.5", className)}>
       {navItems.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+        const isActive =
+          pathname === item.href ||
+          (item.href !== "/" && pathname.startsWith(item.href + "/"));
 
         return (
           <Link
             key={item.href}
             href={item.href}
             onClick={onLinkClick}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
               isActive
-                ? "bg-slate-800 text-white"
-                : "text-slate-400 hover:bg-slate-800 hover:text-white"
-            }`}
+                ? "bg-primary/15 text-foreground ring-1 ring-primary/25"
+                : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
+            )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className={cn("h-4 w-4", isActive && "text-primary")} />
             {item.label}
           </Link>
         );

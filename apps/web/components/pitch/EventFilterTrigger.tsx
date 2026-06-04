@@ -31,7 +31,7 @@ export const EventFilterTrigger = React.forwardRef<
     >
       {label}
       {badge != null && badge !== "" && (
-        <span className="rounded bg-slate-800 px-1.5 py-px text-[10px] tabular-nums text-slate-400">
+        <span className="rounded bg-secondary px-1.5 py-px text-[10px] tabular-nums text-muted-foreground">
           {badge}
         </span>
       )}

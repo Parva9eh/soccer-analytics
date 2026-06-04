@@ -1,9 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Target, Users } from "lucide-react";
+import Link from "next/link";
+import { Calendar, Target, Users, BarChart3 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface SummaryData {
   total_matches: number;
@@ -22,35 +26,13 @@ export default function Dashboard() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="content">
-        <h1 className="text-page-title mb-8">Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card
-              key={i}
-              className="border-slate-700 bg-slate-800 animate-pulse"
-            >
-              <CardHeader>
-                <div className="h-4 bg-slate-700 rounded w-24" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-slate-700 rounded w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="content">
-        <Card className="border-slate-700 bg-slate-800">
+        <PageHeader title="Dashboard" />
+        <Card className="surface-card">
           <CardContent className="pt-6">
-            <p className="text-red-400">
+            <p className="text-destructive">
               Failed to load dashboard data. Please check the backend.
             </p>
           </CardContent>
@@ -61,88 +43,52 @@ export default function Dashboard() {
 
   return (
     <div className="content">
-      <div className="mb-8">
-        <h1 className="text-page-title">
-          Dashboard
-        </h1>
-        <p className="text-slate-400 mt-1">
-          Overview of La Liga 2020/2021 season
-        </p>
+      <PageHeader
+        eyebrow="La Liga 2020/21"
+        title="Dashboard"
+        description="Season overview — matches, events, and squad data at a glance."
+      />
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+        <StatCard
+          label="Total matches"
+          value={data?.total_matches ?? 0}
+          hint="Full season fixture list"
+          icon={Calendar}
+          loading={isLoading}
+        />
+        <StatCard
+          label="Total events"
+          value={data?.total_events?.toLocaleString() ?? 0}
+          hint="Passes, shots, pressures, and more"
+          icon={Target}
+          loading={isLoading}
+        />
+        <StatCard
+          label="Players tracked"
+          value={data?.total_players ?? 0}
+          hint="From match lineups"
+          icon={Users}
+          loading={isLoading}
+        />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Matches Card */}
-        <Card className="border-slate-700 bg-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">
-              Total Matches
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">
-              {data?.total_matches ?? 0}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">La Liga 2020/21</p>
-          </CardContent>
-        </Card>
-
-        {/* Total Events Card */}
-        <Card className="border-slate-700 bg-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">
-              Total Events
-            </CardTitle>
-            <Target className="h-4 w-4 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">
-              {data?.total_events?.toLocaleString() ?? 0}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Passes, shots, pressures...
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Total Players Card */}
-        <Card className="border-slate-700 bg-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">
-              Players Loaded
-            </CardTitle>
-            <Users className="h-4 w-4 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">
-              {data?.total_players ?? 0}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">From lineups</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-8">
-        <Card className="border-slate-700 bg-slate-800">
-          <CardHeader>
-            <CardTitle className="text-white">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
-            <a
-              href="/matches"
-              className="inline-flex items-center justify-center rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
-            >
-              Browse Matches
-            </a>
-            <a
-              href="/analytics"
-              className="inline-flex items-center justify-center rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors"
-            >
-              View Analytics
-            </a>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="surface-card mt-8">
+        <CardHeader>
+          <CardTitle>Quick actions</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/matches">Browse matches</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/analytics">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              View analytics
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

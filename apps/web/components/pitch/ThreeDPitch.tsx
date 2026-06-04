@@ -871,17 +871,17 @@ export function ThreeDPitch({
       </div>
 
       {/* Interaction hint (subtle, non blocking) */}
-      <div className="absolute bottom-2 right-2 z-20 text-[9px] text-slate-400/70 bg-black/50 px-1.5 py-px rounded pointer-events-none tracking-[0.2px]">
+      <div className="pointer-events-none absolute bottom-2 right-2 z-20 rounded bg-black/50 px-1.5 py-px text-[9px] tracking-[0.2px] text-muted-foreground/80">
         SHIFT+drag to box select • Scroll zoom • Drag rotate
       </div>
 
       {/* 3D Hover tooltip for UX parity with advanced 2D tooltip */}
       {hoveredEvent3D && (
-        <div className="absolute z-50 pointer-events-none rounded-lg border border-slate-700/80 bg-slate-900/95 px-3 py-1.5 text-xs shadow-xl backdrop-blur-sm bottom-12 right-2">
+        <div className="pointer-events-none absolute bottom-12 right-2 z-50 rounded-lg border border-border bg-card/95 px-3 py-1.5 text-xs text-foreground shadow-xl backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getEventColor(hoveredEvent3D.event_type) }} />
             <span className="font-medium text-white">{hoveredEvent3D.event_type}</span>
-            <span className="text-slate-400 tabular-nums">
+            <span className="tabular-nums text-muted-foreground">
               {hoveredEvent3D.minute}':{String(hoveredEvent3D.second || 0).padStart(2, "0")}
             </span>
           </div>

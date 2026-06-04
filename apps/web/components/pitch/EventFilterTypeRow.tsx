@@ -65,7 +65,7 @@ export function EventFilterTypeRow(props: EventFilterTypeRowProps) {
         <label
           className={cn(
             eventFilterMenuRowClass,
-            "cursor-pointer has-[:checked]:bg-slate-800/80",
+            "cursor-pointer has-[:checked]:bg-secondary/80",
           )}
         >
           <input

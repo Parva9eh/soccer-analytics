@@ -590,7 +590,7 @@ export function Pitch({
 
         {hoveredEvent && tooltipPos && (
           <div
-            className="absolute z-50 pointer-events-none rounded-lg border border-slate-700/80 bg-slate-900/95 px-3.5 py-2 text-sm shadow-xl backdrop-blur-sm"
+            className="pointer-events-none absolute z-50 rounded-lg border border-border bg-card/95 px-3.5 py-2 text-sm text-foreground shadow-xl backdrop-blur-sm"
             style={{
               left: `${(tooltipPos.x / width) * 100 + 2}%`,
               top: `${(tooltipPos.y / height) * 100 - 6}%`,
@@ -604,7 +604,7 @@ export function Pitch({
               />
               <span className="font-semibold text-white">{hoveredEvent.event_type}</span>
             </div>
-            <div className="mt-0.5 text-[11px] font-medium text-slate-400 tabular-nums">
+            <div className="mt-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
               {hoveredEvent.minute}:
               {hoveredEvent.second !== null
                 ? hoveredEvent.second.toString().padStart(2, "0")
@@ -613,7 +613,7 @@ export function Pitch({
           </div>
         )}
 
-        <p className="pointer-events-none mt-2 text-center text-[9px] text-slate-500/80">
+        <p className="pointer-events-none mt-2 text-center text-[9px] text-muted-foreground/80">
           Drag to explore • Click events • Shift+drag to select (3D)
         </p>
       </div>
