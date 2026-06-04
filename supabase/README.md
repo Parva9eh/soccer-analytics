@@ -35,11 +35,34 @@ Leave flags `false` (default) to keep the Phase 2 open-API developer workflow.
 
 ## Migrations (Phase 3.2)
 
-Apply with the Supabase CLI when policies are added:
+Migration `20250604120000_rls_authenticated_read.sql` enables RLS and grants **SELECT** to the `authenticated` role on:
+
+`competitions`, `seasons`, `teams`, `matches`, `events`, `players`
+
+ETL and admin scripts continue to use the **service role** (bypasses RLS).
+
+### Apply via Supabase CLI
 
 ```bash
 supabase link --project-ref <ref>
 supabase db push
 ```
 
-Until RLS policies exist, `REQUIRE_AUTH=true` may return empty result sets for anon users — plan policies before enforcing auth in production.
+### Apply via SQL Editor
+
+Copy the migration file into Supabase → SQL → New query → Run.
+
+### Verify RLS
+
+1. Enable auth flags (see above) and sign in on the web app.
+2. Open browser DevTools → Network → any API request → confirm `Authorization: Bearer …`.
+3. `curl -H "Authorization: Bearer <token>" http://localhost:8000/matches/` should return data.
+4. Without a token and `REQUIRE_AUTH=true`, the API should return **401**.
+
+```sql
+-- Dashboard check: policies attached
+SELECT schemaname, tablename, policyname, roles, cmd
+FROM pg_policies
+WHERE schemaname = 'public'
+ORDER BY tablename;
+```
