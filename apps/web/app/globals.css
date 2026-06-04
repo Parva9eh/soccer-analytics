@@ -483,5 +483,15 @@ tr[data-selected="true"] {
   letter-spacing: -0.02em;
 }
 
+/* Responsive data tables — horizontal scroll on narrow viewports */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll > table {
+  min-width: 32rem;
+}
+
 /* Select dropdowns inherit the professional dark theme (earlier rules at top already cover this).
    No hardcoded duplicates needed — keeps everything in CSS variables for easy theming. */
