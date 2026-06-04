@@ -140,13 +140,14 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - ✅ `apiFetch` attaches Bearer token when auth is enabled
 - ✅ FastAPI JWT validation (`SUPABASE_JWT_SECRET`), `GET /auth/me`, user-scoped Supabase client when token present
 - ✅ `REQUIRE_AUTH` flag on API (default off); ETL continues to use service role directly
-- ⏳ OAuth providers; dedicated auth layout without app chrome
+- ⏳ OAuth providers
+- ✅ Dedicated auth layout (`(auth)` route group without sidebar)
 
 **Planned Work (remaining):**
 
-**Phase 3.2 — RLS & schema**
-- Versioned database migrations in the repo (e.g. `supabase/migrations/`)
-- Row Level Security policies across application tables
+**Phase 3.2 — RLS & schema (in progress)**
+- ✅ Versioned migrations in `supabase/migrations/` — authenticated read policies for app tables
+- ⏳ Apply migration to hosted Supabase; workspace-scoped policies (Phase 3.3)
 
 **Phase 3.3 — Collaboration**
 - User workspaces / teams

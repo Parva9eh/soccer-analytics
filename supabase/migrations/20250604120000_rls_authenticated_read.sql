@@ -54,7 +54,6 @@ ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "authenticated_select_players" ON public.players;
 CREATE POLICY "authenticated_select_players"
-  ON POLICY "authenticated_select_players"
   ON public.players
   FOR SELECT
   TO authenticated
