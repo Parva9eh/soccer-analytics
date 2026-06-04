@@ -26,19 +26,19 @@ export function MobileHeader() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isDetailPage = pathname.startsWith("/players/") || pathname.startsWith("/matches/");
+  const isDetailPage =
+    pathname.startsWith("/players/") || pathname.startsWith("/matches/");
   const pageTitle = getPageTitle(pathname);
 
   return (
     <>
-      {/* Mobile Top Bar - Premium feel */}
-      <div className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b border-slate-700/70 bg-slate-900/95 px-4 backdrop-blur-md md:hidden">
+      <div className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b border-border bg-card/95 px-4 backdrop-blur-md md:hidden">
         {isDetailPage ? (
           <Button
             variant="ghost"
             size="icon"
             onClick={() => router.back()}
-            className="mr-2 -ml-2 h-10 w-10 text-slate-300 hover:text-white active:bg-slate-800 active:scale-[0.96] transition-transform"
+            className="mr-2 -ml-2"
             aria-label="Go back"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -48,34 +48,31 @@ export function MobileHeader() {
             variant="ghost"
             size="icon"
             onClick={() => setOpen(true)}
-            className="mr-2 -ml-2 h-10 w-10 text-slate-300 hover:text-white active:bg-slate-800 active:scale-[0.96] transition-transform"
+            className="mr-2 -ml-2"
             aria-label="Open navigation menu"
           >
             <Menu className="h-5 w-5" />
           </Button>
         )}
 
-        <div className="flex-1 min-w-0 pr-2">
-          <h1 className="text-[17px] font-semibold tracking-[-0.01em] text-white truncate">
-            {pageTitle}
-          </h1>
-        </div>
+        <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight">
+          {pageTitle}
+        </h1>
       </div>
 
-      {/* Mobile Navigation Drawer */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-[260px] bg-slate-900 p-0 border-r border-slate-700">
-          <SheetHeader className="border-b border-slate-700 bg-slate-950 px-6 py-5">
-            <SheetTitle className="text-left text-xl font-semibold tracking-tight text-white flex items-center gap-2">
-              <span>Soccer Analytics</span>
+        <SheetContent side="left" className="w-[260px] border-border bg-card p-0">
+          <SheetHeader className="border-b border-border px-6 py-5">
+            <SheetTitle className="text-left text-lg font-semibold tracking-tight">
+              Soccer Analytics
             </SheetTitle>
           </SheetHeader>
 
-          <div className="p-3 pt-2">
+          <div className="p-3">
             <NavLinks onLinkClick={() => setOpen(false)} />
           </div>
 
-          <div className="mt-auto border-t border-slate-700 p-4 text-[10px] text-slate-500 tracking-wider">
+          <div className="mt-auto border-t border-border p-4 text-caption">
             v0.2.0 • La Liga 2020/21
           </div>
         </SheetContent>

@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { PageHeader } from "@/components/ui/page-header";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -73,15 +75,9 @@ export default function PlayersPage() {
   if (isLoading) {
     return (
       <div className="content">
-        <div className="mb-6">
-          <h1 className="text-page-title">
-            Players
-          </h1>
-          <p className="text-slate-400 mt-1">Loading players...</p>
-        </div>
+        <PageHeader title="Players" description="Loading players…" />
 
-        {/* Skeleton mirrors final table structure exactly (no layout shift) */}
-        <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
+        <div className="surface-card overflow-hidden rounded-xl border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -98,18 +94,18 @@ export default function PlayersPage() {
                 <TableRow key={i} className="TableRow">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 shrink-0 rounded-full bg-slate-700 animate-pulse" />
-                      <div className="h-4 w-40 bg-slate-700 rounded animate-pulse" />
+                      <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-muted/50" />
+                      <div className="h-4 w-40 animate-pulse rounded bg-muted/50" />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="h-4 w-24 bg-slate-700 rounded animate-pulse" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-muted/50" />
                   </TableCell>
                   <TableCell className="hidden sm:table-cell numeric">
-                    <div className="h-4 w-16 bg-slate-700 rounded animate-pulse" />
+                    <div className="h-4 w-16 animate-pulse rounded bg-muted/50" />
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    <div className="h-4 w-28 bg-slate-700 rounded animate-pulse" />
+                    <div className="h-4 w-28 animate-pulse rounded bg-muted/50" />
                   </TableCell>
                 </TableRow>
               ))}
@@ -122,38 +118,34 @@ export default function PlayersPage() {
 
   if (error) {
     return (
-      <div className="p-8 text-red-400">
-        Failed to load players. Please check the backend.
+      <div className="content">
+        <PageHeader title="Players" />
+        <p className="text-destructive">Failed to load players. Please check the backend.</p>
       </div>
     );
   }
 
   return (
     <div className="content">
-      <div className="mb-6">
-        <h1 className="text-page-title">
-          Players
-        </h1>
-        <p className="text-slate-400 mt-1">
-          {sortedPlayers.length} players found
-        </p>
-      </div>
+      <PageHeader
+        title="Players"
+        description={`${sortedPlayers.length} players in the database`}
+      />
 
-      {/* Search input with debouncing + clear button (B) */}
       <div className="mb-4 flex items-center gap-3">
         <div className="relative w-full max-w-sm">
-          <input
-            type="text"
-            placeholder="Search players by name..."
+          <Input
+            type="search"
+            placeholder="Search by name…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 pr-10 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-600"
+            className="pr-10"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               aria-label="Clear search"
             >
               ×
@@ -161,11 +153,11 @@ export default function PlayersPage() {
           )}
         </div>
         {search !== debouncedSearch && (
-          <span className="text-body-sm text-slate-400">Searching...</span>
+          <span className="text-caption">Searching…</span>
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
+      <div className="surface-card overflow-hidden rounded-xl border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -200,10 +192,9 @@ export default function PlayersPage() {
                     });
                   }}
                 >
-                  <TableCell className="font-medium text-white">
+                  <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      {/* B: Simple initials avatar */}
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-medium text-white">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-foreground">
                         {player.name
                           .split(" ")
                           .map((n) => n[0])
@@ -228,10 +219,10 @@ export default function PlayersPage() {
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="py-10 text-center">
-                  <div className="text-sm font-medium text-slate-300">
+                  <div className="text-sm font-medium text-foreground">
                     {search ? "No players match your search" : "No players available"}
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">
+                  <div className="mt-1 text-caption">
                     {search ? "Try a different name or clear the search." : "Data will appear once loaded."}
                   </div>
                 </TableCell>
@@ -241,7 +232,7 @@ export default function PlayersPage() {
         </Table>
       </div>
 
-      <p className="text-body-sm text-slate-400 mt-4">
+      <p className="text-caption mt-4">
         Click "Player" to sort. Search is debounced for better performance.
       </p>
     </div>

@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { MatchCard } from "@/components/matches/MatchCard";
+import { PageHeader } from "@/components/ui/page-header";
 import { apiFetch } from "@/lib/api";
 
 interface Match {
@@ -28,74 +29,54 @@ export default function MatchesPage() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight text-white">
-            Matches
-          </h1>
-          <p className="text-slate-400 mt-1">Loading matches...</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-[220px] rounded-xl border border-slate-700 bg-slate-800 p-6 animate-pulse"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="h-4 w-24 bg-slate-700 rounded" />
-                <div className="h-5 w-16 bg-slate-700 rounded-full" />
-              </div>
-
-              <div className="flex justify-between items-center gap-4 mb-4">
-                <div className="h-5 w-28 bg-slate-700 rounded" />
-                <div className="h-4 w-6 bg-slate-700 rounded" />
-                <div className="h-5 w-28 bg-slate-700 rounded" />
-              </div>
-
-              <div className="flex items-center justify-center gap-6 py-4 border-y border-slate-700 mb-4">
-                <div className="h-9 w-12 bg-slate-700 rounded" />
-                <div className="h-4 w-4 bg-slate-700 rounded" />
-                <div className="h-9 w-12 bg-slate-700 rounded" />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="h-4 w-28 bg-slate-700 rounded" />
-                <div className="h-4 w-20 bg-slate-700 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
-      <div className="p-8 text-red-400">
-        Failed to load matches. Please check the backend.
+      <div className="content">
+        <PageHeader title="Matches" />
+        <p className="text-destructive">Failed to load matches. Please check the backend.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-white">
-          Matches
-        </h1>
-        <p className="text-slate-400 mt-1">
-          La Liga 2020/2021 • {matches?.length ?? 0} matches
-        </p>
-      </div>
+    <div className="content">
+      <PageHeader
+        eyebrow="Competition"
+        title="Matches"
+        description={`La Liga 2020/2021 • ${matches?.length ?? 0} fixtures`}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {matches?.map((match) => (
-          <MatchCard key={match.id} match={match} hasEvents={false} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="surface-card h-[220px] animate-pulse rounded-xl border p-6"
+            >
+              <div className="mb-4 flex justify-between">
+                <div className="h-4 w-24 rounded bg-muted/50" />
+                <div className="h-5 w-16 rounded-full bg-muted/50" />
+              </div>
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div className="h-5 w-28 rounded bg-muted/50" />
+                <div className="h-4 w-6 rounded bg-muted/50" />
+                <div className="h-5 w-28 rounded bg-muted/50" />
+              </div>
+              <div className="mb-4 flex items-center justify-center gap-6 border-y border-border py-4">
+                <div className="h-9 w-12 rounded bg-muted/50" />
+                <div className="h-4 w-4 rounded bg-muted/50" />
+                <div className="h-9 w-12 rounded bg-muted/50" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {matches?.map((match) => (
+            <MatchCard key={match.id} match={match} hasEvents={false} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

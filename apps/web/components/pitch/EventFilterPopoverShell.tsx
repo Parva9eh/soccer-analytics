@@ -5,7 +5,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { EventFilterTrigger } from "./EventFilterTrigger";
 import {
   eventFilterMenuBodyClass,
@@ -56,15 +55,14 @@ export function EventFilterPopoverShell({
       <PopoverContent
         align="end"
         data-event-filter-menu
-        className={cn(
-          eventFilterMenuClass,
-          "border-slate-700 bg-slate-900 text-slate-200",
-        )}
+        className={eventFilterMenuClass}
       >
         <div className={eventFilterMenuBodyClass}>
           <div className={eventFilterMenuHeaderClass}>
-            <p className="text-sm font-medium text-white">{title}</p>
-            <p className="mt-0.5 text-[11px] text-slate-400">{description}</p>
+            <p className="text-sm font-medium text-foreground">{title}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              {description}
+            </p>
           </div>
 
           <ul
