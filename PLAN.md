@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 2 in progress (June 2026)  
-**Active Branch:** `phase2/frontend-completion`
+**Current Phase:** Phase 2 complete — Phase 3 next (June 2026)  
+**Latest branch:** `phase2/frontend-completion` (ready to merge)
 
 ---
 
@@ -86,13 +86,15 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 ---
 
-### Phase 2: Frontend Completion (In Progress)
+### Phase 2: Frontend Completion (Completed)
 
 **Goal:** Deliver a complete and polished user experience on the frontend, backed by the existing API.
 
 **Branch:** `phase2/frontend-completion`
 
-#### Completed (current branch)
+**Summary:** [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md)
+
+#### Completed
 
 **Pages & data fetching**
 - Dashboard (`/`) with summary KPIs via TanStack Query
@@ -114,16 +116,9 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - Partial accessibility pass (`aria-label`s, focus-visible styles, keyboard-friendly tables)
 - Route-level `error.tsx` boundaries with shared `RouteError` UI (Try again + section-specific back links)
 
-#### Remaining (to close Phase 2)
+#### Deferred polish (non-blocking)
 
-- ~~Per-route error boundaries~~ ✅ `RouteError` + `error.tsx` on `/matches`, `/matches/[id]`, `/players`, `/players/[id]`, `/analytics`; root `app/error.tsx` for fallback
-- ~~Shared query error and empty-state components~~ ✅ `QueryErrorState`, `EmptyState`
-- ~~Richer `apiFetch` — parse API `ErrorResponse`, surface `X-Request-ID`~~ ✅ `ApiError`, `apiFetchJson`
-- ~~Matches list empty state; analytics error state when summary fetch fails~~ ✅
-- ~~Layout consistency across pages (shared `content` / typography patterns)~~ ✅ `PageShell`, `PageHeader`, responsive pass
-- Responsive polish audit on pitch-only overlays (ongoing; main pages and tables done)
-- ~~Competition/season selector in the UI, wired to existing `/matches` API filters~~ ✅ `GET /competitions/`, URL params on `/matches`
-- `PHASE2_SUMMARY.md` when the phase is complete
+- Pitch-only overlay responsive audit (main pages and tables are done)
 
 #### Explicitly not Phase 2
 
@@ -202,12 +197,12 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 |-------|--------|-------|
 | Phase 0 | ✅ Completed | Monorepo hygiene and foundation |
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
-| Phase 2 | 🚧 In progress | Frontend UX on `phase2/frontend-completion` — see completed/remaining above |
+| Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
 | Phase 3 | Planned | Auth, RLS, collaboration (sub-phases 3.1–3.3) |
 | Phase 4 | Planned | Real analytics features |
 | Phase 5 | Planned | Testing, CI, and deployment |
 
-Detailed summaries for completed phases are available in the linked documents above. `PHASE2_SUMMARY.md` will be added when Phase 2 is complete.
+Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md).
 
 ---
 
