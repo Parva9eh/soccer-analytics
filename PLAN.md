@@ -96,7 +96,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 **Pages & data fetching**
 - Dashboard (`/`) with summary KPIs via TanStack Query
-- Matches list (`/matches`) and match detail (`/matches/[id]`) with event table, filters, and pitch visualizations
+- Matches list (`/matches`) with competition/season selectors (URL-synced), catalog fetch, and empty/error states; match detail (`/matches/[id]`) with event table, filters, and pitch visualizations
 - Players list (`/players`) with debounced search, sorting, skeletons, prefetch, and empty search state
 - Player detail (`/players/[id]`) with loading and error states
 - Analytics (`/analytics`) as a KPI dashboard with placeholder modules for Phase 4 features
@@ -105,6 +105,8 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 **Backend support (Phase 2)**
 - `GET /players/` — list with optional name search and limit
 - `GET /players/{id}` — single player detail
+- `GET /competitions/` — catalog of competition names and seasons for UI filters
+- `GET /matches/` — `competition` and `season` query params (existing filters, now used by the UI)
 
 **UX & visualizations**
 - 2D pitch and advanced 3D pitch on match detail (camera presets, event highlighting, keyboard navigation)
@@ -119,7 +121,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - ~~Matches list empty state; analytics error state when summary fetch fails~~ ✅
 - ~~Layout consistency across pages (shared `content` / typography patterns)~~ ✅ `PageShell`, `PageHeader`, responsive pass
 - Responsive polish audit on pitch-only overlays (ongoing; main pages and tables done)
-- Competition/season selector in the UI, wired to existing `/matches` API filters
+- ~~Competition/season selector in the UI, wired to existing `/matches` API filters~~ ✅ `GET /competitions/`, URL params on `/matches`
 - `PHASE2_SUMMARY.md` when the phase is complete
 
 #### Explicitly not Phase 2
