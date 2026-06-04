@@ -2,7 +2,7 @@
 
 import { RouteError } from "@/components/ui/route-error";
 
-export default function GlobalError({
+export default function PlayersError({
   error,
   reset,
 }: {
@@ -13,8 +13,8 @@ export default function GlobalError({
     <RouteError
       error={error}
       reset={reset}
-      title="Something went wrong"
-      fallbackMessage="An unexpected error occurred while loading this page."
+      title="Players unavailable"
+      fallbackMessage="Something went wrong while loading the players section."
       backHref="/"
       backLabel="Back to dashboard"
     />

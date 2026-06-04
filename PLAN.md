@@ -112,10 +112,11 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - 2D pitch and advanced 3D pitch on match detail (camera presets, event highlighting, keyboard navigation)
 - Design system refinements (`globals.css`), motion, and responsive layout (sidebar + mobile header)
 - Partial accessibility pass (`aria-label`s, focus-visible styles, keyboard-friendly tables)
+- Route-level `error.tsx` boundaries with shared `RouteError` UI (Try again + section-specific back links)
 
 #### Remaining (to close Phase 2)
 
-- App-level `error.tsx` (done); optional per-route error boundaries for finer-grained recovery
+- ~~Per-route error boundaries~~ ✅ `RouteError` + `error.tsx` on `/matches`, `/matches/[id]`, `/players`, `/players/[id]`, `/analytics`; root `app/error.tsx` for fallback
 - ~~Shared query error and empty-state components~~ ✅ `QueryErrorState`, `EmptyState`
 - ~~Richer `apiFetch` — parse API `ErrorResponse`, surface `X-Request-ID`~~ ✅ `ApiError`, `apiFetchJson`
 - ~~Matches list empty state; analytics error state when summary fetch fails~~ ✅
