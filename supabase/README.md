@@ -75,6 +75,7 @@ Apply migrations **in filename order**:
 | `20250604160000_profiles_active_workspace.sql` | `profiles.active_workspace_id` preference |
 | `20250604170000_fix_workspace_rls_recursion.sql` | Fix workspace RLS infinite recursion on empty lists |
 | `20250604180000_workspace_invitations.sql` | Email invitations with shareable token links |
+| `20250604190000_workspaces_create_policy_fix.sql` | Let creators read/insert workspaces (fixes Google OAuth create) |
 
 ### App data read access
 

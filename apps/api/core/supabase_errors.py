@@ -50,7 +50,11 @@ def raise_for_supabase_error(
         if code in {"42501", "PGRST301"} or "permission denied" in text:
             raise_http_exception(
                 status_code=403,
-                detail="You do not have permission to access workspaces.",
+                detail=(
+                    "Workspace access was denied by database policies. "
+                    "Apply migration 20250604190000_workspaces_create_policy_fix.sql "
+                    "(and 20250604170000_fix_workspace_rls_recursion.sql if not already applied)."
+                ),
                 code=ErrorCode.FORBIDDEN,
             )
 
