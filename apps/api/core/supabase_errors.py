@@ -48,14 +48,25 @@ def raise_for_supabase_error(
             )
 
         if code in {"42501", "PGRST301"} or "permission denied" in text:
+            hint = exc.message or exc.details or "permission denied"
             raise_http_exception(
                 status_code=403,
                 detail=(
-                    "Workspace access was denied by database policies. "
-                    "Apply migration 20250604190000_workspaces_create_policy_fix.sql "
-                    "(and 20250604170000_fix_workspace_rls_recursion.sql if not already applied)."
+                    f"Workspace access denied ({hint}). "
+                    "Apply Supabase migration 20250604200000_workspace_create_rpc.sql "
+                    "in the SQL editor, then restart the API."
                 ),
                 code=ErrorCode.FORBIDDEN,
+            )
+
+        if code == "PGRST202" and "create_workspace_for_user" in text:
+            raise_http_exception(
+                status_code=503,
+                detail=(
+                    "Workspace create function is missing. "
+                    "Apply migration 20250604200000_workspace_create_rpc.sql in Supabase."
+                ),
+                code=ErrorCode.SERVICE_UNAVAILABLE,
             )
 
         logger.warning("%s: %s", log_context, exc)
