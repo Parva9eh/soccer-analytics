@@ -76,6 +76,9 @@ Apply migrations **in filename order**:
 | `20250604170000_fix_workspace_rls_recursion.sql` | Fix workspace RLS infinite recursion on empty lists |
 | `20250604180000_workspace_invitations.sql` | Email invitations with shareable token links |
 | `20250604190000_workspaces_create_policy_fix.sql` | Let creators read/insert workspaces (fixes Google OAuth create) |
+| `20250604200000_workspace_create_rpc.sql` | **Required for create** — RPC + table grants for `authenticated` |
+
+**Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql` in the Supabase SQL editor (Dashboard → SQL → New query → paste file → Run). Earlier workspace migrations must already be applied. Restart the API after running it.
 
 ### App data read access
 
