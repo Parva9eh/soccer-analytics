@@ -141,20 +141,22 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - ✅ `apiFetch` attaches Bearer token when auth is enabled
 - ✅ FastAPI JWT validation (`SUPABASE_JWT_SECRET`), `GET /auth/me`, user-scoped Supabase client when token present
 - ✅ `REQUIRE_AUTH` flag on API (default off); ETL continues to use service role directly
-- ⏳ OAuth providers
+- ✅ OAuth sign-in (Google, GitHub) on login/signup
 - ✅ Dedicated auth layout (`(auth)` route group without sidebar)
 
-**Planned Work (remaining):**
-
 **Phase 3.2 — RLS & schema (in progress)**
-- ✅ Versioned migrations in `supabase/migrations/` — authenticated read policies for app tables
-- ⏳ Apply migration to hosted Supabase; workspace-scoped policies (Phase 3.3)
+- ✅ Authenticated read policies for app data tables
+- ✅ `profiles` table + auth signup trigger
+- ✅ Migrations: `20250604130000_profiles`, `20250604140000_workspaces`, `20250604150000_profiles_workspace_peers`
+- ⏳ Apply all migrations on hosted Supabase
 
-**Phase 3.3 — Collaboration**
-- User workspaces / teams
-- Role-based access (coach, analyst, viewer, admin)
-- Private saved analyses, reports, and dashboards
-- Invitation and sharing flows
+**Phase 3.3 — Collaboration (in progress)**
+- ✅ `workspaces` + `workspace_members` schema with RLS
+- ✅ API: `GET/POST /workspaces/`, `GET /workspaces/{id}`
+- ✅ Web: `/settings` workspace list + create (when auth enabled)
+- ⏳ Invitations and sharing flows
+- ⏳ Workspace-scoped match/data access (link datasets to workspaces)
+- ⏳ Private saved analyses, reports, and dashboards
 
 ---
 

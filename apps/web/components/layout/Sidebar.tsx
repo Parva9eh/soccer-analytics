@@ -1,8 +1,7 @@
 "use client";
 
 import { NavLinks } from "./NavLinks";
-import { SignOutButton } from "@/components/auth/SignOutButton";
-import { AUTH_ENABLED } from "@/lib/auth-config";
+import { SidebarUser } from "@/components/layout/SidebarUser";
 
 export function Sidebar() {
   return (
@@ -27,7 +26,7 @@ export function Sidebar() {
       </div>
 
       <div className="space-y-2 border-t border-border p-4">
-        {AUTH_ENABLED && <SignOutButton />}
+        <SidebarUser />
         <p className="text-caption">v0.3.0 • Event-level data</p>
       </div>
     </aside>

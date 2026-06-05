@@ -35,7 +35,18 @@ Leave flags `false` (default) to keep the Phase 2 open-API developer workflow.
 
 ## Migrations (Phase 3.2)
 
-Migration `20250604120000_rls_authenticated_read.sql` enables RLS and grants **SELECT** to the `authenticated` role on:
+Apply migrations **in filename order**:
+
+| Migration | Purpose |
+|-----------|---------|
+| `20250604120000_rls_authenticated_read.sql` | RLS read on app data tables |
+| `20250604130000_profiles.sql` | Profiles + signup trigger |
+| `20250604140000_workspaces.sql` | Workspaces, members, roles |
+| `20250604150000_profiles_workspace_peers.sql` | Peers can view profiles in shared workspaces |
+
+### App data read access
+
+`20250604120000_rls_authenticated_read.sql` enables RLS and grants **SELECT** to the `authenticated` role on:
 
 `competitions`, `seasons`, `teams`, `matches`, `events`, `players`
 

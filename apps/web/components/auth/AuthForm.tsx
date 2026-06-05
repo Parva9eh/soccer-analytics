@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 type AuthMode = "login" | "signup";
 
@@ -77,7 +78,20 @@ export function AuthForm({ mode }: AuthFormProps) {
           Soccer Analytics — coaches and analysts
         </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        <OAuthButtons nextPath={next} />
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-[10px] uppercase tracking-wide">
+            <span className="bg-card px-2 text-muted-foreground">
+              or email
+            </span>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="text-label">

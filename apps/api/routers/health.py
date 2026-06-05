@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request
 from supabase import Client
 
-from core.supabase_client import get_supabase
+from core.supabase_client import get_supabase_service_client
 from core.config import get_settings
 from core.logging import get_request_id
 from schemas.error import ErrorCode, raise_http_exception
@@ -33,7 +33,7 @@ def health_check(
 
 @router.get("/supabase")
 def test_supabase_connection(
-    supabase: Client = Depends(get_supabase),
+    supabase: Client = Depends(get_supabase_service_client),
     request_id: str = Depends(get_request_id)
 ):
     """Test Supabase connection."""
