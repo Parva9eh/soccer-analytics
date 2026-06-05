@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetchJson } from "@/lib/api";
+import Link from "next/link";
+import { Building2 } from "lucide-react";
+import { apiFetchJson, ApiError, parseQueryError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -12,8 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2 } from "lucide-react";
-import Link from "next/link";
 
 interface Workspace {
   id: string;
@@ -30,17 +30,30 @@ interface AuthMe {
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
+  const [mounted, setMounted] = useState(false);
 
-  const { data, isLoading, error, refetch } = useQuery<Workspace[]>({
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const {
+    data: workspaces = [],
+    isLoading,
+    error,
+    refetch,
+    isFetched,
+  } = useQuery<Workspace[]>({
     queryKey: ["workspaces"],
     queryFn: () => apiFetchJson<Workspace[]>("/workspaces/"),
-    enabled: AUTH_ENABLED,
+    enabled: mounted && AUTH_ENABLED,
+    retry: 1,
   });
 
   const { data: me } = useQuery<AuthMe>({
     queryKey: ["auth-me"],
     queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: AUTH_ENABLED,
+    enabled: mounted && AUTH_ENABLED,
+    retry: false,
   });
 
   const createMutation = useMutation({
@@ -52,6 +65,10 @@ export default function SettingsPage() {
       }),
     onSuccess: (created) => {
       setName("");
+      queryClient.setQueryData<Workspace[]>(["workspaces"], (current) => [
+        ...(current ?? []),
+        created,
+      ]);
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       apiFetchJson<AuthMe>("/auth/me", {
         method: "PATCH",
@@ -62,6 +79,14 @@ export default function SettingsPage() {
       });
     },
   });
+
+  if (!mounted) {
+    return (
+      <PageShell>
+        <PageHeader title="Workspaces" description="Loading…" />
+      </PageShell>
+    );
+  }
 
   if (!AUTH_ENABLED) {
     return (
@@ -79,27 +104,17 @@ export default function SettingsPage() {
     );
   }
 
-  const listUnavailable = Boolean(error) && !data;
+  const listError = error && isFetched ? parseQueryError(error) : null;
+  const hasWorkspaces = workspaces.length > 0;
 
   return (
     <PageShell>
       <PageHeader
         title="Workspaces"
-        description="Teams and roles for collaboration (Phase 3.3)."
+        description="Create a team space, invite colleagues, and pick an active workspace in the sidebar."
       />
 
-      {listUnavailable && (
-        <QueryErrorState
-          className="mb-6"
-          error={error}
-          title="Could not load workspaces"
-          fallbackMessage="Apply Supabase migrations (see supabase/README.md), then try again."
-          onRetry={() => refetch()}
-          compact
-        />
-      )}
-
-      <Card className="surface-card mb-8 border">
+      <Card className="surface-card mb-6 border">
         <CardHeader>
           <CardTitle className="text-base">Create workspace</CardTitle>
         </CardHeader>
@@ -128,21 +143,42 @@ export default function SettingsPage() {
               type="submit"
               disabled={createMutation.isPending || !name.trim()}
             >
-              {createMutation.isPending ? "Creating…" : "Create"}
+              {createMutation.isPending ? "Creating…" : "Create workspace"}
             </Button>
           </form>
           {createMutation.error && (
             <p className="text-caption mt-2 text-destructive">
-              {createMutation.error instanceof Error
+              {createMutation.error instanceof ApiError
                 ? createMutation.error.message
                 : "Could not create workspace."}
+            </p>
+          )}
+          {createMutation.isSuccess && (
+            <p className="text-caption mt-2 text-primary">
+              Workspace created. It appears in your list below — open Manage to
+              invite members.
             </p>
           )}
         </CardContent>
       </Card>
 
-      {!listUnavailable &&
-        (isLoading ? (
+      {listError && (
+        <QueryErrorState
+          className="mb-6"
+          error={error}
+          title="Could not refresh workspace list"
+          fallbackMessage="You can still create a workspace above. If the list stays empty, apply Supabase migrations (supabase/README.md) and restart the API."
+          onRetry={() => refetch()}
+          compact
+        />
+      )}
+
+      <section aria-labelledby="workspace-list-heading">
+        <h2 id="workspace-list-heading" className="text-section-title mb-3">
+          Your workspaces
+        </h2>
+
+        {isLoading && !hasWorkspaces ? (
           <div className="space-y-3">
             {Array.from({ length: 2 }).map((_, i) => (
               <div
@@ -151,15 +187,15 @@ export default function SettingsPage() {
               />
             ))}
           </div>
-        ) : !data?.length ? (
+        ) : !hasWorkspaces ? (
           <EmptyState
             icon={Building2}
             title="No workspaces yet"
-            description="Create a workspace for your coaching staff or analysis group."
+            description="Use the form above to create your first workspace. After that, use Manage to copy an invite link for teammates."
           />
         ) : (
           <ul className="space-y-3">
-            {data.map((ws) => (
+            {workspaces.map((ws) => (
               <li key={ws.id}>
                 <Card className="surface-card border">
                   <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
@@ -167,36 +203,37 @@ export default function SettingsPage() {
                       <p className="font-medium text-foreground">{ws.name}</p>
                       <p className="text-caption font-mono-data">{ws.slug}</p>
                     </div>
-                  <div className="flex items-center gap-2">
-                    {me?.active_workspace_id === ws.id && (
-                      <Badge>Active</Badge>
-                    )}
-                    <Badge variant="secondary">{ws.role}</Badge>
-                    <span className="text-caption">
-                      {ws.member_count} member
-                      {ws.member_count === 1 ? "" : "s"}
-                    </span>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/settings/workspaces/${ws.id}`}>
-                        Manage
-                      </Link>
-                    </Button>
-                  </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {me?.active_workspace_id === ws.id && (
+                        <Badge>Active</Badge>
+                      )}
+                      <Badge variant="secondary">{ws.role}</Badge>
+                      <span className="text-caption">
+                        {ws.member_count} member
+                        {ws.member_count === 1 ? "" : "s"}
+                      </span>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/settings/workspaces/${ws.id}`}>
+                          Manage
+                        </Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </li>
             ))}
           </ul>
-        ))}
+        )}
+      </section>
 
-      <p className="text-caption mt-8">
-        Admins can invite colleagues from a workspace&apos;s Manage page. Switch
-        the active workspace from the sidebar. Workspace-scoped match data is
-        next.{" "}
-        <Link href="/" className="text-primary hover:underline">
-          Back to dashboard
-        </Link>
-      </p>
+      {hasWorkspaces && (
+        <p className="text-caption mt-8 text-muted-foreground">
+          Switch the active workspace from the sidebar.{" "}
+          <Link href="/" className="text-primary hover:underline">
+            Back to dashboard
+          </Link>
+        </p>
+      )}
     </PageShell>
   );
 }
