@@ -239,6 +239,13 @@ def create_invitation(
     try:
         require_workspace_admin(supabase, user.id, ws_id)
 
+        if user.email and normalize_email(user.email) == email:
+            raise_http_exception(
+                status_code=409,
+                detail="You are already a member of this workspace",
+                code=ErrorCode.CONFLICT,
+            )
+
         if _member_exists_for_email(supabase, ws_id, email):
             raise_http_exception(
                 status_code=409,
