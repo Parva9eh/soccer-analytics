@@ -19,15 +19,19 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
-  const callbackError = searchParams.get("error");
+  const errorParam = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(
-    callbackError === "auth_callback"
-      ? "Sign-in could not be completed. Try again."
-      : null,
-  );
+  const [message, setMessage] = useState<string | null>(() => {
+    if (errorParam === "auth_callback") {
+      return "Sign-in could not be completed. Try again.";
+    }
+    if (errorParam === "missing_supabase_env") {
+      return "Auth is enabled but Supabase URL/anon key are missing in .env.local. Restart the dev server after fixing.";
+    }
+    return null;
+  });
   const [pending, setPending] = useState(false);
 
   const isLogin = mode === "login";

@@ -10,10 +10,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!hasSupabaseEnv()) {
-    console.warn(
-      "[auth] NEXT_PUBLIC_AUTH_ENABLED is true but Supabase env vars are missing.",
-    );
-    return NextResponse.next({ request });
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("error", "missing_supabase_env");
+    return NextResponse.redirect(loginUrl);
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
