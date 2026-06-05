@@ -135,7 +135,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 **Branch:** `phase3/auth-foundation`
 
-**Phase 3.1 — Authentication (in progress)**
+**Phase 3.1 — Authentication (complete)**
 - ✅ Supabase Auth (email/password) — login, signup, `/auth/callback`, `@supabase/ssr` session proxy
 - ✅ Optional route protection via `NEXT_PUBLIC_AUTH_ENABLED` (default off for local dev)
 - ✅ `apiFetch` attaches Bearer token when auth is enabled
@@ -143,6 +143,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - ✅ `REQUIRE_AUTH` flag on API (default off); ETL continues to use service role directly
 - ✅ OAuth sign-in (Google, GitHub) on login/signup
 - ✅ Dedicated auth layout (`(auth)` route group without sidebar)
+- ✅ JWT verification for OAuth (Auth API, JWKS, HS256); sidebar uses client session
 
 #### Google OAuth setup (Supabase Auth)
 
@@ -203,6 +204,7 @@ GitHub OAuth: same flow with [GitHub OAuth Apps](https://github.com/settings/dev
 - ✅ `workspaces` + `workspace_members` schema with RLS
 - ✅ API: `GET/POST /workspaces/`, `GET /workspaces/{id}`
 - ✅ Web: `/settings` workspace list + create (when auth enabled)
+- ✅ Active workspace on profile (`PATCH /auth/me`), sidebar switcher
 - ⏳ Invitations and sharing flows
 - ⏳ Workspace-scoped match/data access (link datasets to workspaces)
 - ⏳ Private saved analyses, reports, and dashboards
