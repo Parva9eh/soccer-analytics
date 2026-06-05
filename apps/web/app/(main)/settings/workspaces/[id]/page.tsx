@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiFetchJson, ApiError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { formatWorkspaceRole } from "@/lib/workspace-ui";
+import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { QueryErrorState } from "@/components/ui/query-error-state";
@@ -20,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Copy, Mail } from "lucide-react";
+import { ArrowLeft, Copy, Info, Mail, Users } from "lucide-react";
 
 interface WorkspaceDetail {
   id: string;
@@ -43,21 +45,32 @@ interface Invitation {
   invite_url: string | null;
 }
 
-const INVITE_ROLES = ["viewer", "analyst", "coach"] as const;
+const INVITE_ROLES = [
+  { value: "viewer", label: "Viewer", hint: "Read-only access" },
+  { value: "analyst", label: "Analyst", hint: "Analysis workflows" },
+  { value: "coach", label: "Coach", hint: "Coaching staff access" },
+] as const;
 
 export default function WorkspaceManagePage() {
   const params = useParams();
   const workspaceId = params.id as string;
   const queryClient = useQueryClient();
+  const { session } = useAuthSession();
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<(typeof INVITE_ROLES)[number]>("viewer");
+  const [role, setRole] = useState<(typeof INVITE_ROLES)[number]["value"]>(
+    "viewer",
+  );
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const { data: workspace, error: wsError, refetch } = useQuery<WorkspaceDetail>({
-    queryKey: ["workspace", workspaceId],
-    queryFn: () => apiFetchJson<WorkspaceDetail>(`/workspaces/${workspaceId}`),
-    enabled: AUTH_ENABLED && Boolean(workspaceId),
-  });
+  const signedInEmail = session?.user.email?.toLowerCase() ?? null;
+
+  const { data: workspace, error: wsError, refetch } = useQuery<WorkspaceDetail>(
+    {
+      queryKey: ["workspace", workspaceId],
+      queryFn: () => apiFetchJson<WorkspaceDetail>(`/workspaces/${workspaceId}`),
+      enabled: AUTH_ENABLED && Boolean(workspaceId),
+    },
+  );
 
   const isAdmin = workspace?.role === "admin";
 
@@ -118,7 +131,7 @@ export default function WorkspaceManagePage() {
         <Button asChild variant="ghost" className="mt-4">
           <Link href="/settings">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Back to workspaces
           </Link>
         </Button>
       </PageShell>
@@ -133,37 +146,55 @@ export default function WorkspaceManagePage() {
     );
   }
 
+  const selectedRoleMeta = INVITE_ROLES.find((r) => r.value === role);
+
   return (
     <PageShell>
-      <div className="mb-6">
+      <div className="mb-4">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
           <Link href="/settings">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Workspaces
+            All workspaces
           </Link>
         </Button>
       </div>
 
-      <PageHeader
-        title={workspace.name}
-        description={`${workspace.slug} · your role: ${workspace.role}`}
-      />
+      <PageHeader title={workspace.name} />
 
-      <Card className="surface-card mb-8 border">
-        <CardHeader>
-          <CardTitle className="text-base">Members</CardTitle>
+      <div className="mb-8 flex flex-wrap items-center gap-2">
+        <code className="rounded-md border border-border bg-muted/40 px-2 py-0.5 font-mono text-xs text-muted-foreground">
+          {workspace.slug}
+        </code>
+        <Badge variant="secondary">{formatWorkspaceRole(workspace.role)}</Badge>
+        <span className="text-caption text-muted-foreground">
+          {workspace.members.length} member
+          {workspace.members.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <Card className="surface-card mb-6 border">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="h-4 w-4 text-primary" />
+            Members
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2">
+          <ul className="divide-y divide-border rounded-lg border border-border">
             {workspace.members.map((member) => (
               <li
                 key={member.user_id}
-                className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-sm"
               >
-                <span className="text-foreground">
-                  {member.display_name || member.email || member.user_id}
-                </span>
-                <Badge variant="secondary">{member.role}</Badge>
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">
+                    {member.display_name || "Member"}
+                  </p>
+                  {member.email && (
+                    <p className="text-caption truncate">{member.email}</p>
+                  )}
+                </div>
+                <Badge variant="outline">{formatWorkspaceRole(member.role)}</Badge>
               </li>
             ))}
           </ul>
@@ -172,70 +203,109 @@ export default function WorkspaceManagePage() {
 
       {isAdmin ? (
         <>
-          <Card className="surface-card mb-8 border">
+          <Card className="surface-card mb-6 border border-primary/20 bg-primary/5">
+            <CardContent className="flex gap-3 py-4">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div className="text-caption space-y-1.5 text-muted-foreground">
+                <p>
+                  Invite <strong className="text-foreground">any colleague&apos;s email</strong>{" "}
+                  as Viewer, Analyst, or Coach. They must sign in with that
+                  exact address to accept.
+                </p>
+                <p>
+                  Admin access cannot be granted via invite (only you as creator).
+                  Emails already in the member list—including yours—cannot be
+                  invited again.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="surface-card mb-6 border">
             <CardHeader>
-              <CardTitle className="text-base">Invite by email</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Mail className="h-4 w-4 text-primary" />
+                Invite by email
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <form
-                className="flex flex-col gap-3 sm:flex-row sm:items-end"
+                className="flex flex-col gap-4"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (email.trim()) inviteMutation.mutate();
                 }}
               >
-                <div className="min-w-0 flex-1">
-                  <label htmlFor="invite-email" className="text-label mb-1.5 block">
-                    Email
-                  </label>
-                  <Input
-                    id="invite-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="colleague@club.com"
-                    required
-                  />
-                </div>
-                <div className="w-full sm:w-36">
-                  <label className="text-label mb-1.5 block">Role</label>
-                  <Select
-                    value={role}
-                    onValueChange={(v) =>
-                      setRole(v as (typeof INVITE_ROLES)[number])
-                    }
+                <div className="grid gap-4 sm:grid-cols-[1fr_11rem_auto] sm:items-end">
+                  <div className="min-w-0">
+                    <label htmlFor="invite-email" className="text-label mb-1.5 block">
+                      Colleague&apos;s email
+                    </label>
+                    <Input
+                      id="invite-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="colleague@club.com"
+                      autoComplete="email"
+                      required
+                    />
+                    {signedInEmail &&
+                      email.trim().toLowerCase() === signedInEmail && (
+                        <p className="text-caption mt-1.5 text-amber-600 dark:text-amber-500">
+                          You&apos;re already an admin in this workspace.
+                        </p>
+                      )}
+                  </div>
+                  <div>
+                    <label htmlFor="invite-role" className="text-label mb-1.5 block">
+                      Role
+                    </label>
+                    <Select
+                      value={role}
+                      onValueChange={(v) =>
+                        setRole(v as (typeof INVITE_ROLES)[number]["value"])
+                      }
+                    >
+                      <SelectTrigger id="invite-role">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INVITE_ROLES.map((r) => (
+                          <SelectItem key={r.value} value={r.value}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="sm:mb-0.5"
+                    disabled={inviteMutation.isPending || !email.trim()}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INVITE_ROLES.map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {r}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {inviteMutation.isPending ? "Creating…" : "Create invite"}
+                  </Button>
                 </div>
-                <Button
-                  type="submit"
-                  disabled={inviteMutation.isPending || !email.trim()}
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  {inviteMutation.isPending ? "Sending…" : "Create invite"}
-                </Button>
+                {selectedRoleMeta && (
+                  <p className="text-caption text-muted-foreground">
+                    {selectedRoleMeta.label}: {selectedRoleMeta.hint}
+                  </p>
+                )}
               </form>
               {inviteMutation.error && (
-                <p className="text-caption mt-2 text-destructive">
+                <p className="text-caption mt-3 text-destructive">
                   {inviteMutation.error instanceof ApiError
                     ? inviteMutation.error.message
                     : "Could not create invitation."}
                 </p>
               )}
-              <p className="text-caption mt-3 text-muted-foreground">
-                Share the invite link with your colleague. They must sign in with
-                the same email address.
-              </p>
+              {inviteMutation.isSuccess && (
+                <p className="text-caption mt-3 text-primary">
+                  Invitation created — copy the link below and send it to your
+                  colleague.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -255,18 +325,23 @@ export default function WorkspaceManagePage() {
               <CardContent>
                 {!invitations?.length ? (
                   <p className="text-caption text-muted-foreground">
-                    No pending invitations.
+                    No pending invitations. Create one above to get a shareable
+                    link.
                   </p>
                 ) : (
                   <ul className="space-y-3">
                     {invitations.map((inv) => (
                       <li
                         key={inv.id}
-                        className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                        className="flex flex-col gap-3 rounded-lg border border-border bg-card/50 p-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0">
-                          <p className="text-sm font-medium">{inv.email}</p>
-                          <p className="text-caption">{inv.role}</p>
+                          <p className="text-sm font-medium text-foreground">
+                            {inv.email}
+                          </p>
+                          <p className="text-caption text-muted-foreground">
+                            {formatWorkspaceRole(inv.role)} · expires in 7 days
+                          </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Button
@@ -283,7 +358,7 @@ export default function WorkspaceManagePage() {
                             type="button"
                             size="sm"
                             variant="ghost"
-                            className="text-destructive"
+                            className="text-destructive hover:text-destructive"
                             disabled={revokeMutation.isPending}
                             onClick={() => revokeMutation.mutate(inv.id)}
                           >
@@ -299,9 +374,14 @@ export default function WorkspaceManagePage() {
           )}
         </>
       ) : (
-        <p className="text-caption text-muted-foreground">
-          Only workspace admins can invite members.
-        </p>
+        <Card className="surface-card border">
+          <CardContent className="py-6">
+            <p className="text-caption text-muted-foreground">
+              Only workspace admins can invite members. Contact an admin if you
+              need access changes.
+            </p>
+          </CardContent>
+        </Card>
       )}
     </PageShell>
   );

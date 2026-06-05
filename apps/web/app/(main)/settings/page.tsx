@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatWorkspaceRole } from "@/lib/workspace-ui";
 
 interface Workspace {
   id: string;
@@ -201,13 +202,19 @@ export default function SettingsPage() {
                   <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">{ws.name}</p>
-                      <p className="text-caption font-mono-data">{ws.slug}</p>
+                      <code className="mt-0.5 inline-block rounded border border-border bg-muted/30 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                        {ws.slug}
+                      </code>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {me?.active_workspace_id === ws.id && (
-                        <Badge>Active</Badge>
+                        <Badge className="bg-primary/15 text-primary hover:bg-primary/15">
+                          Active
+                        </Badge>
                       )}
-                      <Badge variant="secondary">{ws.role}</Badge>
+                      <Badge variant="secondary">
+                        {formatWorkspaceRole(ws.role)}
+                      </Badge>
                       <span className="text-caption">
                         {ws.member_count} member
                         {ws.member_count === 1 ? "" : "s"}
