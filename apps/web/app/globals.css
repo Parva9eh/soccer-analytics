@@ -1,91 +1,497 @@
 @import "tailwindcss";
 
+/* === Soccer analytics design tokens (FBref / StatsBomb / Hudl-inspired dark UI) === */
+:root {
+  /* Layered navy surfaces — reduces glare for long analysis sessions */
+  --background: 222 47% 6%;
+  --foreground: 210 40% 98%;
+
+  --card: 217 33% 12%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 217 33% 11%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Pitch green — primary actions & selection (not generic blue) */
+  --primary: 166 72% 36%;
+  --primary-foreground: 210 40% 98%;
+  --primary-hover: 166 72% 30%;
+
+  --secondary: 215 25% 20%;
+  --secondary-foreground: 210 40% 96%;
+
+  --muted: 215 25% 16%;
+  --muted-foreground: 215 16% 62%;
+
+  /* Teal highlight for focus / links (aligned with pitch brand) */
+  --accent: 166 55% 45%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 72% 58%;
+  --success: 160 72% 42%;
+  --warning: 38 92% 55%;
+
+  --border: 215 22% 22%;
+  --input: 215 22% 22%;
+  --ring: 166 65% 42%;
+
+  --radius: 0.75rem;
+
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 200ms;
+  --motion-duration-slow: 320ms;
+  --motion-ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-spring: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
 @theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-primary-hover: hsl(var(--primary-hover));
+  --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-family), ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-:root {
-  /* === Professional Dark Sports Analytics Theme === */
-  --background: 15 23 42; /* #0F172A - Deep Navy */
-  --foreground: 241 245 249; /* #F1F5F9 - Slate 100 */
-
-  --card: 30 41 59; /* #1E293B - Slate 800 */
-  --card-foreground: 241 245 249;
-
-  --popover: 30 41 59;
-  --popover-foreground: 241 245 249;
-
-  --primary: 20 184 166; /* #14B8A6 - Teal */
-  --primary-foreground: 15 23 42;
-
-  --secondary: 51 65 85; /* #334155 - Slate 700 */
-  --secondary-foreground: 241 245 249;
-
-  --muted: 51 65 85;
-  --muted-foreground: 148 163 184; /* #94A3B8 - Slate 400 */
-
-  --accent: 56 189 248; /* #38BDF8 - Sky Blue */
-  --accent-foreground: 15 23 42;
-
-  --destructive: 239 68 68;
-  --destructive-foreground: 241 245 249;
-
-  --border: 51 65 85;
-  --input: 51 65 85;
-  --ring: 20 184 166;
-
-  --radius: 0.75rem;
-}
-
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  font-feature-settings: "tnum", "ss01";
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: hsl(var(--primary) / 0.35);
+  color: hsl(var(--foreground));
+}
+
+/* Professional Typography for Analytics */
+h1, h2, h3 {
+  font-feature-settings: "tnum";
+}
+
+.metric-value {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 /* === Better Dropdown / Select Styling === */
 .SelectContent,
-[role="listbox"],
-[role="menu"] {
+[role="listbox"]:not([data-event-filter-list]),
+[role="menu"]:not([data-event-filter-menu]) {
   background-color: hsl(var(--card)) !important;
   border: 1px solid hsl(var(--border)) !important;
   color: hsl(var(--foreground)) !important;
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
 }
 
-.SelectItem,
-[role="option"] {
+.SelectItem {
   color: hsl(var(--foreground)) !important;
 }
 
 .SelectItem:hover,
-.SelectItem[data-highlighted],
-[role="option"]:hover {
+.SelectItem[data-highlighted] {
   background-color: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
 }
 
-/* Improve focus states */
+/* Pitch/table event filter popovers — component classes own all surfaces */
+[data-event-filter-menu] {
+  background-color: hsl(var(--background)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+[data-event-filter-menu] [data-event-filter-list] {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Premium Focus States (Advanced Accessibility) */
 :focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Better focus within cards and interactive elements */
+.Card:focus-within,
+.interactive:focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
 
-/* Force dark background on all Select dropdowns */
-.SelectContent {
-  background-color: #1e293b !important; /* Slate 800 */
-  border: 1px solid #334155 !important;
-  color: #f1f5f9 !important;
+/* === Link hover (text links only — never button-styled anchors) === */
+a[href]:not([data-slot="button"]),
+.link,
+table a:not([data-slot="button"]),
+.TableRow a:not([data-slot="button"]) {
+  transition: color 0.1s ease;
 }
 
-.SelectItem {
-  color: #f1f5f9 !important;
+a[href]:not([data-slot="button"]):hover,
+.link:hover,
+table a:not([data-slot="button"]):hover,
+.TableRow a:not([data-slot="button"]):hover {
+  color: hsl(var(--primary));
 }
 
-.SelectItem:hover,
-.SelectItem[data-highlighted] {
-  background-color: #14b8a6 !important; /* Teal */
-  color: #0f172a !important;
+/* Button links (Button asChild + Link) keep readable label on every state */
+a[href][data-slot="button"] {
+  text-decoration: none;
 }
+
+a[href][data-slot="button"]:hover,
+a[href][data-slot="button"]:focus-visible {
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* === Professional Data Table Styling (FBref + Driblab inspired) === */
+/* Automatic on shadcn/ui <Table> components + raw tables.
+   Use .numeric on metric columns, .mono on times/coords for pro scannability.
+   Zebra + dense rows enabled by default for analytics tables (B). */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+thead th,
+.TableHead {
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6875rem; /* 11px - still dense but improved readability */
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid hsl(var(--border));
+  background-color: hsl(var(--card) / 0.55);
+}
+
+tbody td,
+.TableCell {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.55);
+  font-feature-settings: "tnum";
+  vertical-align: middle;
+}
+
+/* Subtle zebra striping for long tables (default on, excellent for 30-100+ rows) */
+tbody tr:nth-child(even) {
+  background-color: hsl(var(--muted) / 0.07);
+}
+
+.TableRow,
+tbody tr {
+  transition: background-color 0.1s ease;
+  outline: none;
+}
+
+.TableRow:hover,
+tbody tr:hover {
+  background-color: hsl(var(--muted) / 0.38);
+}
+
+/* Advanced keyboard focus for tables */
+.TableRow:focus-visible,
+tbody tr:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: -2px;
+  background-color: hsl(var(--muted) / 0.45);
+  z-index: 1;
+  position: relative;
+}
+
+/* Numeric columns - right aligned + tabular nums (metrics, jersey, etc.) */
+.TableCell.numeric,
+.TableHead.numeric,
+td.numeric,
+th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Monospace data columns (minute:second, x,y coordinates, IDs) */
+.TableCell.mono,
+td.mono,
+.font-mono-data {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.02em;
+}
+
+/* Semantic data colors for metrics / percentiles */
+.TableCell.success, td.success { color: hsl(var(--success)); }
+.TableCell.warning, td.warning { color: hsl(var(--warning)); }
+.TableCell.destructive, td.destructive { color: hsl(var(--destructive)); }
+
+/* Sortable header affordance */
+th[role="columnheader"],
+.TableHead.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+th[role="columnheader"]:hover,
+.TableHead.sortable:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Selected / highlighted row (match events detail, etc.) — Advanced treatment */
+.TableRow.selected,
+tbody tr.selected,
+tr[data-selected="true"] {
+  background-color: hsl(var(--primary) / 0.12) !important;
+  border-left: 3px solid hsl(var(--primary));
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.18);
+}
+
+/* Cards: subtle depth; lift only on interactive marketing tiles */
+.Card {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  border-color: hsl(var(--border) / 0.85);
+}
+
+.Card.card-interactive {
+  transition:
+    box-shadow var(--motion-duration-base) var(--motion-ease-out),
+    border-color var(--motion-duration-base) var(--motion-ease-out),
+    transform var(--motion-duration-base) var(--motion-ease-out);
+}
+
+.Card.card-interactive:hover {
+  box-shadow: 0 8px 20px -6px rgb(0 0 0 / 0.35);
+  border-color: hsl(var(--primary) / 0.35);
+  transform: translateY(-1px);
+}
+
+/* === Motion & interaction === */
+
+/* Purposeful micro-interactions */
+.interactive {
+  transition: 
+    transform var(--motion-duration-base) var(--motion-ease-out),
+    box-shadow var(--motion-duration-base) var(--motion-ease-out),
+    border-color var(--motion-duration-base) var(--motion-ease-out),
+    background-color var(--motion-duration-base) var(--motion-ease-out);
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.interactive:active {
+  transform: scale(0.985);
+  transition-duration: var(--motion-duration-fast);
+}
+
+/* Advanced Staggered Animations */
+.stagger > * {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: 
+    opacity var(--motion-duration-base) var(--motion-ease-out),
+    transform var(--motion-duration-base) var(--motion-spring);
+}
+
+.stagger > *:nth-child(1) { transition-delay: 40ms; }
+.stagger > *:nth-child(2) { transition-delay: 80ms; }
+.stagger > *:nth-child(3) { transition-delay: 120ms; }
+.stagger > *:nth-child(4) { transition-delay: 160ms; }
+.stagger > *:nth-child(5) { transition-delay: 200ms; }
+.stagger > *:nth-child(6) { transition-delay: 240ms; }
+.stagger > *:nth-child(7) { transition-delay: 280ms; }
+.stagger > *:nth-child(8) { transition-delay: 320ms; }
+
+.stagger.in > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Table row stagger support */
+.TableBody.stagger tr {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: all var(--motion-duration-base) var(--motion-spring);
+}
+
+.TableBody.stagger.in tr {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* === Advanced Elevation System (Senior UI/UX Level) === */
+/* Layered depth for dark sports analytics interfaces */
+.elevation-0 {
+  box-shadow: none;
+  border-color: hsl(var(--border));
+}
+
+.elevation-1 {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border-color: hsl(var(--border) / 0.8);
+}
+
+.elevation-2 {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border-color: hsl(var(--border) / 0.7);
+}
+
+.elevation-3 {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  border-color: hsl(var(--border) / 0.6);
+}
+
+.elevation-4 {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border-color: hsl(var(--border) / 0.5);
+}
+
+/* Interactive elevation on hover (premium feel) */
+.elevation-hover {
+  transition: 
+    box-shadow var(--motion-duration-base) var(--motion-spring),
+    border-color var(--motion-duration-base) var(--motion-ease-out),
+    transform var(--motion-duration-base) var(--motion-spring);
+}
+
+.elevation-hover:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.12), 0 4px 6px -4px rgb(0 0 0 / 0.12);
+  border-color: hsl(var(--border) / 0.5);
+  transform: translateY(-1px);
+}
+
+.elevation-hover:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: var(--motion-duration-fast);
+}
+
+/* Compact card content for data views */
+.card-compact,
+.card-compact .CardContent {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+/* === Typography (analytics hierarchy) === */
+.text-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+
+.text-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+}
+
+.text-caption {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+}
+
+.text-body-sm {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: hsl(var(--foreground) / 0.92);
+}
+
+.text-page-title {
+  font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: hsl(var(--foreground));
+}
+
+.text-page-description {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: hsl(var(--muted-foreground));
+}
+
+.text-section-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: hsl(var(--foreground));
+}
+
+/* === Surfaces & layout === */
+.content {
+  padding: 1.25rem 1.25rem 2rem;
+  max-width: 80rem;
+  margin-inline: auto;
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding: 1.75rem 2rem 2.5rem;
+  }
+}
+
+.surface-card {
+  border-color: hsl(var(--border) / 0.9);
+  background-color: hsl(var(--card));
+}
+
+.surface-panel {
+  border-color: hsl(var(--border) / 0.9);
+  background-color: hsl(var(--card) / 0.65);
+}
+
+.font-mono-data {
+  font-family: var(--font-mono-family), ui-monospace, monospace;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.02em;
+}
+
+/* Responsive data tables — horizontal scroll on narrow viewports */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll > table {
+  min-width: 32rem;
+}
+
+/* Select dropdowns inherit the professional dark theme (earlier rules at top already cover this).
+   No hardcoded duplicates needed — keeps everything in CSS variables for easy theming. */

@@ -25,23 +25,17 @@ export function MatchCard({ match, hasEvents = false }: MatchCardProps) {
   });
 
   return (
-    <Link href={`/matches/${match.id}`}>
-      <Card
-        className="group h-full border-slate-700 bg-slate-800 transition-all duration-300 ease-out 
-                   hover:border-slate-600 hover:bg-slate-700 hover:shadow-2xl 
-                   hover:-translate-y-1 hover:scale-[1.01] hover:ring-1 hover:ring-teal-500/20"
-      >
-        <CardHeader className="pb-3">
+    <Link href={`/matches/${match.id}`} className="group block h-full">
+      <Card className="card-interactive surface-card h-full">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between text-sm">
-            {/* Date */}
-            <div className="flex items-center gap-2 text-slate-400 group-hover:text-slate-300 transition-colors">
-              <Calendar className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4 shrink-0" />
               {formattedDate}
             </div>
 
-            {/* Match Week */}
-            {match.match_week && (
-              <div className="flex items-center gap-1.5 rounded-full bg-slate-700 px-2.5 py-0.5 text-xs text-slate-300 group-hover:bg-slate-600 transition-colors">
+            {match.match_week != null && (
+              <div className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground">
                 <Trophy className="h-3 w-3" />
                 Week {match.match_week}
               </div>
@@ -50,47 +44,40 @@ export function MatchCard({ match, hasEvents = false }: MatchCardProps) {
         </CardHeader>
 
         <CardContent>
-          <div className="space-y-4">
-            {/* Teams */}
-            <div className="flex justify-between items-center gap-4">
-              <div className="font-semibold text-lg text-white truncate pr-2 group-hover:text-teal-50 transition-colors">
-                {match.home_team || "Home Team"}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="truncate pr-2 text-lg font-semibold text-foreground">
+                {match.home_team || "Home"}
               </div>
-              <div className="text-xs text-slate-500 shrink-0">vs</div>
-              <div className="font-semibold text-lg text-white text-right truncate pl-2 group-hover:text-teal-50 transition-colors">
-                {match.away_team || "Away Team"}
-              </div>
-            </div>
-
-            {/* Score */}
-            <div className="flex items-center justify-center gap-6 py-3 border-y border-slate-700 group-hover:border-slate-600 transition-colors">
-              <div className="text-4xl font-bold tabular-nums tracking-tighter text-white">
-                {match.home_score ?? "-"}
-              </div>
-              <div className="text-slate-500 text-sm font-medium">—</div>
-              <div className="text-4xl font-bold tabular-nums tracking-tighter text-white">
-                {match.away_score ?? "-"}
+              <span className="shrink-0 text-caption">vs</span>
+              <div className="truncate pl-2 text-right text-lg font-semibold text-foreground">
+                {match.away_team || "Away"}
               </div>
             </div>
 
-            {/* Footer */}
+            <div className="flex items-center justify-center gap-6 border-y border-border py-3">
+              <div className="metric-value text-4xl text-foreground">
+                {match.home_score ?? "–"}
+              </div>
+              <span className="text-caption font-medium">—</span>
+              <div className="metric-value text-4xl text-foreground">
+                {match.away_score ?? "–"}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between text-sm">
-              <div>
-                {hasEvents ? (
-                  <span className="inline-flex items-center rounded-full bg-emerald-900/60 px-2.5 py-0.5 text-xs font-medium text-emerald-400 group-hover:bg-emerald-900/80 transition-colors">
-                    Events Available
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-500">
-                    No events loaded
-                  </span>
-                )}
-              </div>
+              {hasEvents ? (
+                <span className="inline-flex rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  Events available
+                </span>
+              ) : (
+                <span className="text-caption">Explore match detail</span>
+              )}
 
-              <div className="flex items-center gap-1.5 text-slate-400 group-hover:text-teal-400 transition-all">
-                View details
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </div>
+              <span className="flex items-center gap-1 text-muted-foreground transition-colors group-hover:text-primary">
+                View
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
             </div>
           </div>
         </CardContent>

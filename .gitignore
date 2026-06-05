@@ -19,8 +19,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Python packaging build artifacts — root only
+# (prevents accidentally ignoring frontend lib/ directories in this monorepo)
+/lib/
+/lib64/
 parts/
 sdist/
 var/
