@@ -73,6 +73,7 @@ Apply migrations **in filename order**:
 | `20250604140000_workspaces.sql` | Workspaces, members, roles |
 | `20250604150000_profiles_workspace_peers.sql` | Peers can view profiles in shared workspaces |
 | `20250604160000_profiles_active_workspace.sql` | `profiles.active_workspace_id` preference |
+| `20250604170000_fix_workspace_rls_recursion.sql` | Fix workspace RLS infinite recursion on empty lists |
 
 ### App data read access
 

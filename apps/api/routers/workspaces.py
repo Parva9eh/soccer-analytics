@@ -4,10 +4,12 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from postgrest.exceptions import APIError
 from supabase import Client
 
 from core.deps import get_current_user_required, get_user_supabase
 from core.auth import AuthUser
+from core.supabase_errors import raise_for_supabase_error
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 from schemas.workspace import (
     WorkspaceCreate,
@@ -27,6 +29,41 @@ def _slugify(name: str) -> str:
     return slug[:60] or "workspace"
 
 
+def _list_user_workspaces(supabase: Client, user_id: str) -> list[WorkspaceResponse]:
+    membership = (
+        supabase.table("workspace_members")
+        .select("workspace_id, role, workspaces(id, name, slug)")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    rows = membership.data or []
+    results: list[WorkspaceResponse] = []
+
+    for row in rows:
+        ws = row.get("workspaces") or {}
+        ws_id = ws.get("id")
+        if not ws_id:
+            continue
+
+        count_resp = (
+            supabase.table("workspace_members")
+            .select("user_id", count="exact")
+            .eq("workspace_id", ws_id)
+            .execute()
+        )
+        results.append(
+            WorkspaceResponse(
+                id=ws_id,
+                name=ws["name"],
+                slug=ws["slug"],
+                role=WorkspaceRole(row["role"]),
+                member_count=count_resp.count or 0,
+            )
+        )
+
+    return results
+
+
 @router.get(
     "/",
     response_model=List[WorkspaceResponse],
@@ -36,49 +73,22 @@ def list_workspaces(
     user: AuthUser = Depends(get_current_user_required),
     supabase: Client = Depends(get_user_supabase),
 ) -> List[WorkspaceResponse]:
-    """List workspaces the current user belongs to."""
+    """List workspaces the current user belongs to (empty list when none)."""
     try:
-        membership = (
-            supabase.table("workspace_members")
-            .select("workspace_id, role, workspaces(id, name, slug)")
-            .eq("user_id", user.id)
-            .execute()
-        )
-        rows = membership.data or []
-        results: list[WorkspaceResponse] = []
-
-        for row in rows:
-            ws = row.get("workspaces") or {}
-            ws_id = ws.get("id")
-            if not ws_id:
-                continue
-
-            count_resp = (
-                supabase.table("workspace_members")
-                .select("user_id", count="exact")
-                .eq("workspace_id", ws_id)
-                .execute()
-            )
-            results.append(
-                WorkspaceResponse(
-                    id=ws_id,
-                    name=ws["name"],
-                    slug=ws["slug"],
-                    role=WorkspaceRole(row["role"]),
-                    member_count=count_resp.count or 0,
-                )
-            )
-
-        return results
-
+        return _list_user_workspaces(supabase, user.id)
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("Error in list_workspaces")
-        raise_http_exception(
-            status_code=500,
-            detail="Failed to list workspaces",
-            code=ErrorCode.INTERNAL_SERVER_ERROR,
+    except APIError as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to list workspaces",
+            log_context="list_workspaces",
+        )
+    except Exception as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to list workspaces",
+            log_context="list_workspaces",
         )
 
 
@@ -148,12 +158,17 @@ def create_workspace(
 
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("Error in create_workspace")
-        raise_http_exception(
-            status_code=500,
-            detail="Failed to create workspace",
-            code=ErrorCode.INTERNAL_SERVER_ERROR,
+    except APIError as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to create workspace",
+            log_context="create_workspace",
+        )
+    except Exception as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to create workspace",
+            log_context="create_workspace",
         )
 
 
@@ -222,10 +237,15 @@ def get_workspace(
 
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("Error in get_workspace")
-        raise_http_exception(
-            status_code=500,
-            detail="Failed to fetch workspace",
-            code=ErrorCode.INTERNAL_SERVER_ERROR,
+    except APIError as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to fetch workspace",
+            log_context="get_workspace",
+        )
+    except Exception as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to fetch workspace",
+            log_context="get_workspace",
         )
