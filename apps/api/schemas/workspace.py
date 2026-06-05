@@ -1,8 +1,13 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+import re
+
+from pydantic import BaseModel, Field, field_validator
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class WorkspaceRole(str, Enum):
@@ -33,3 +38,50 @@ class WorkspaceResponse(BaseModel):
 
 class WorkspaceDetailResponse(WorkspaceResponse):
     members: list[WorkspaceMemberResponse] = []
+
+
+class InvitationStatus(str, Enum):
+    pending = "pending"
+    accepted = "accepted"
+    revoked = "revoked"
+
+
+class InvitationCreate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=320)
+    role: WorkspaceRole = WorkspaceRole.viewer
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not _EMAIL_RE.match(normalized):
+            raise ValueError("Invalid email address")
+        return normalized
+
+    @field_validator("role")
+    @classmethod
+    def role_not_admin(cls, role: WorkspaceRole) -> WorkspaceRole:
+        if role == WorkspaceRole.admin:
+            raise ValueError("Invitations cannot grant admin role")
+        return role
+
+
+class InvitationResponse(BaseModel):
+    id: UUID
+    workspace_id: UUID
+    email: str
+    role: WorkspaceRole
+    status: InvitationStatus
+    created_at: datetime
+    expires_at: datetime
+    invite_url: str | None = None
+
+
+class InvitationAccept(BaseModel):
+    token: str = Field(..., min_length=8, max_length=128)
+
+
+class InvitationAcceptResponse(BaseModel):
+    workspace_id: UUID
+    workspace_name: str
+    role: WorkspaceRole
