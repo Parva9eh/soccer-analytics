@@ -20,15 +20,14 @@ The login page offers Google and GitHub buttons. Each provider must be **enabled
 
 ### Google
 
-1. **Google Cloud Console** → [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)
-   - Create an **OAuth 2.0 Client ID** (type: Web application).
-   - **Authorized JavaScript origins:** `http://localhost:3000` (and your production URL later).
-   - **Authorized redirect URIs:** copy from Supabase (see step 2).
-2. **Supabase** → Authentication → **Providers** → **Google** → Enable.
-   - Paste **Client ID** and **Client Secret** from Google.
-   - Supabase shows the **Callback URL** (redirect URI) to add in Google — usually  
-     `https://<project-ref>.supabase.co/auth/v1/callback`
-3. Save both sides. Retry **Sign in with Google** on `/login`.
+Full step-by-step: [PLAN.md § Google OAuth setup](../PLAN.md#google-oauth-setup-supabase-auth).
+
+Summary:
+
+1. Supabase → URL configuration (`http://localhost:3000`, `http://localhost:3000/auth/callback`).
+2. Supabase → Providers → Google → Enable; copy **Callback URL**.
+3. Google Cloud → OAuth client (Web): origins = `http://localhost:3000`; redirect URI = Supabase callback URL.
+4. Paste Client ID/secret into Supabase → Save → test `/login`.
 
 ### GitHub
 
@@ -39,6 +38,8 @@ The login page offers Google and GitHub buttons. Each provider must be **enabled
 3. Save and retry.
 
 Email/password works without OAuth setup. OAuth is optional on the free tier (subject to auth MAU limits).
+
+**Production:** See [PLAN.md — Before production deploy](../PLAN.md#before-production-deploy-auth--oauth) (Supabase Site URL + redirect URLs, matching Google/GitHub app origins, JWT secret and keys from the same project).
 
 ## Enabling auth locally
 

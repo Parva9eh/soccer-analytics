@@ -144,6 +144,55 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - ✅ OAuth sign-in (Google, GitHub) on login/signup
 - ✅ Dedicated auth layout (`(auth)` route group without sidebar)
 
+#### Google OAuth setup (Supabase Auth)
+
+Works on **Supabase free tier** (Auth MAU limits apply; the provider itself is not paid-only). If Google is disabled in Supabase, the app shows: `Unsupported provider: provider is not enabled`.
+
+**1. Supabase — URL configuration (dev)**
+
+Authentication → **URL configuration**:
+
+- **Site URL:** `http://localhost:3000`
+- **Redirect URLs:** `http://localhost:3000/auth/callback`
+
+**2. Supabase — enable Google (get callback URL)**
+
+Authentication → **Providers** → **Google** → **Enable**.
+
+Copy the **Callback URL** shown there (add to Google in step 4). It looks like:
+
+`https://<project-ref>.supabase.co/auth/v1/callback`
+
+Leave this tab open; you will paste Google **Client ID** and **Client secret** here after step 3.
+
+**3. Google Cloud Console — OAuth client**
+
+[APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → **Create credentials** → **OAuth client ID**.
+
+- If prompted, configure the **OAuth consent screen** (External is fine for testing; add your email as a test user while in “Testing”).
+- Application type: **Web application**.
+- **Authorized JavaScript origins:** `http://localhost:3000` (your web app origin — **not** the Supabase callback URL).
+- **Authorized redirect URIs:** the **Supabase Callback URL** from step 2 (`https://<project-ref>.supabase.co/auth/v1/callback`) — **not** `http://localhost:3000/auth/callback` (that is only in Supabase redirect URLs for the app after Supabase finishes OAuth).
+
+Create the client and copy **Client ID** and **Client secret**.
+
+**4. Supabase — paste Google credentials**
+
+Back to **Providers** → **Google**: paste Client ID and Client secret → **Save**.
+
+**5. App env and test**
+
+- `apps/web/.env.local`: `NEXT_PUBLIC_AUTH_ENABLED=true`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `apps/api/.env`: `REQUIRE_AUTH=true`, `SUPABASE_JWT_SECRET` (Settings → API → JWT Secret)
+- Restart web and API dev servers after env changes.
+- Open `/login` → **Google** → consent → redirect to `/auth/callback` → app home with data loading.
+
+**6. Production (Google)**
+
+When deploying, repeat the same pattern for your live domain — see [Before production deploy (auth / OAuth)](#before-production-deploy-auth--oauth): production **Site URL** / **Redirect URLs** in Supabase, add production origin under Google **Authorized JavaScript origins**, keep Supabase callback URL in Google **Authorized redirect URIs**, same Supabase project keys and JWT secret in production env.
+
+GitHub OAuth: same flow with [GitHub OAuth Apps](https://github.com/settings/developers); callback URL is still Supabase’s `https://<project-ref>.supabase.co/auth/v1/callback`. Details: [supabase/README.md](./supabase/README.md).
+
 **Phase 3.2 — RLS & schema (in progress)**
 - ✅ Authenticated read policies for app data tables
 - ✅ `profiles` table + auth signup trigger
@@ -157,6 +206,14 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - ⏳ Invitations and sharing flows
 - ⏳ Workspace-scoped match/data access (link datasets to workspaces)
 - ⏳ Private saved analyses, reports, and dashboards
+
+#### Before production deploy (auth / OAuth)
+
+- Add **production URLs** in Supabase (**Site URL** + **Redirect URLs**, e.g. `https://<your-app>/auth/callback`).
+- Add the **same production web origins** in **Google** and **GitHub** OAuth apps (JavaScript origins / app URL where applicable; OAuth redirect URI to Supabase remains `https://<project-ref>.supabase.co/auth/v1/callback`).
+- Keep **`SUPABASE_JWT_SECRET`** and all Supabase keys (**URL**, **anon**, **service role**) aligned with **that same** Supabase project in production API and web env.
+
+Setup detail: [supabase/README.md](./supabase/README.md).
 
 ---
 
@@ -185,6 +242,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - Monitoring, alerting, and logging improvements
 - Containerization (Docker) and infrastructure as code
 - Deployment to chosen hosting platforms (after Phase 3 auth/RLS)
+- Production auth: Supabase URLs, OAuth app origins, JWT secret / keys — see [Before production deploy (auth / OAuth)](#before-production-deploy-auth--oauth)
 - Cost and performance monitoring
 
 ---
