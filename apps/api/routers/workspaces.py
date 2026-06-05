@@ -9,6 +9,7 @@ from supabase import Client
 
 from core.deps import get_current_user_required, get_user_supabase
 from core.auth import AuthUser
+from core.profiles import ensure_profile
 from core.supabase_errors import raise_for_supabase_error
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 from schemas.workspace import (
@@ -92,6 +93,15 @@ def list_workspaces(
         )
 
 
+def _is_unique_slug_violation(exc: APIError) -> bool:
+    if (exc.code or "") != "23505":
+        return False
+    text = " ".join(
+        part for part in (exc.message, exc.details, exc.hint) if part
+    ).lower()
+    return "slug" in text or "workspaces_slug" in text
+
+
 @router.post(
     "/",
     response_model=WorkspaceResponse,
@@ -105,39 +115,41 @@ def create_workspace(
 ) -> WorkspaceResponse:
     """Create a workspace; creator becomes admin."""
     try:
+        ensure_profile(supabase, user)
+
         base_slug = _slugify(body.name)
-        slug = base_slug
+        workspace: dict | None = None
 
         for attempt in range(5):
-            existing = (
-                supabase.table("workspaces")
-                .select("id")
-                .eq("slug", slug)
-                .execute()
-            )
-            if not existing.data:
-                break
-            slug = f"{base_slug}-{attempt + 2}"
+            slug = base_slug if attempt == 0 else f"{base_slug}-{attempt + 1}"
+            try:
+                ws_resp = (
+                    supabase.table("workspaces")
+                    .insert(
+                        {
+                            "name": body.name.strip(),
+                            "slug": slug,
+                            "created_by": user.id,
+                        }
+                    )
+                    .execute()
+                )
+            except APIError as exc:
+                if _is_unique_slug_violation(exc):
+                    continue
+                raise
 
-        ws_resp = (
-            supabase.table("workspaces")
-            .insert(
-                {
-                    "name": body.name.strip(),
-                    "slug": slug,
-                    "created_by": user.id,
-                }
-            )
-            .execute()
-        )
-        if not ws_resp.data:
+            if ws_resp.data:
+                workspace = ws_resp.data[0]
+                break
+
+        if not workspace:
             raise_http_exception(
                 status_code=500,
                 detail="Failed to create workspace",
                 code=ErrorCode.INTERNAL_SERVER_ERROR,
             )
 
-        workspace = ws_resp.data[0]
         ws_id = workspace["id"]
 
         supabase.table("workspace_members").insert(
