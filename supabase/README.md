@@ -12,6 +12,34 @@ Versioned SQL for schema and Row Level Security (Phase 3.2+) lives under `migrat
    - **Site URL:** `http://localhost:3000` (dev)
    - **Redirect URLs:** `http://localhost:3000/auth/callback`
 
+## OAuth (Google / GitHub)
+
+The login page offers Google and GitHub buttons. Each provider must be **enabled in Supabase** and configured with OAuth credentials. If a provider is off, Supabase returns:
+
+`Unsupported provider: provider is not enabled`
+
+### Google
+
+1. **Google Cloud Console** → [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)
+   - Create an **OAuth 2.0 Client ID** (type: Web application).
+   - **Authorized JavaScript origins:** `http://localhost:3000` (and your production URL later).
+   - **Authorized redirect URIs:** copy from Supabase (see step 2).
+2. **Supabase** → Authentication → **Providers** → **Google** → Enable.
+   - Paste **Client ID** and **Client Secret** from Google.
+   - Supabase shows the **Callback URL** (redirect URI) to add in Google — usually  
+     `https://<project-ref>.supabase.co/auth/v1/callback`
+3. Save both sides. Retry **Sign in with Google** on `/login`.
+
+### GitHub
+
+1. **GitHub** → Settings → Developer settings → [OAuth Apps](https://github.com/settings/developers) → New OAuth App.
+   - **Authorization callback URL:** same Supabase callback URL as Google (`https://<project-ref>.supabase.co/auth/v1/callback`).
+2. **Supabase** → Authentication → **Providers** → **GitHub** → Enable.
+   - Paste **Client ID** and **Client Secret** from GitHub.
+3. Save and retry.
+
+Email/password works without OAuth setup. OAuth is optional on the free tier (subject to auth MAU limits).
+
 ## Enabling auth locally
 
 **Web** (`apps/web/.env.local`):
