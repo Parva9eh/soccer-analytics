@@ -106,6 +106,15 @@ export function parseQueryError(
   fallback = "Something went wrong. Please try again.",
 ): ParsedQueryError {
   if (error instanceof ApiError) {
+    if (error.status === 503) {
+      return {
+        title: "Setup required",
+        message: error.message,
+        code: error.code,
+        requestId: error.requestId,
+      };
+    }
+
     return {
       title: error.status === 404 ? "Not found" : "Unable to load data",
       message: error.message,

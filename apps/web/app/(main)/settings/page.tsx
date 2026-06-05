@@ -79,18 +79,7 @@ export default function SettingsPage() {
     );
   }
 
-  if (error) {
-    return (
-      <PageShell>
-        <PageHeader title="Workspaces" />
-        <QueryErrorState
-          error={error}
-          fallbackMessage="Sign in and apply Phase 3 migrations to use workspaces."
-          onRetry={() => refetch()}
-        />
-      </PageShell>
-    );
-  }
+  const listUnavailable = Boolean(error) && !data;
 
   return (
     <PageShell>
@@ -98,6 +87,17 @@ export default function SettingsPage() {
         title="Workspaces"
         description="Teams and roles for collaboration (Phase 3.3)."
       />
+
+      {listUnavailable && (
+        <QueryErrorState
+          className="mb-6"
+          error={error}
+          title="Could not load workspaces"
+          fallbackMessage="Apply Supabase migrations (see supabase/README.md), then try again."
+          onRetry={() => refetch()}
+          compact
+        />
+      )}
 
       <Card className="surface-card mb-8 border">
         <CardHeader>
@@ -141,7 +141,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {isLoading ? (
+      {!listUnavailable && isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 2 }).map((_, i) => (
             <div
@@ -150,13 +150,13 @@ export default function SettingsPage() {
             />
           ))}
         </div>
-      ) : !data?.length ? (
+      ) : !listUnavailable && !data?.length ? (
         <EmptyState
           icon={Building2}
           title="No workspaces yet"
           description="Create a workspace for your coaching staff or analysis group."
         />
-      ) : (
+      ) : !listUnavailable ? (
         <ul className="space-y-3">
           {data.map((ws) => (
             <li key={ws.id}>

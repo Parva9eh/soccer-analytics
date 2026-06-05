@@ -26,12 +26,15 @@ interface AuthMe {
 export function SidebarWorkspace() {
   const queryClient = useQueryClient();
 
-  const { data: workspaces, isLoading: workspacesLoading } = useQuery<
-    Workspace[]
-  >({
+  const {
+    data: workspaces,
+    isLoading: workspacesLoading,
+    isError: workspacesError,
+  } = useQuery<Workspace[]>({
     queryKey: ["workspaces"],
     queryFn: () => apiFetchJson<Workspace[]>("/workspaces/"),
     enabled: AUTH_ENABLED,
+    retry: false,
   });
 
   const { data: me, isLoading: meLoading } = useQuery<AuthMe>({
@@ -52,7 +55,7 @@ export function SidebarWorkspace() {
     },
   });
 
-  if (!AUTH_ENABLED || workspacesLoading || meLoading) {
+  if (!AUTH_ENABLED || workspacesLoading || meLoading || workspacesError) {
     return null;
   }
 

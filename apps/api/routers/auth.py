@@ -2,10 +2,12 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from postgrest.exceptions import APIError
 from supabase import Client
 
 from core.auth import AuthUser
 from core.deps import get_current_user_required, get_user_supabase
+from core.supabase_errors import raise_for_supabase_error
 from schemas.auth import AuthMeResponse, AuthMeUpdate
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, ErrorResponse, raise_http_exception
 
@@ -27,16 +29,34 @@ def _is_workspace_member(supabase: Client, user_id: str, workspace_id: str) -> b
 
 
 def _load_profile_row(supabase: Client, user_id: str) -> dict | None:
-    result = (
-        supabase.table("profiles")
-        .select("display_name, email, active_workspace_id")
-        .eq("id", user_id)
-        .limit(1)
-        .execute()
-    )
+    columns = "display_name, email, active_workspace_id"
+    try:
+        result = (
+            supabase.table("profiles")
+            .select(columns)
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
+    except APIError as exc:
+        if "active_workspace_id" in _combined_api_message(exc):
+            result = (
+                supabase.table("profiles")
+                .select("display_name, email")
+                .eq("id", user_id)
+                .limit(1)
+                .execute()
+            )
+        else:
+            raise
     if not result.data:
         return None
     return result.data[0]
+
+
+def _combined_api_message(exc: APIError) -> str:
+    parts = [exc.message, exc.details, exc.hint]
+    return " ".join(p for p in parts if p).lower()
 
 
 def _workspace_name(supabase: Client, workspace_id: str) -> str | None:
