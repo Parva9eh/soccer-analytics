@@ -22,6 +22,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - **Multi-Competition Support**: Design schema, queries, UI, and data models to support multiple competitions from day one.
 - **Free-Tier Friendly Initially**: Target Vercel (frontend) + Render/Railway (backend) for early hosting, with awareness of limitations.
 - **Incremental & Reviewable**: All work is done in small, reviewable increments on dedicated branches with explicit approval gates.
+- **Phase branches merge with merge commits**: When a phase is complete, integrate via a **merge commit** into `main` (not squash). Phase branches are **retained** on the remote after merge for history and reference.
 - **Real-time as a Future Differentiator**: Supabase Realtime is viewed as a high-value future capability rather than a Phase 1 priority.
 
 ---
@@ -214,9 +215,41 @@ Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md
 
 ## How to Contribute / Review
 
-- All major work happens on dedicated feature branches (e.g. `phase0/housekeeping`, `phase1/backend-hardening`, `phase2/frontend-completion`).
-- Changes are kept small and reviewable where possible.
-- Significant architectural decisions are discussed before implementation.
+### Branching
+
+- All major work happens on dedicated phase branches (e.g. `phase2/frontend-completion`, `phase3/auth-foundation`).
+- Branch from the latest `main` at the start of a phase.
+- Keep commits small and reviewable where possible; discuss significant architectural decisions before implementation.
+
+### Merging a completed phase into `main`
+
+Use a **merge commit** so the phase branch history stays visible on `main`. Do **not** squash. Do **not** delete the phase branch after merge.
+
+**Local:**
+
+```bash
+git checkout main
+git pull origin main
+git merge --no-ff phaseN/branch-name -m "Merge branch 'phaseN/branch-name'"
+git push origin main
+```
+
+**GitHub PR:** choose **“Create a merge commit”** (not “Squash and merge”).
+
+**After merge:**
+
+1. Leave `phaseN/branch-name` on the remote (for archaeology, diffs, and PR links).
+2. Start the next phase from updated `main`:  
+   `git checkout main && git pull && git checkout -b phaseN+1/...`
+3. Add or update `PHASEN_SUMMARY.md` and mark the phase complete in this plan.
+
+**Example (Phase 2):** `phase2/frontend-completion` → merge commit `8c3c56c` on `main`; branch kept on `origin`.
+
+**Current (Phase 3):** When `phase3/auth-foundation` is complete, merge it into `main` the same way and keep the branch.
+
+### Rebasing a long-running phase branch
+
+If `main` moved while a phase branch was in progress (e.g. another phase merged first), rebase or merge `main` into the phase branch before the final PR. Prefer **cherry-picking only phase-specific commits** onto `main` if a full rebase conflicts with an earlier squash (avoid replaying entire phase histories twice).
 
 ---
 
