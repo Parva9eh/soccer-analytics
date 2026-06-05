@@ -1,8 +1,4 @@
--- Reliable workspace creation for authenticated users (bypasses RLS edge cases)
-
-GRANT SELECT, INSERT, UPDATE ON public.workspaces TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.workspace_members TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
+-- Fix: RETURNS TABLE (id, ...) made "id" ambiguous in ON CONFLICT / INSERT
 
 CREATE OR REPLACE FUNCTION public.create_workspace_for_user(p_name text)
 RETURNS TABLE (id uuid, name text, slug text)
@@ -83,6 +79,3 @@ BEGIN
   RETURN QUERY SELECT ws_id, cleaned_name, try_slug;
 END;
 $$;
-
-REVOKE ALL ON FUNCTION public.create_workspace_for_user(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.create_workspace_for_user(text) TO authenticated;
