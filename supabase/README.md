@@ -77,8 +77,9 @@ Apply migrations **in filename order**:
 | `20250604180000_workspace_invitations.sql` | Email invitations with shareable token links |
 | `20250604190000_workspaces_create_policy_fix.sql` | Let creators read/insert workspaces (fixes Google OAuth create) |
 | `20250604200000_workspace_create_rpc.sql` | **Required for create** — RPC + table grants for `authenticated` |
+| `20250604210000_fix_create_workspace_ambiguous_id.sql` | Fix `column reference "id" is ambiguous` on create RPC |
 
-**Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql` in the Supabase SQL editor (Dashboard → SQL → New query → paste file → Run). Earlier workspace migrations must already be applied. Restart the API after running it.
+**Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql`, then `20250604210000_fix_create_workspace_ambiguous_id.sql` if you see an ambiguous `id` error. Restart the API after running migrations.
 
 ### App data read access
 
