@@ -2,15 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, Users, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Calendar, Users, BarChart3, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AUTH_ENABLED } from "@/lib/auth-config";
 
-export const navItems = [
+const baseNavItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/matches", label: "Matches", icon: Calendar },
   { href: "/players", label: "Players", icon: Users },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
-];
+] as const;
+
+export const navItems = AUTH_ENABLED
+  ? [
+      ...baseNavItems,
+      { href: "/settings", label: "Workspaces", icon: Building2 },
+    ]
+  : [...baseNavItems];
 
 interface NavLinksProps {
   onLinkClick?: () => void;

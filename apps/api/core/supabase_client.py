@@ -31,7 +31,7 @@ def get_supabase_anon_client() -> Client:
     return _create_supabase_client(use_service_role=False)
 
 
-def _client_with_user_jwt(access_token: str) -> Client:
+def client_with_user_jwt(access_token: str) -> Client:
     """Anon client scoped to the authenticated user (RLS applies)."""
     client = get_supabase_anon_client()
     client.postgrest.auth(access_token)
@@ -52,7 +52,7 @@ def get_supabase(
     token = _extract_bearer(authorization)
 
     if token:
-        return _client_with_user_jwt(token)
+        return client_with_user_jwt(token)
 
     if settings.REQUIRE_AUTH:
         raise_http_exception(
