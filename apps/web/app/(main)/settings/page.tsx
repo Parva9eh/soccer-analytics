@@ -167,16 +167,21 @@ export default function SettingsPage() {
                       <p className="font-medium text-foreground">{ws.name}</p>
                       <p className="text-caption font-mono-data">{ws.slug}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {me?.active_workspace_id === ws.id && (
-                        <Badge>Active</Badge>
-                      )}
-                      <Badge variant="secondary">{ws.role}</Badge>
-                      <span className="text-caption">
-                        {ws.member_count} member
-                        {ws.member_count === 1 ? "" : "s"}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {me?.active_workspace_id === ws.id && (
+                      <Badge>Active</Badge>
+                    )}
+                    <Badge variant="secondary">{ws.role}</Badge>
+                    <span className="text-caption">
+                      {ws.member_count} member
+                      {ws.member_count === 1 ? "" : "s"}
+                    </span>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/settings/workspaces/${ws.id}`}>
+                        Manage
+                      </Link>
+                    </Button>
+                  </div>
                   </CardContent>
                 </Card>
               </li>
@@ -185,8 +190,9 @@ export default function SettingsPage() {
         ))}
 
       <p className="text-caption mt-8">
-        Switch the active workspace from the sidebar. Invitations and
-        workspace-scoped match data are next.{" "}
+        Admins can invite colleagues from a workspace&apos;s Manage page. Switch
+        the active workspace from the sidebar. Workspace-scoped match data is
+        next.{" "}
         <Link href="/" className="text-primary hover:underline">
           Back to dashboard
         </Link>
