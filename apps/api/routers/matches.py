@@ -1,49 +1,61 @@
-from fastapi import APIRouter, Query, HTTPException
+import logging
+
+from fastapi import APIRouter, Query, Depends
 from typing import List, Optional
-from core.supabase_client import supabase
+from supabase import Client
+
+from core.supabase_client import get_supabase
 from schemas.match import MatchResponse
+from schemas.params import MatchListParams
+from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/matches", tags=["Matches"])
 
 
-def _get_team_names(team_ids: List[int]) -> dict:
-    """Fetch team names safely."""
-    if not team_ids:
-        return {}
-    try:
-        response = supabase.table("teams").select("id, name").in_("id", team_ids).execute()
-        return {team["id"]: team["name"] for team in (response.data or [])}
-    except Exception as e:
-        print(f"[Matches] Error fetching team names: {e}")
-        return {}
-
-
-@router.get("/", response_model=List[MatchResponse])
+@router.get(
+    "/",
+    response_model=List[MatchResponse],
+    responses=COMMON_ERROR_RESPONSES,
+)
 def get_matches(
-    competition: Optional[str] = None,
-    season: Optional[str] = None,
-    limit: int = Query(50, le=200)
+    supabase: Client = Depends(get_supabase),
+    filters: MatchListParams = Depends()
 ) -> List[MatchResponse]:
     """Get list of matches with team names."""
     try:
         query = supabase.table("matches").select(
-            "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id"
-        ).limit(limit)
+            "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id, "
+            "home_team:teams!home_team_id(name), "
+            "away_team:teams!away_team_id(name)"
+        )
 
-        response = query.execute()
+        comp_name = None
+        season_name = None
+
+        if filters.competition:
+            comp_result = supabase.table("competitions").select("id").eq("name", filters.competition).execute()
+            if comp_result.data:
+                comp_id = comp_result.data[0]["id"]
+                comp_name = filters.competition
+                query = query.eq("competition_id", comp_id)
+
+        if filters.season:
+            season_result = supabase.table("seasons").select("id").eq("year", filters.season).execute()
+            if season_result.data:
+                season_id = season_result.data[0]["id"]
+                season_name = filters.season
+                query = query.eq("season_id", season_id)
+
+        response = query.limit(filters.limit).execute()
         matches_data = response.data or []
-
-        team_ids = set()
-        for m in matches_data:
-            if m.get("home_team_id"):
-                team_ids.add(m["home_team_id"])
-            if m.get("away_team_id"):
-                team_ids.add(m["away_team_id"])
-
-        team_names = _get_team_names(list(team_ids))
 
         result = []
         for m in matches_data:
+            home_team = m.get("home_team") or {}
+            away_team = m.get("away_team") or {}
+
             result.append(
                 MatchResponse(
                     id=m["id"],
@@ -51,36 +63,53 @@ def get_matches(
                     home_score=m.get("home_score"),
                     away_score=m.get("away_score"),
                     match_week=m.get("match_week"),
-                    home_team=team_names.get(m.get("home_team_id")),
-                    away_team=team_names.get(m.get("away_team_id")),
-                    competition=None,
-                    season=None,
+                    home_team=home_team.get("name"),
+                    away_team=away_team.get("name"),
+                    competition=comp_name,
+                    season=season_name,
                 )
             )
         return result
 
-    except Exception as e:
-        print(f"[Matches] Error in get_matches: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch matches")
+    except Exception:
+        logger.exception("Error in get_matches")
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to fetch matches",
+            code=ErrorCode.INTERNAL_SERVER_ERROR
+        )
 
 
-@router.get("/{match_id}", response_model=MatchResponse)
-def get_match(match_id: int) -> MatchResponse:
+@router.get(
+    "/{match_id}",
+    response_model=MatchResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
+def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchResponse:
     """Get a single match by ID."""
     try:
         response = (
             supabase.table("matches")
-            .select("id, match_date, home_score, away_score, match_week, home_team_id, away_team_id")
+            .select(
+                "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id, "
+                "home_team:teams!home_team_id(name), "
+                "away_team:teams!away_team_id(name)"
+            )
             .eq("id", match_id)
             .single()
             .execute()
         )
 
         if not response.data:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise_http_exception(
+                status_code=404,
+                detail="Match not found",
+                code=ErrorCode.NOT_FOUND
+            )
 
         m = response.data
-        team_names = _get_team_names([m.get("home_team_id"), m.get("away_team_id")])
+        home_team = m.get("home_team") or {}
+        away_team = m.get("away_team") or {}
 
         return MatchResponse(
             id=m["id"],
@@ -88,14 +117,16 @@ def get_match(match_id: int) -> MatchResponse:
             home_score=m.get("home_score"),
             away_score=m.get("away_score"),
             match_week=m.get("match_week"),
-            home_team=team_names.get(m.get("home_team_id")),
-            away_team=team_names.get(m.get("away_team_id")),
+            home_team=home_team.get("name"),
+            away_team=away_team.get("name"),
             competition=None,
             season=None,
         )
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"[Matches] Error in get_match: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch match")
+    except Exception:
+        logger.exception("Error in get_match")
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to fetch match",
+            code=ErrorCode.INTERNAL_SERVER_ERROR
+        )

@@ -1,17 +1,29 @@
-from fastapi import APIRouter, Query, HTTPException
+import logging
+
+from fastapi import APIRouter, Query, Depends
 from typing import Optional
-from core.supabase_client import supabase
+from supabase import Client
+
+from core.supabase_client import get_supabase
 from schemas.event import EventListResponse
+from schemas.params import PaginationParams
+from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
-@router.get("/", response_model=EventListResponse)
+@router.get(
+    "/",
+    response_model=EventListResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
 def get_events(
+    supabase: Client = Depends(get_supabase),
     match_id: int = Query(..., description="Database match ID"),
     event_type: Optional[str] = Query(None, description="Filter by event type (e.g. Pass, Shot)"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(100, le=500)
+    pagination: PaginationParams = Depends()
 ) -> EventListResponse:
     """Get paginated events for a match, optionally filtered by event_type."""
     try:
@@ -29,21 +41,25 @@ def get_events(
         total = count_response.count or 0
 
         # Get paginated results
-        offset = (page - 1) * page_size
+        offset = pagination.offset
         response = (
             query.order("minute")
             .order("second")
-            .range(offset, offset + page_size - 1)
+            .range(offset, offset + pagination.page_size - 1)
             .execute()
         )
 
         return EventListResponse(
             total=total,
-            page=page,
-            page_size=page_size,
+            page=pagination.page,
+            page_size=pagination.page_size,
             events=response.data or []
         )
 
-    except Exception as e:
-        print(f"[Events] Error in get_events: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch events")
+    except Exception:
+        logger.exception("Error in get_events")
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to fetch events",
+            code=ErrorCode.INTERNAL_SERVER_ERROR
+        )

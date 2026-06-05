@@ -1,15 +1,32 @@
 "use client";
 
-import { useState } from "react";
+// IMPORTANT: Patch THREE.Clock BEFORE any import that pulls in @react-three/fiber.
+// This must be the first import so that when fiber's internal store does
+// `new THREE.Clock()` (in its events bundles), it gets our non-deprecated shim.
+import "@/lib/three-patch";
+
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Trophy, X, ChevronDown } from "lucide-react";
+import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
+import { apiFetchJson } from "@/lib/api";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pitch } from "@/components/pitch/Pitch";
+import { ThreeDPitch } from "@/components/pitch/ThreeDPitch";
+import { getEventColor, getEventIcon, EVENT_TYPES } from "@/components/pitch/utils";
+import { PitchLayersPopover } from "@/components/pitch/PitchLayersPopover";
+import { TableEventFilterPopover } from "@/components/pitch/TableEventFilterPopover";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { PageShell } from "@/components/ui/page-shell";
+import { QueryErrorState } from "@/components/ui/query-error-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TableContainer } from "@/components/ui/table-container";
+import { MapPin } from "lucide-react";
 
 import {
   Table,
@@ -20,25 +37,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-
-import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+
+/** Match timeline scale (0'–90'+); inset keeps edge markers visible. */
+const MATCH_DURATION_MIN = 95;
+const TIMELINE_EDGE_INSET_PCT = 3;
+
+function timelinePercentFromMinute(minute: number): number {
+  const clamped = Math.min(Math.max(minute, 0), MATCH_DURATION_MIN);
+  const t = clamped / MATCH_DURATION_MIN;
+  return TIMELINE_EDGE_INSET_PCT + t * (100 - 2 * TIMELINE_EDGE_INSET_PCT);
+}
 
 interface Match {
   id: number;
@@ -78,7 +93,11 @@ export default function MatchDetailPage() {
     null,
   );
   const [isControlsOpen, setIsControlsOpen] = useState(false);
+  const [isTableFilterOpen, setIsTableFilterOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [use3DView, setUse3DView] = useState(false);
+  const [current3DView, setCurrent3DView] = useState<'top' | 'side' | 'goal' | 'iso'>('iso');
+  const [autoOrbit3D, setAutoOrbit3D] = useState(false); // advanced interactivity for 3D stadium tour feel
 
   const [visibleEventTypes, setVisibleEventTypes] = useState<string[]>([
     "Shot",
@@ -89,15 +108,36 @@ export default function MatchDetailPage() {
   ]);
 
   const pageSize = 50;
+  const eventsTableRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to and highlight the selected event in the table when clicked from pitch
+  useEffect(() => {
+    if (highlightedEventId && eventsTableRef.current) {
+      const row = eventsTableRef.current.querySelector(
+        `[data-event-id="${highlightedEventId}"]`
+      ) as HTMLElement | null;
+
+      if (row) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Add temporary pulse animation
+        row.classList.add("!bg-primary/15", "ring-1", "ring-primary/40");
+        setTimeout(() => {
+          row.classList.remove("!bg-primary/15", "ring-1", "ring-primary/40");
+        }, 1400);
+      }
+    }
+  }, [highlightedEventId]);
 
   // Fetch match details
-  const { data: match, isLoading: matchLoading } = useQuery<Match>({
+  const {
+    data: match,
+    isLoading: matchLoading,
+    error: matchError,
+    refetch: refetchMatch,
+  } = useQuery<Match>({
     queryKey: ["match", matchId],
-    queryFn: async () => {
-      const res = await fetch(`http://localhost:8000/matches/${matchId}`);
-      if (!res.ok) throw new Error("Match not found");
-      return res.json();
-    },
+    queryFn: () => apiFetchJson<Match>(`/matches/${matchId}`),
     enabled: !!matchId,
   });
 
@@ -108,11 +148,9 @@ export default function MatchDetailPage() {
       queryFn: async () => {
         const eventTypeParam =
           selectedEventType === "all" ? "" : `&event_type=${selectedEventType}`;
-        const res = await fetch(
-          `http://localhost:8000/events/?match_id=${matchId}&page=${currentPage}&page_size=${pageSize}${eventTypeParam}`,
+        return apiFetchJson<EventsResponse>(
+          `/events/?match_id=${matchId}&page=${currentPage}&page_size=${pageSize}${eventTypeParam}`,
         );
-        if (!res.ok) throw new Error("Failed to fetch events");
-        return res.json();
       },
       enabled: !!matchId,
     });
@@ -121,11 +159,13 @@ export default function MatchDetailPage() {
   const { data: pitchEventsData } = useQuery<EventsResponse>({
     queryKey: ["pitch-events", matchId],
     queryFn: async () => {
-      const res = await fetch(
-        `http://localhost:8000/events/?match_id=${matchId}&page=1&page_size=500`,
-      );
-      if (!res.ok) return { events: [] };
-      return res.json();
+      try {
+        return await apiFetchJson<EventsResponse>(
+          `/events/?match_id=${matchId}&page=1&page_size=500`,
+        );
+      } catch {
+        return { events: [], total: 0, page: 1, page_size: 500 };
+      }
     },
     enabled: !!matchId,
   });
@@ -148,6 +188,8 @@ export default function MatchDetailPage() {
     : [];
 
   const totalPages = eventsData ? Math.ceil(eventsData.total / pageSize) : 1;
+  const matchEventTotal = pitchEventsData?.total ?? null;
+  const tableFilterCount = eventsData?.total ?? null;
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -169,6 +211,9 @@ export default function MatchDetailPage() {
   };
 
   // Handle click on pitch (dot or arrow)
+  // getEventColor and getEventIcon are now shared in @/components/pitch/utils
+  // for consistency between 2D/3D and UI (legend, timeline, sheet, tooltips).
+
   const handlePitchEventClick = (event: any) => {
     setHighlightedEventId(event.id);
     setSelectedEvent(event);
@@ -191,19 +236,37 @@ export default function MatchDetailPage() {
   };
 
   if (matchLoading) {
-    return <div className="p-8">Loading match...</div>;
+    return (
+      <PageShell wide>
+        <div className="mb-4 h-4 w-24 animate-pulse rounded bg-muted/50" />
+        <div className="mb-6 h-10 w-full max-w-md animate-pulse rounded bg-muted/50" />
+        <div className="surface-card mb-8 h-28 animate-pulse rounded-xl border" />
+        <div className="surface-card min-h-[280px] animate-pulse rounded-xl border sm:min-h-[400px]" />
+      </PageShell>
+    );
   }
 
-  if (!match) {
+  if (matchError || !match) {
     return (
-      <div className="p-8">
-        <p className="text-red-500">Match not found.</p>
-        <Link href="/matches">
-          <Button variant="outline" className="mt-4">
-            Back to Matches
-          </Button>
+      <PageShell wide>
+        <Link
+          href="/matches"
+          className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to matches
         </Link>
-      </div>
+        <QueryErrorState
+          error={matchError ?? new Error("Match not found")}
+          title="Match not found"
+          onRetry={() => refetchMatch()}
+          action={
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/matches">All matches</Link>
+            </Button>
+          }
+        />
+      </PageShell>
     );
   }
 
@@ -215,190 +278,339 @@ export default function MatchDetailPage() {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <PageShell wide>
       {/* Back Button */}
       <Link
         href="/matches"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
+        className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Matches
+        Back
       </Link>
 
       {/* Match Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-3xl font-semibold tracking-tight">
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <h1 className="text-page-title min-w-0 break-words">
             {match.home_team} vs {match.away_team}
           </h1>
-          {match.match_week && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+          {match.match_week != null && (
+            <Badge variant="secondary" className="w-fit shrink-0 gap-1">
               <Trophy className="h-3 w-3" /> Week {match.match_week}
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          {formattedDate}
+        <div className="flex items-center gap-2 text-caption sm:text-muted-foreground">
+          <Calendar className="h-4 w-4 shrink-0" />
+          <span>{formattedDate}</span>
         </div>
       </div>
 
-      {/* Score Card */}
-      <Card className="mb-8">
-        <CardContent className="pt-6">
-          <div className="flex justify-center items-center gap-12">
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-1">
-                {match.home_team}
+      {/* Compact Score Header - Advanced layout */}
+      <Card className="surface-panel mb-8">
+        <CardContent className="py-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex w-full items-center justify-center gap-3 sm:gap-6 md:gap-8">
+              <div className="min-w-0 flex-1 text-center sm:text-right">
+                <div className="text-label truncate">{match.home_team}</div>
+                <div className="metric-value text-4xl tracking-tighter text-foreground sm:text-5xl">
+                  {match.home_score ?? "–"}
+                </div>
               </div>
-              <div className="text-6xl font-bold tabular-nums">
-                {match.home_score ?? "-"}
+
+              <div className="flex shrink-0 flex-col items-center px-1 text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  vs
+                </div>
+                {match.match_week != null && (
+                  <div className="text-caption mt-0.5">W{match.match_week}</div>
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1 text-center sm:text-left">
+                <div className="text-label truncate">{match.away_team}</div>
+                <div className="metric-value text-4xl tracking-tighter text-foreground sm:text-5xl">
+                  {match.away_score ?? "–"}
+                </div>
               </div>
             </div>
-            <div className="text-2xl text-muted-foreground font-light">vs</div>
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-1">
-                {match.away_team}
-              </div>
-              <div className="text-6xl font-bold tabular-nums">
-                {match.away_score ?? "-"}
-              </div>
-            </div>
+
+            <p className="text-center text-caption sm:hidden">{formattedDate}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Pitch Visualization */}
+      {/* Pitch Visualization - Elevated as primary view */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">Match Visualization</h2>
+        <SectionHeader
+          title="Pitch view"
+          description={
+            use3DView
+              ? "Click events to inspect • Shift+drag to box-select"
+              : "Click events on the pitch to inspect"
+          }
+          action={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <SegmentedControl
+              aria-label="Pitch view mode"
+              options={[
+                { value: "2d", label: "2D" },
+                { value: "3d", label: "3D" },
+              ]}
+              value={use3DView ? "3d" : "2d"}
+              onChange={(v) => setUse3DView(v === "3d")}
+            />
 
-          <div className="relative">
-            <Collapsible open={isControlsOpen} onOpenChange={setIsControlsOpen}>
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="outline"
+            <div className="hidden items-center gap-1.5 border-l border-border pl-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:flex">
+              {EVENT_TYPES.map((t) => (
+                <span key={t} className="inline-flex items-center gap-0.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getEventColor(t) }} />
+                  {t}
+                </span>
+              ))}
+            </div>
+
+            {highlightedEventId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setHighlightedEventId(null);
+                  setSelectedEvent(null);
+                }}
+              >
+                Clear selection
+              </Button>
+            )}
+
+            {use3DView && (
+              <>
+                <SegmentedControl
+                  aria-label="Camera view"
                   size="sm"
-                  className="flex items-center gap-2"
+                  options={(
+                    ["iso", "top", "side", "goal"] as const
+                  ).map((m) => ({ value: m, label: m }))}
+                  value={current3DView}
+                  onChange={setCurrent3DView}
+                />
+                <Button
+                  type="button"
+                  variant={autoOrbit3D ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setAutoOrbit3D(!autoOrbit3D)}
+                  title="Toggle auto-rotate"
                 >
-                  Pitch Controls
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${isControlsOpen ? "rotate-180" : ""}`}
-                  />
+                  {autoOrbit3D ? "Stop orbit" : "Auto orbit"}
                 </Button>
-              </CollapsibleTrigger>
+              </>
+            )}
 
-              <CollapsibleContent className="absolute right-0 top-11 z-50">
-                <Card className="w-64 border-slate-700 bg-slate-800 shadow-xl">
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {["Shot", "Pass", "Pressure", "Carry", "Duel"].map(
-                        (type) => (
-                          <label
-                            key={type}
-                            className="flex items-center gap-3 text-sm text-slate-200 cursor-pointer hover:bg-slate-700 p-1.5 rounded"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={visibleEventTypes.includes(type)}
-                              onChange={() => toggleEventType(type)}
-                              className="h-4 w-4 accent-teal-500"
-                            />
-                            <span>Show {type}s</span>
-                          </label>
-                        ),
-                      )}
-                      <div className="pt-3 border-t border-slate-700">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setVisibleEventTypes([
-                              "Shot",
-                              "Pass",
-                              "Pressure",
-                              "Carry",
-                              "Duel",
-                            ])
-                          }
-                          className="w-full justify-start text-xs text-slate-300 hover:text-white"
-                        >
-                          Reset All Filters
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </CollapsibleContent>
-            </Collapsible>
+            <PitchLayersPopover
+              open={isControlsOpen}
+              onOpenChange={setIsControlsOpen}
+              visibleTypes={visibleEventTypes}
+              onToggleType={toggleEventType}
+              onSelectAll={() => setVisibleEventTypes([...EVENT_TYPES])}
+              onClearAll={() => setVisibleEventTypes([])}
+            />
+          </div>
+          }
+        />
+
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:hidden">
+          {EVENT_TYPES.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: getEventColor(t) }}
+              />
+              {t}
+            </span>
+          ))}
+        </div>
+
+        <div className="mb-3 mt-1">
+          <div className="mb-1.5 flex items-center justify-between text-label">
+            <span>Event timeline</span>
+            <span className="normal-case tracking-normal text-muted-foreground">
+              {filteredPitchEvents.length} events
+            </span>
+          </div>
+          <div className="relative h-8 w-full rounded-md border border-border/80 bg-background px-3">
+            <div className="relative h-full">
+              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border/60" />
+              {filteredPitchEvents
+                .filter((e) => e.minute != null)
+                .map((event, index) => {
+                  const minute = event.minute ?? 0;
+                  const leftPct = timelinePercentFromMinute(minute);
+                  const color = getEventColor(event.event_type);
+                  const isActive = highlightedEventId === event.id;
+
+                  return (
+                    <button
+                      key={`${event.id}-${index}`}
+                      type="button"
+                      onClick={() => handlePitchEventClick(event)}
+                      aria-label={`${event.event_type} at ${minute} minutes`}
+                      aria-pressed={isActive}
+                      className={`absolute top-1/2 z-[1] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background transition-all duration-150 hover:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        isActive
+                          ? "scale-125 ring-2 ring-primary/50"
+                          : "opacity-80 hover:opacity-100"
+                      }`}
+                      style={{ left: `${leftPct}%`, backgroundColor: color }}
+                      title={`${event.event_type} — ${minute}'`}
+                    />
+                  );
+                })}
+            </div>
           </div>
         </div>
 
-        <Pitch
-          events={filteredPitchEvents}
-          onEventClick={handlePitchEventClick}
-          highlightedEventId={highlightedEventId}
-        />
+        {/* Advanced: Event Density Heatmap */}
+        <div className="mb-3">
+          <div className="mb-1 flex items-center justify-between text-label">
+            <span>Event density (per minute)</span>
+          </div>
+          <div className="flex h-3 w-full gap-px overflow-hidden rounded border border-border/80 bg-background">
+            {Array.from({ length: 95 }, (_, min) => {
+              const count = filteredPitchEvents.filter(e => e.minute === min).length;
+              const intensity = Math.min(count / 4, 1);
+              const bg = intensity > 0 ? `rgba(163, 163, 172, ${0.2 + intensity * 0.7})` : 'rgba(15, 23, 42, 0.6)';
+              return <div key={min} className="flex-1" style={{ backgroundColor: bg }} title={`Minute ${min}: ${count} events`} />;
+            })}
+          </div>
+          <div className="mt-0.5 flex justify-between text-[9px] text-muted-foreground">
+            <span>0'</span><span>45'</span><span>90'+</span>
+          </div>
+        </div>
+
+        <div
+          className={`relative transition-all ${use3DView ? "min-h-[min(420px,58vh)] sm:min-h-[560px] md:min-h-[720px] lg:min-h-[800px]" : "h-auto"}`}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (!filteredPitchEvents.length) return;
+            const currentIndex = filteredPitchEvents.findIndex(e => e.id === highlightedEventId);
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % filteredPitchEvents.length : 0;
+              const nextEvent = filteredPitchEvents[nextIndex];
+              handlePitchEventClick(nextEvent);
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              const prevIndex = currentIndex >= 0 ? (currentIndex - 1 + filteredPitchEvents.length) % filteredPitchEvents.length : filteredPitchEvents.length - 1;
+              const prevEvent = filteredPitchEvents[prevIndex];
+              handlePitchEventClick(prevEvent);
+            }
+            if (e.key === 'Escape') {
+              setHighlightedEventId(null);
+              setSelectedEvent(null);
+            }
+          }}
+        >
+          {use3DView ? (
+            <ThreeDPitch
+              events={filteredPitchEvents}
+              onEventClick={handlePitchEventClick}
+              highlightedEventId={highlightedEventId}
+              selectedEventIds={highlightedEventId ? [highlightedEventId] : []}
+              viewMode={current3DView}
+              onViewModeChange={(mode) => setCurrent3DView(mode)}
+              autoRotate={autoOrbit3D}
+              onSelectionChange={(selectedIds) => {
+                if (selectedIds.length > 0) {
+                  setHighlightedEventId(selectedIds[0]);
+                  const first = filteredPitchEvents.find(e => e.id === selectedIds[0]);
+                  if (first) setSelectedEvent(first);
+                }
+              }}
+            />
+          ) : (
+            <Pitch
+              events={filteredPitchEvents}
+              onEventClick={handlePitchEventClick}
+              highlightedEventId={highlightedEventId}
+              selectedEventIds={highlightedEventId ? [highlightedEventId] : []}
+              onSelectionChange={(selectedIds) => {
+                if (selectedIds.length > 0) {
+                  setHighlightedEventId(selectedIds[0]);
+                  const first = filteredPitchEvents.find(e => e.id === selectedIds[0]);
+                  if (first) setSelectedEvent(first);
+                }
+              }}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Events Table */}
-      <div id="events-table">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold">Events</h2>
-
-          <div className="flex items-center gap-4">
-            {eventTypes.length > 0 && (
-              <div className="w-56">
-                <Select
-                  value={selectedEventType}
-                  onValueChange={handleFilterChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by event type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Event Types</SelectItem>
-                    {eventTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {eventsData && (
-              <div className="text-sm text-muted-foreground whitespace-nowrap">
-                Page {currentPage} of {totalPages}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Events Table - Tightly integrated with Pitch */}
+      <div id="events-table" className="mt-8">
+        <SectionHeader
+          title="Event timeline"
+          description="Synced with pitch selection"
+          className="mb-4"
+          action={
+            <div className="flex items-center gap-2">
+              {eventTypes.length > 0 && (
+                <TableEventFilterPopover
+                  open={isTableFilterOpen}
+                  onOpenChange={setIsTableFilterOpen}
+                  selectedType={selectedEventType}
+                  eventTypes={eventTypes}
+                  onSelect={handleFilterChange}
+                  filteredCount={tableFilterCount}
+                  totalCount={matchEventTotal}
+                />
+              )}
+            </div>
+          }
+        />
 
         {eventsLoading ? (
-          <div className="h-96 bg-slate-800 border border-slate-700 rounded-xl animate-pulse" />
+          <div className="surface-card h-96 rounded-xl border p-6">
+            <div className="mb-4 h-5 w-32 animate-pulse rounded bg-muted/50" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="mb-3 flex items-center gap-4">
+                <div className="h-4 w-12 animate-pulse rounded bg-muted/50" />
+                <div className="h-4 flex-1 animate-pulse rounded bg-muted/50" />
+                <div className="h-4 w-28 animate-pulse rounded bg-muted/50" />
+              </div>
+            ))}
+          </div>
         ) : eventsData && eventsData.events.length > 0 ? (
           <>
-            <Card className="border-slate-700 bg-slate-800">
+            <Card className="surface-card elevation-2">
+              <TableContainer>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[110px]">Minute</TableHead>
                     <TableHead>Event Type</TableHead>
                     <TableHead>Location (x, y)</TableHead>
-                    <TableHead>End Location</TableHead>
+                    <TableHead className="hidden sm:table-cell">End Location</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {eventsData.events.map((event) => (
                     <TableRow
                       key={event.id}
-                      className={
-                        highlightedEventId === event.id
-                          ? "bg-blue-900/30 border-l-4 border-blue-500"
-                          : ""
-                      }
+                      data-event-id={event.id}
+                      tabIndex={0}
+                      role="button"
+                      className={highlightedEventId === event.id ? "selected min-h-[52px]" : "min-h-[52px]"}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handlePitchEventClick(event);
+                        }
+                      }}
                     >
                       <TableCell className="font-mono">
                         {event.minute ?? "-"}:
@@ -409,11 +621,11 @@ export default function MatchDetailPage() {
                           {event.event_type || "Unknown"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-mono-data text-sm text-muted-foreground">
                         {event.x?.toFixed(1) ?? "-"},{" "}
                         {event.y?.toFixed(1) ?? "-"}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-mono-data hidden text-sm text-muted-foreground sm:table-cell">
                         {event.end_x?.toFixed(1) ?? "-"},{" "}
                         {event.end_y?.toFixed(1) ?? "-"}
                       </TableCell>
@@ -421,133 +633,197 @@ export default function MatchDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </TableContainer>
             </Card>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <Button
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                Previous
+                ← Prev
               </Button>
-              <div className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * pageSize + 1}–
-                {Math.min(currentPage * pageSize, eventsData.total)} of{" "}
-                {eventsData.total}
+              <div className="text-caption tabular-nums">
+                Page {currentPage} of {totalPages}
               </div>
               <Button
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                Next
+                Next →
               </Button>
             </div>
           </>
         ) : (
-          <Card className="border-slate-700 bg-slate-800">
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">
-                No events found for this match.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={MapPin}
+            title="No events for this match"
+            description="This fixture may not have event data loaded yet, or your filter excludes all types."
+            action={
+              selectedEventType !== "all" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFilterChange("all")}
+                >
+                  Show all types
+                </Button>
+              ) : undefined
+            }
+          />
         )}
       </div>
 
       {/* ==================== PREMIUM SIDE PANEL ==================== */}
       <Sheet
         open={!!selectedEvent}
-        onOpenChange={(open) => !open && setSelectedEvent(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedEvent(null);
+            setHighlightedEventId(null);
+          }
+        }}
       >
-        <SheetContent className="w-[380px] sm:w-[420px] bg-slate-900 border-l border-slate-700 p-0 flex flex-col">
-          {/* Header */}
-          <SheetHeader className="px-6 pt-6 pb-4 border-b border-slate-700">
-            <div className="flex items-start justify-between">
-              <div>
-                <SheetTitle className="text-xl text-white">
-                  Event Details
-                </SheetTitle>
-                <SheetDescription className="text-slate-400 mt-1">
-                  {selectedEvent?.event_type} • Minute {selectedEvent?.minute}
-                  {selectedEvent?.second !== null &&
-                    `:${selectedEvent?.second.toString().padStart(2, "0")}`}
+        <SheetContent
+          showCloseButton={false}
+          className="flex w-full max-w-[420px] flex-col border-border bg-card p-0 elevation-4 sm:w-[420px]"
+        >
+          <SheetHeader className="border-b border-border bg-background/60 px-6 pb-4 pt-5 text-left">
+            <div className="flex items-start justify-between gap-3 pr-1">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <div className="shrink-0 text-primary">
+                    {getEventIcon(selectedEvent?.event_type)}
+                  </div>
+                  <SheetTitle className="text-lg tracking-tight">
+                    {selectedEvent?.event_type || "Event"}
+                  </SheetTitle>
+                </div>
+                <SheetDescription className="mt-0.5 text-xs">
+                  Minute {selectedEvent?.minute}:
+                  {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
                 </SheetDescription>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedEvent(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              <SheetClose asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label="Close event details"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </SheetClose>
             </div>
           </SheetHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-7">
             {/* Event Type */}
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
-                Event Type
-              </div>
-              <div className="text-lg font-semibold text-white">
-                {selectedEvent?.event_type}
+              <div className="text-label mb-1">Event Type</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-semibold text-foreground">
+                  {selectedEvent?.event_type}
+                </span>
+                <span className="rounded bg-secondary px-2 py-px text-[10px] font-medium tracking-wider text-muted-foreground">
+                  {selectedEvent?.event_type?.slice(0, 4).toUpperCase()}
+                </span>
               </div>
             </div>
 
             {/* Time */}
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
-                Time
-              </div>
-              <div className="text-white font-mono text-lg">
+              <div className="text-label mb-1">Time</div>
+              <div className="font-mono-data text-3xl font-semibold tabular-nums text-foreground">
                 {selectedEvent?.minute}:
-                {selectedEvent?.second?.toString().padStart(2, "0")}
+                {(selectedEvent?.second ?? 0).toString().padStart(2, "0")}
               </div>
             </div>
 
             {/* Location */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
-                  Start Location
-                </div>
-                <div className="font-mono text-white">
-                  ({selectedEvent?.x?.toFixed(1)},{" "}
-                  {selectedEvent?.y?.toFixed(1)})
+                <div className="text-label mb-1">Start Location</div>
+                <div className="font-mono-data flex items-center gap-2 text-xl text-foreground">
+                  ({selectedEvent?.x?.toFixed(1)}, {selectedEvent?.y?.toFixed(1)})
+                  <span className="text-caption">(on pitch)</span>
                 </div>
               </div>
 
               {(selectedEvent?.end_x || selectedEvent?.end_y) && (
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">
-                    End Location
-                  </div>
-                  <div className="font-mono text-white">
-                    ({selectedEvent?.end_x?.toFixed(1)},{" "}
-                    {selectedEvent?.end_y?.toFixed(1)})
+                  <div className="text-label mb-1">End Location</div>
+                  <div className="font-mono-data text-xl text-foreground">
+                    ({selectedEvent?.end_x?.toFixed(1)}, {selectedEvent?.end_y?.toFixed(1)})
                   </div>
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-slate-700">
-            <Button
-              variant="outline"
-              onClick={() => setSelectedEvent(null)}
-              className="w-full"
-            >
-              Close
-            </Button>
+            <p className="text-caption">
+              Synced with the pitch view and event table. Press Escape to dismiss.
+            </p>
+
+            {selectedEvent && (
+              <div className="border-t border-border/80 pt-2 text-[10px]">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Distance</span>
+                  <span className="font-mono-data text-foreground">
+                    {selectedEvent.end_x && selectedEvent.end_y 
+                      ? Math.hypot((selectedEvent.end_x - (selectedEvent.x || 0)), (selectedEvent.end_y - (selectedEvent.y || 0))).toFixed(1) 
+                      : '—'} units
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Mini pitch visual for context (advanced) */}
+            {selectedEvent && (
+              <div>
+                <div className="text-label mb-1">Location on Pitch</div>
+                <div className="relative h-20 w-32 overflow-hidden rounded border border-border bg-background">
+                  <svg viewBox="0 0 120 80" className="h-full w-full">
+                    <rect
+                      x="5"
+                      y="5"
+                      width="110"
+                      height="70"
+                      fill="none"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="1"
+                    />
+                    <line
+                      x1="60"
+                      y1="5"
+                      x2="60"
+                      y2="75"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="0.8"
+                    />
+                    {/* Event dot */}
+                    <circle 
+                      cx={selectedEvent.x ?? 60} 
+                      cy={selectedEvent.y ?? 40} 
+                      r="2.5" 
+                      fill={getEventColor(selectedEvent.event_type)} 
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
+
+            {/* Richer context placeholder */}
+            <p className="border-t border-border/80 pt-2 text-caption">
+              Player context and advanced metrics would appear here with richer event data.
+            </p>
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </PageShell>
   );
 }

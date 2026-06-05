@@ -1,0 +1,13 @@
+{
+  "name": "soccer-analytics",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Professional soccer data analysis platform",
+  "scripts": {
+    "dev": "echo '→ Use: pnpm dev:web  |  pnpm dev:api'",
+    "dev:web": "cd apps/web && pnpm dev",
+    "dev:api": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
+    "build:web": "cd apps/web && pnpm build",
+    "lint:web": "cd apps/web && pnpm lint"
+  }
+}
