@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { apiFetchJson, ApiError } from "@/lib/api";
+import { apiFetchJson } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { SignOutButton } from "@/components/auth/SignOutButton";
@@ -13,15 +13,30 @@ interface AuthMe {
   display_name: string | null;
 }
 
-export function SidebarUser() {
-  const { session, isLoading: sessionLoading, isAuthenticated } =
-    useAuthSession();
+function sessionDisplayName(session: {
+  user: {
+    email?: string | null;
+    user_metadata?: Record<string, unknown>;
+  };
+}): string {
+  const meta = session.user.user_metadata ?? {};
+  const fromMeta =
+    (typeof meta.full_name === "string" && meta.full_name) ||
+    (typeof meta.name === "string" && meta.name) ||
+    null;
 
-  const { data, error, isLoading: profileLoading } = useQuery<AuthMe>({
+  return fromMeta || session.user.email || "Account";
+}
+
+export function SidebarUser() {
+  const { session, isLoading: sessionLoading } = useAuthSession();
+
+  const { data } = useQuery<AuthMe>({
     queryKey: ["auth-me", session?.access_token],
     queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: AUTH_ENABLED && isAuthenticated,
+    enabled: AUTH_ENABLED && Boolean(session?.access_token),
     retry: false,
+    staleTime: 60_000,
   });
 
   if (!AUTH_ENABLED) {
@@ -43,32 +58,15 @@ export function SidebarUser() {
     );
   }
 
-  if (profileLoading) {
-    return <p className="text-caption px-1">Loading profile…</p>;
-  }
-
-  if (error) {
-    const hint =
-      error instanceof ApiError && error.status === 401
-        ? "API rejected your session (check SUPABASE_JWT_SECRET)."
-        : "Could not verify session with the API.";
-
-    return (
-      <div className="space-y-2">
-        <p className="text-caption px-1 text-destructive" title={hint}>
-          Session invalid
-        </p>
-        <SignOutButton label="Clear session" />
-      </div>
-    );
-  }
-
   const label =
-    data?.display_name || data?.email || session.user.email || "Account";
+    data?.display_name || data?.email || sessionDisplayName(session);
 
   return (
     <div className="space-y-2">
-      <p className="truncate px-1 text-xs font-medium text-foreground" title={label}>
+      <p
+        className="truncate px-1 text-xs font-medium text-foreground"
+        title={label}
+      >
         {label}
       </p>
       <SignOutButton />
