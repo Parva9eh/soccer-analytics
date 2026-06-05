@@ -23,6 +23,10 @@ interface Workspace {
   member_count: number;
 }
 
+interface AuthMe {
+  active_workspace_id: string | null;
+}
+
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -33,6 +37,12 @@ export default function SettingsPage() {
     enabled: AUTH_ENABLED,
   });
 
+  const { data: me } = useQuery<AuthMe>({
+    queryKey: ["auth-me"],
+    queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
+    enabled: AUTH_ENABLED,
+  });
+
   const createMutation = useMutation({
     mutationFn: (workspaceName: string) =>
       apiFetchJson<Workspace>("/workspaces/", {
@@ -40,9 +50,16 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: workspaceName }),
       }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       setName("");
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      apiFetchJson<AuthMe>("/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active_workspace_id: created.id }),
+      }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["auth-me"] });
+      });
     },
   });
 
@@ -150,6 +167,9 @@ export default function SettingsPage() {
                     <p className="text-caption font-mono-data">{ws.slug}</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {me?.active_workspace_id === ws.id && (
+                      <Badge>Active</Badge>
+                    )}
                     <Badge variant="secondary">{ws.role}</Badge>
                     <span className="text-caption">
                       {ws.member_count} member{ws.member_count === 1 ? "" : "s"}
@@ -163,8 +183,8 @@ export default function SettingsPage() {
       )}
 
       <p className="text-caption mt-8">
-        Invitations and workspace-scoped match data are planned for a later
-        Phase 3 increment.{" "}
+        Switch the active workspace from the sidebar. Invitations and
+        workspace-scoped match data are next.{" "}
         <Link href="/" className="text-primary hover:underline">
           Back to dashboard
         </Link>
