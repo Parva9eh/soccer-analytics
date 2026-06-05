@@ -141,46 +141,48 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {!listUnavailable && isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div
-              key={i}
-              className="surface-card h-20 animate-pulse rounded-xl border"
-            />
-          ))}
-        </div>
-      ) : !listUnavailable && !data?.length ? (
-        <EmptyState
-          icon={Building2}
-          title="No workspaces yet"
-          description="Create a workspace for your coaching staff or analysis group."
-        />
-      ) : !listUnavailable ? (
-        <ul className="space-y-3">
-          {data.map((ws) => (
-            <li key={ws.id}>
-              <Card className="surface-card border">
-                <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground">{ws.name}</p>
-                    <p className="text-caption font-mono-data">{ws.slug}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {me?.active_workspace_id === ws.id && (
-                      <Badge>Active</Badge>
-                    )}
-                    <Badge variant="secondary">{ws.role}</Badge>
-                    <span className="text-caption">
-                      {ws.member_count} member{ws.member_count === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
+      {!listUnavailable &&
+        (isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div
+                key={i}
+                className="surface-card h-20 animate-pulse rounded-xl border"
+              />
+            ))}
+          </div>
+        ) : !data?.length ? (
+          <EmptyState
+            icon={Building2}
+            title="No workspaces yet"
+            description="Create a workspace for your coaching staff or analysis group."
+          />
+        ) : (
+          <ul className="space-y-3">
+            {data.map((ws) => (
+              <li key={ws.id}>
+                <Card className="surface-card border">
+                  <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">{ws.name}</p>
+                      <p className="text-caption font-mono-data">{ws.slug}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {me?.active_workspace_id === ws.id && (
+                        <Badge>Active</Badge>
+                      )}
+                      <Badge variant="secondary">{ws.role}</Badge>
+                      <span className="text-caption">
+                        {ws.member_count} member
+                        {ws.member_count === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        ))}
 
       <p className="text-caption mt-8">
         Switch the active workspace from the sidebar. Invitations and
