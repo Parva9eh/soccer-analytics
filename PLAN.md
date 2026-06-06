@@ -206,7 +206,7 @@ GitHub OAuth: same flow with [GitHub OAuth Apps](https://github.com/settings/dev
 - ✅ Web: `/settings` workspace list + create (when auth enabled)
 - ✅ Active workspace on profile (`PATCH /auth/me`), sidebar switcher
 - ✅ Invitations: create/revoke, shareable link, accept flow (`/invitations/accept`)
-- ⏳ Workspace-scoped match/data access (link datasets to workspaces)
+- ✅ Workspace-scoped match/data access (`workspace_datasets`, active-workspace RLS, Manage → Data access)
 - ⏳ Private saved analyses, reports, and dashboards
 
 #### Before production deploy (auth / OAuth)

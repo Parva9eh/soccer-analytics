@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Calendar, Target, Users, BarChart3 } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
+import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { StatCard } from "@/components/ui/stat-card";
@@ -19,8 +20,9 @@ interface SummaryData {
 }
 
 export default function Dashboard() {
+  const workspaceId = useActiveWorkspaceId();
   const { data, isLoading, error, refetch, isFetching } = useQuery<SummaryData>({
-    queryKey: ["summary"],
+    queryKey: ["summary", workspaceId],
     queryFn: () => apiFetchJson<SummaryData>("/summary/"),
   });
 

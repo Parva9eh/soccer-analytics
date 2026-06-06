@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/api";
+import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -25,13 +26,14 @@ interface SummaryData {
 }
 
 export default function AnalyticsPage() {
+  const workspaceId = useActiveWorkspaceId();
   const {
     data: summary,
     isLoading: summaryLoading,
     error,
     refetch,
   } = useQuery<SummaryData>({
-    queryKey: ["summary"],
+    queryKey: ["summary", workspaceId],
     queryFn: () => apiFetchJson<SummaryData>("/summary/"),
   });
 

@@ -11,6 +11,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
+import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,6 +87,7 @@ interface EventsResponse {
 export default function MatchDetailPage() {
   const params = useParams();
   const matchId = params.id ? Number(params.id) : null;
+  const workspaceId = useActiveWorkspaceId();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEventType, setSelectedEventType] = useState<string>("all");
@@ -136,7 +138,7 @@ export default function MatchDetailPage() {
     error: matchError,
     refetch: refetchMatch,
   } = useQuery<Match>({
-    queryKey: ["match", matchId],
+    queryKey: ["match", workspaceId, matchId],
     queryFn: () => apiFetchJson<Match>(`/matches/${matchId}`),
     enabled: !!matchId,
   });
@@ -144,7 +146,7 @@ export default function MatchDetailPage() {
   // Fetch events for table
   const { data: eventsData, isLoading: eventsLoading } =
     useQuery<EventsResponse>({
-      queryKey: ["events", matchId, currentPage, selectedEventType],
+      queryKey: ["events", workspaceId, matchId, currentPage, selectedEventType],
       queryFn: async () => {
         const eventTypeParam =
           selectedEventType === "all" ? "" : `&event_type=${selectedEventType}`;
@@ -157,7 +159,7 @@ export default function MatchDetailPage() {
 
   // Fetch events for Pitch
   const { data: pitchEventsData } = useQuery<EventsResponse>({
-    queryKey: ["pitch-events", matchId],
+    queryKey: ["pitch-events", workspaceId, matchId],
     queryFn: async () => {
       try {
         return await apiFetchJson<EventsResponse>(

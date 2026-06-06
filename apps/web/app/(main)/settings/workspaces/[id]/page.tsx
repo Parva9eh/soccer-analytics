@@ -7,6 +7,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, apiFetchJson, ApiError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 import { formatWorkspaceRole } from "@/lib/workspace-ui";
+import {
+  DEFAULT_COMPETITION,
+  DEFAULT_SEASON,
+} from "@/lib/competition-filter";
+import { WORKSPACE_SCOPED_QUERY_PREFIXES } from "@/lib/workspace-data-queries";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -22,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Copy, Info, Mail, Users } from "lucide-react";
+import { ArrowLeft, Copy, Database, Info, Mail, Users } from "lucide-react";
 
 interface WorkspaceDetail {
   id: string;
@@ -45,6 +50,14 @@ interface Invitation {
   invite_url: string | null;
 }
 
+interface WorkspaceDataset {
+  competition_id: number;
+  season_id: number;
+  competition: string;
+  season: string;
+  added_at: string;
+}
+
 const INVITE_ROLES = [
   { value: "viewer", label: "Viewer", hint: "Read-only access" },
   { value: "analyst", label: "Analyst", hint: "Analysis workflows" },
@@ -57,10 +70,20 @@ export default function WorkspaceManagePage() {
   const queryClient = useQueryClient();
   const { session } = useAuthSession();
   const [email, setEmail] = useState("");
+  const [datasetCompetition, setDatasetCompetition] = useState(
+    DEFAULT_COMPETITION,
+  );
+  const [datasetSeason, setDatasetSeason] = useState(DEFAULT_SEASON);
   const [role, setRole] = useState<(typeof INVITE_ROLES)[number]["value"]>(
     "viewer",
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  function invalidateWorkspaceData() {
+    for (const prefix of WORKSPACE_SCOPED_QUERY_PREFIXES) {
+      queryClient.invalidateQueries({ queryKey: [prefix] });
+    }
+  }
 
   const signedInEmail = session?.user.email?.toLowerCase() ?? null;
 
@@ -73,6 +96,49 @@ export default function WorkspaceManagePage() {
   );
 
   const isAdmin = workspace?.role === "admin";
+
+  const {
+    data: datasets,
+    error: datasetsError,
+    refetch: refetchDatasets,
+  } = useQuery<WorkspaceDataset[]>({
+    queryKey: ["workspace-datasets", workspaceId],
+    queryFn: () =>
+      apiFetchJson<WorkspaceDataset[]>(`/workspaces/${workspaceId}/datasets`),
+    enabled: AUTH_ENABLED && Boolean(workspaceId) && isAdmin,
+  });
+
+  const datasetMutation = useMutation({
+    mutationFn: () =>
+      apiFetchJson<WorkspaceDataset>(`/workspaces/${workspaceId}/datasets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          competition: datasetCompetition.trim(),
+          season: datasetSeason.trim(),
+        }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["workspace-datasets", workspaceId],
+      });
+      invalidateWorkspaceData();
+    },
+  });
+
+  const removeDatasetMutation = useMutation({
+    mutationFn: (dataset: WorkspaceDataset) =>
+      apiFetch(
+        `/workspaces/${workspaceId}/datasets/${dataset.competition_id}/${dataset.season_id}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["workspace-datasets", workspaceId],
+      });
+      invalidateWorkspaceData();
+    },
+  });
 
   const {
     data: invitations,
@@ -203,6 +269,114 @@ export default function WorkspaceManagePage() {
 
       {isAdmin ? (
         <>
+          <Card className="surface-card mb-6 border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Database className="h-4 w-4 text-primary" />
+                Data access
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-caption text-muted-foreground">
+                Members see matches and events for the competition seasons linked
+                here. New workspaces start with La Liga 2020/21 when that data
+                is loaded.
+              </p>
+              {datasetsError ? (
+                <QueryErrorState
+                  error={datasetsError}
+                  title="Could not load datasets"
+                  onRetry={() => refetchDatasets()}
+                  compact
+                />
+              ) : !datasets?.length ? (
+                <p className="text-caption text-muted-foreground">
+                  No datasets linked yet. Add a competition and season below.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border rounded-lg border border-border">
+                  {datasets.map((dataset) => (
+                    <li
+                      key={`${dataset.competition_id}-${dataset.season_id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-sm"
+                    >
+                      <span className="font-medium text-foreground">
+                        {dataset.competition} · {dataset.season}
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        disabled={removeDatasetMutation.isPending}
+                        onClick={() => removeDatasetMutation.mutate(dataset)}
+                      >
+                        Remove
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <form
+                className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (datasetCompetition.trim() && datasetSeason.trim()) {
+                    datasetMutation.mutate();
+                  }
+                }}
+              >
+                <div>
+                  <label
+                    htmlFor="dataset-competition"
+                    className="text-label mb-1.5 block"
+                  >
+                    Competition
+                  </label>
+                  <Input
+                    id="dataset-competition"
+                    value={datasetCompetition}
+                    onChange={(e) => setDatasetCompetition(e.target.value)}
+                    placeholder="La Liga"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="dataset-season"
+                    className="text-label mb-1.5 block"
+                  >
+                    Season
+                  </label>
+                  <Input
+                    id="dataset-season"
+                    value={datasetSeason}
+                    onChange={(e) => setDatasetSeason(e.target.value)}
+                    placeholder="2020/2021"
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={
+                    datasetMutation.isPending ||
+                    !datasetCompetition.trim() ||
+                    !datasetSeason.trim()
+                  }
+                >
+                  {datasetMutation.isPending ? "Adding…" : "Add dataset"}
+                </Button>
+              </form>
+              {datasetMutation.error && (
+                <p className="text-caption text-destructive">
+                  {datasetMutation.error instanceof ApiError
+                    ? datasetMutation.error.message
+                    : "Could not add dataset."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="surface-card mb-6 border border-primary/20 bg-primary/5">
             <CardContent className="flex gap-3 py-4">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

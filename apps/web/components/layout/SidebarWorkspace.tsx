@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { WORKSPACE_SCOPED_QUERY_PREFIXES } from "@/lib/workspace-data-queries";
 import {
   Select,
   SelectContent,
@@ -52,6 +53,9 @@ export function SidebarWorkspace() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auth-me"] });
+      for (const prefix of WORKSPACE_SCOPED_QUERY_PREFIXES) {
+        queryClient.invalidateQueries({ queryKey: [prefix] });
+      }
     },
   });
 

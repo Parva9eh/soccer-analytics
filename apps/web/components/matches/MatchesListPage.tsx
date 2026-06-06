@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
+import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import {
   buildMatchesQuery,
   DEFAULT_COMPETITION,
@@ -79,6 +80,7 @@ export function MatchesListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const workspaceId = useActiveWorkspaceId();
   const competition = readFilter(searchParams, "competition", DEFAULT_COMPETITION);
   const season = readFilter(searchParams, "season", DEFAULT_SEASON);
 
@@ -95,12 +97,12 @@ export function MatchesListPage() {
   const { data: catalog, isLoading: catalogLoading } = useQuery<
     CompetitionCatalogItem[]
   >({
-    queryKey: ["competitions-catalog"],
+    queryKey: ["competitions-catalog", workspaceId],
     queryFn: () => apiFetchJson<CompetitionCatalogItem[]>("/competitions/"),
     staleTime: 5 * 60 * 1000,
   });
 
-  const matchesQueryKey = ["matches", competition, season] as const;
+  const matchesQueryKey = ["matches", workspaceId, competition, season] as const;
 
   const {
     data: matches,
