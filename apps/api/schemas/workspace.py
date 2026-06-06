@@ -85,3 +85,16 @@ class InvitationAcceptResponse(BaseModel):
     workspace_id: UUID
     workspace_name: str
     role: WorkspaceRole
+
+
+class WorkspaceDatasetCreate(BaseModel):
+    competition: str = Field(..., min_length=1, max_length=120)
+    season: str = Field(..., min_length=1, max_length=32)
+
+
+class WorkspaceDatasetResponse(BaseModel):
+    competition_id: int
+    season_id: int
+    competition: str
+    season: str
+    added_at: datetime

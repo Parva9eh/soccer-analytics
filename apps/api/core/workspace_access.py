@@ -4,7 +4,7 @@ from schemas.error import ErrorCode, raise_http_exception
 from schemas.workspace import WorkspaceRole
 
 
-def require_workspace_admin(
+def require_workspace_member(
     supabase: Client,
     user_id: str,
     workspace_id: str,
@@ -23,8 +23,15 @@ def require_workspace_admin(
             detail="Workspace not found",
             code=ErrorCode.NOT_FOUND,
         )
+    return WorkspaceRole(membership.data[0]["role"])
 
-    role = WorkspaceRole(membership.data[0]["role"])
+
+def require_workspace_admin(
+    supabase: Client,
+    user_id: str,
+    workspace_id: str,
+) -> WorkspaceRole:
+    role = require_workspace_member(supabase, user_id, workspace_id)
     if role != WorkspaceRole.admin:
         raise_http_exception(
             status_code=403,
