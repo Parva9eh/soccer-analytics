@@ -44,7 +44,7 @@ export default function SavedAnalysesPage() {
     return (
       <PageShell>
         <PageHeader
-          title="Saved analyses"
+          title="Match views"
           description="Enable authentication to save private match views."
         />
       </PageShell>
@@ -54,7 +54,7 @@ export default function SavedAnalysesPage() {
   if (error) {
     return (
       <PageShell>
-        <PageHeader title="Saved analyses" />
+        <PageHeader title="Match views" />
         <QueryErrorState error={error} onRetry={() => refetch()} />
       </PageShell>
     );
@@ -63,8 +63,8 @@ export default function SavedAnalysesPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Saved analyses"
-        description="Private views you saved from match pages in the active workspace."
+        title="Match views"
+        description="Private filter and pitch setups you saved from match pages in the active workspace."
       />
 
       {isLoading ? (
@@ -79,7 +79,7 @@ export default function SavedAnalysesPage() {
       ) : !data?.length ? (
         <EmptyState
           icon={Bookmark}
-          title="No saved analyses yet"
+          title="No match views yet"
           description="Open a match, tune filters and pitch layers, then use Save view to store your setup here."
           action={
             <Button asChild>

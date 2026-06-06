@@ -62,7 +62,19 @@ export default function ReportsPage() {
     <PageShell>
       <PageHeader
         title="Reports"
-        description="Private multi-match snapshots saved from the analytics dashboard. Export any report as CSV."
+        description={
+          <>
+            Private multi-match snapshots saved from the analytics dashboard.
+            Export any report as CSV. For single-match setups, see{" "}
+            <Link
+              href="/analyses"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Match views
+            </Link>
+            .
+          </>
+        }
         action={
           <Button asChild size="sm">
             <Link href="/analytics">Open dashboard</Link>
