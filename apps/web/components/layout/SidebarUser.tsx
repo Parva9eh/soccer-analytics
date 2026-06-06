@@ -40,7 +40,14 @@ export function SidebarUser() {
   });
 
   if (!AUTH_ENABLED) {
-    return null;
+    return (
+      <Link
+        href="/login"
+        className="text-caption block px-1 text-muted-foreground hover:text-primary hover:underline"
+      >
+        Sign in
+      </Link>
+    );
   }
 
   if (sessionLoading) {
