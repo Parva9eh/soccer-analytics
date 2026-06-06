@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AUTH_ENABLED } from "@/lib/auth-config";
+import { AUTH_ENABLED, isPublicPath } from "@/lib/auth-config";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 
 /**
@@ -15,9 +15,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useAuthSession();
 
   useEffect(() => {
-    if (!AUTH_ENABLED || isLoading) return;
+    if (!AUTH_ENABLED || isLoading || isPublicPath(pathname)) return;
     if (!session) {
-      const next = pathname && pathname !== "/" ? pathname : "/";
+      const search =
+        typeof window !== "undefined" ? window.location.search : "";
+      const next =
+        pathname && pathname !== "/"
+          ? `${pathname}${search}`
+          : "/";
       router.replace(`/login?next=${encodeURIComponent(next)}`);
     }
   }, [isLoading, session, router, pathname]);
@@ -34,7 +39,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session) {
+  if (!session && !isPublicPath(pathname)) {
     return null;
   }
 
