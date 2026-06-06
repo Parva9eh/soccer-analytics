@@ -74,7 +74,7 @@ $$;
 
 GRANT SELECT, INSERT, DELETE ON public.workspace_datasets TO authenticated;
 
-CREATE OR REPLACE FUNCTION public.user_can_access_match(p_match_id integer)
+CREATE OR REPLACE FUNCTION public.user_can_access_match(p_match_id bigint)
 RETURNS boolean
 LANGUAGE sql
 STABLE
@@ -93,7 +93,7 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.effective_active_workspace_id() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.user_can_access_match(integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_can_access_match(bigint) TO authenticated;
 
 -- Seed default dataset (La Liga 2020/2021 when present)
 CREATE OR REPLACE FUNCTION public.seed_default_workspace_dataset(
