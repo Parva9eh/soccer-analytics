@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 2 complete — Phase 3 next (June 2026)  
-**Latest branch:** `phase2/frontend-completion` (ready to merge)
+**Current Phase:** Phase 3 complete — ready to merge (June 2026)  
+**Active branch:** `phase3/auth-foundation`
 
 ---
 
@@ -18,10 +18,11 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 - **Professional Quality First**: Prioritize code quality, consistency, observability, and maintainability over rapid feature development.
 - **Supabase as the Platform**: Use Supabase (Postgres + Auth + Realtime + Storage) as the primary backend platform.
-- **Production Auth Model**: No anonymous production API; Row Level Security enforced in Supabase; service role limited to ETL and admin operations. Phases 0–2 use open API access with the service-role client for development velocity. Auth and RLS are enforced starting Phase 3, before any production deployment.
+- **Production Auth Model**: Row Level Security enforced in Supabase; service role limited to ETL and admin operations. Phases 0–2 use open API access with the service-role client for development velocity. Phase 3 adds authenticated workspace scoping; when auth is enabled, guests may read a limited public demo dataset via the Supabase `anon` role (see Phase 3).
 - **Multi-Competition Support**: Design schema, queries, UI, and data models to support multiple competitions from day one.
 - **Free-Tier Friendly Initially**: Target Vercel (frontend) + Render/Railway (backend) for early hosting, with awareness of limitations.
 - **Incremental & Reviewable**: All work is done in small, reviewable increments on dedicated branches with explicit approval gates.
+- **Phase branches merge with merge commits**: When a phase is complete, integrate via a **merge commit** into `main` (not squash). Phase branches are **retained** on the remote after merge for history and reference.
 - **Real-time as a Future Differentiator**: Supabase Realtime is viewed as a high-value future capability rather than a Phase 1 priority.
 
 ---
@@ -128,26 +129,123 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 ---
 
-### Phase 3: Authentication, Authorization & Collaboration (Planned)
+### Phase 3: Authentication, Authorization & Collaboration (Completed)
 
-**Goal:** Implement secure access control and collaboration features.
+**Goal:** Implement secure access control, multi-user workspaces, and collaboration features.
 
-**Planned Work:**
+**Branch:** `phase3/auth-foundation`
 
-**Phase 3.1 — Authentication**
-- Supabase Auth on the frontend (email first; OAuth providers afterward)
-- Next.js session handling and protected routes
-- FastAPI JWT validation; user-scoped Supabase client for app reads (service role for ETL/admin only)
+**Summary:** [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md)
 
-**Phase 3.2 — RLS & schema**
-- Versioned database migrations in the repo (e.g. `supabase/migrations/`)
-- Row Level Security policies across application tables
+#### Phase 3.1 — Authentication (complete)
 
-**Phase 3.3 — Collaboration**
-- User workspaces / teams
-- Role-based access (coach, analyst, viewer, admin)
-- Private saved analyses, reports, and dashboards
-- Invitation and sharing flows
+- ✅ Supabase Auth (email/password, Google, GitHub) — `/login`, `/signup`, `/auth/callback`, `/auth/confirm`
+- ✅ `@supabase/ssr` session cookies; Next.js `proxy.ts` refresh + route guard
+- ✅ `NEXT_PUBLIC_AUTH_ENABLED` (web) and `REQUIRE_AUTH` (API) — default off for open local dev
+- ✅ `apiFetch` attaches Bearer token when a session exists
+- ✅ FastAPI JWT validation (`SUPABASE_JWT_SECRET`, JWKS); `GET/PATCH /auth/me`
+- ✅ User-scoped Supabase client (`postgrest.auth(token)`) for RLS-enforced routes
+- ✅ Dedicated `(auth)` layout without app sidebar
+- ✅ Email confirm via `verifyOtp` on `/auth/confirm`; invite signup preserves token through confirm
+- ✅ **Guest browsing** when auth is on — explore routes public; collaboration routes require sign-in
+
+#### Google OAuth setup (Supabase Auth)
+
+Works on **Supabase free tier** (Auth MAU limits apply; the provider itself is not paid-only). If Google is disabled in Supabase, the app shows: `Unsupported provider: provider is not enabled`.
+
+**1. Supabase — URL configuration (dev)**
+
+Authentication → **URL configuration**:
+
+- **Site URL:** `http://localhost:3000`
+- **Redirect URLs:** `http://localhost:3000/auth/callback`, `http://localhost:3000/auth/confirm`
+
+**2. Supabase — enable Google (get callback URL)**
+
+Authentication → **Providers** → **Google** → **Enable**.
+
+Copy the **Callback URL** shown there (add to Google in step 4). It looks like:
+
+`https://<project-ref>.supabase.co/auth/v1/callback`
+
+Leave this tab open; you will paste Google **Client ID** and **Client secret** here after step 3.
+
+**3. Google Cloud Console — OAuth client**
+
+[APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → **Create credentials** → **OAuth client ID**.
+
+- If prompted, configure the **OAuth consent screen** (External is fine for testing; add your email as a test user while in “Testing”).
+- Application type: **Web application**.
+- **Authorized JavaScript origins:** `http://localhost:3000` (your web app origin — **not** the Supabase callback URL).
+- **Authorized redirect URIs:** the **Supabase Callback URL** from step 2 (`https://<project-ref>.supabase.co/auth/v1/callback`) — **not** `http://localhost:3000/auth/callback` (that is only in Supabase redirect URLs for the app after Supabase finishes OAuth).
+
+Create the client and copy **Client ID** and **Client secret**.
+
+**4. Supabase — paste Google credentials**
+
+Back to **Providers** → **Google**: paste Client ID and Client secret → **Save**.
+
+**5. App env and test**
+
+- `apps/web/.env.local`: `NEXT_PUBLIC_AUTH_ENABLED=true`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `apps/api/.env`: `REQUIRE_AUTH=true`, `SUPABASE_JWT_SECRET` (Settings → API → JWT Secret)
+- Restart web and API dev servers after env changes.
+- Open `/login` → **Google** → consent → redirect to `/auth/callback` → app home with data loading.
+
+**6. Production (Google)**
+
+When deploying, repeat the same pattern for your live domain — see [Before production deploy (auth / OAuth)](#before-production-deploy-auth--oauth): production **Site URL** / **Redirect URLs** in Supabase, add production origin under Google **Authorized JavaScript origins**, keep Supabase callback URL in Google **Authorized redirect URIs**, same Supabase project keys and JWT secret in production env.
+
+GitHub OAuth: same flow with [GitHub OAuth Apps](https://github.com/settings/developers); callback URL is still Supabase’s `https://<project-ref>.supabase.co/auth/v1/callback`. Details: [supabase/README.md](./supabase/README.md).
+
+#### Phase 3.2 — RLS & schema (complete)
+
+- ✅ RLS on app data tables (`competitions`, `seasons`, `teams`, `matches`, `events`, `players`)
+- ✅ `profiles` + signup trigger; workspace peer visibility
+- ✅ `workspaces`, `workspace_members`, roles (`admin` / `member`)
+- ✅ `workspace_invitations` with token-based accept RPC
+- ✅ `workspace_datasets` — competition/season links per workspace
+- ✅ `saved_analyses`, `workspace_reports` tables with creator-only RLS
+- ✅ Scoped read policies via `effective_active_workspace_id()` and `user_can_access_match(bigint)`
+- ✅ Anon read policies for guest demo dataset (La Liga 2020/21)
+- ✅ Workspace create/seed RPCs; iterative SQL fix migrations documented in [supabase/README.md](./supabase/README.md)
+- ⏳ Apply all migrations on hosted Supabase (operator step)
+
+#### Phase 3.3 — Collaboration (complete)
+
+**Workspaces & invitations**
+- ✅ API: `GET/POST /workspaces/`, `GET /workspaces/{id}`, dataset link/unlink, invitation CRUD, `POST /workspaces/invitations/accept`
+- ✅ Web: `/settings`, `/settings/workspaces/[id]` (members, invites, **Data access**)
+- ✅ Active workspace on profile (`PATCH /auth/me`); sidebar switcher
+- ✅ `/invitations/accept` — preserves invite token through signup and email confirm
+
+**Workspace-scoped data**
+- ✅ Match/event/competition catalog scoped to active workspace datasets
+- ✅ New workspaces seed La Liga 2020/21; empty-workspace UX (no hardcoded fallback)
+- ✅ Players remain global (documented in UI)
+
+**Match views** (private saved analyses)
+- ✅ `GET/POST/PATCH/DELETE /analyses/`; `/analyses` list; **Save view** on match page; restore via `?saved=`
+- ✅ Nav: **Match views** under Library
+
+**Reports & dashboards**
+- ✅ `workspace_report_snapshot` RPC; `GET/POST/DELETE /reports/`, `GET /reports/dashboard`, CSV export
+- ✅ `/analytics` live dashboard (signed in); `/reports`, `/reports/[id]`
+- ✅ Nav: **Reports** under Library; sidebar grouped **Explore** / **Library** / **Workspaces**
+
+**Guest browsing** (auth on, not signed in)
+- ✅ Public explore routes: `/`, `/matches`, `/players`, `/analytics`
+- ✅ API read routes use anon client; RLS limits to demo dataset
+- ✅ Guest banner; **Continue browsing without signing in** on login
+- ✅ Library and Workspaces nav hidden until sign-in
+
+#### Before production deploy (auth / OAuth)
+
+- Add **production URLs** in Supabase (**Site URL** + **Redirect URLs**, e.g. `https://<your-app>/auth/callback`).
+- Add the **same production web origins** in **Google** and **GitHub** OAuth apps (JavaScript origins / app URL where applicable; OAuth redirect URI to Supabase remains `https://<project-ref>.supabase.co/auth/v1/callback`).
+- Keep **`SUPABASE_JWT_SECRET`** and all Supabase keys (**URL**, **anon**, **service role**) aligned with **that same** Supabase project in production API and web env.
+
+Setup detail: [supabase/README.md](./supabase/README.md).
 
 ---
 
@@ -176,6 +274,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - Monitoring, alerting, and logging improvements
 - Containerization (Docker) and infrastructure as code
 - Deployment to chosen hosting platforms (after Phase 3 auth/RLS)
+- Production auth: Supabase URLs, OAuth app origins, JWT secret / keys — see [Before production deploy (auth / OAuth)](#before-production-deploy-auth--oauth)
 - Cost and performance monitoring
 
 ---
@@ -184,7 +283,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 - Real-time features using Supabase Realtime (live match updates, collaborative analysis)
 - Dedicated native mobile app (responsive web layout is largely covered in Phase 2)
-- Export capabilities (PDF reports, CSV, images)
+- Export capabilities beyond workspace report CSV (PDF, images)
 - Advanced sharing and embedding features
 - Integration with additional data sources
 - Community / public analysis sharing features
@@ -198,19 +297,51 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 | Phase 0 | ✅ Completed | Monorepo hygiene and foundation |
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
-| Phase 3 | Planned | Auth, RLS, collaboration (sub-phases 3.1–3.3) |
+| Phase 3 | ✅ Completed | Auth, RLS, workspaces, collaboration — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
 | Phase 4 | Planned | Real analytics features |
 | Phase 5 | Planned | Testing, CI, and deployment |
 
-Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md).
+Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md).
 
 ---
 
 ## How to Contribute / Review
 
-- All major work happens on dedicated feature branches (e.g. `phase0/housekeeping`, `phase1/backend-hardening`, `phase2/frontend-completion`).
-- Changes are kept small and reviewable where possible.
-- Significant architectural decisions are discussed before implementation.
+### Branching
+
+- All major work happens on dedicated phase branches (e.g. `phase2/frontend-completion`, `phase3/auth-foundation`).
+- Branch from the latest `main` at the start of a phase.
+- Keep commits small and reviewable where possible; discuss significant architectural decisions before implementation.
+
+### Merging a completed phase into `main`
+
+Use a **merge commit** so the phase branch history stays visible on `main`. Do **not** squash. Do **not** delete the phase branch after merge.
+
+**Local:**
+
+```bash
+git checkout main
+git pull origin main
+git merge --no-ff phaseN/branch-name -m "Merge branch 'phaseN/branch-name'"
+git push origin main
+```
+
+**GitHub PR:** choose **“Create a merge commit”** (not “Squash and merge”).
+
+**After merge:**
+
+1. Leave `phaseN/branch-name` on the remote (for archaeology, diffs, and PR links).
+2. Start the next phase from updated `main`:  
+   `git checkout main && git pull && git checkout -b phaseN+1/...`
+3. Add or update `PHASEN_SUMMARY.md` and mark the phase complete in this plan.
+
+**Example (Phase 2):** `phase2/frontend-completion` → merge commit `8c3c56c` on `main`; branch kept on `origin`.
+
+**Current (Phase 3):** When `phase3/auth-foundation` is complete, merge it into `main` the same way and keep the branch.
+
+### Rebasing a long-running phase branch
+
+If `main` moved while a phase branch was in progress (e.g. another phase merged first), rebase or merge `main` into the phase branch before the final PR. Prefer **cherry-picking only phase-specific commits** onto `main` if a full rebase conflicts with an earlier squash (avoid replaying entire phase histories twice).
 
 ---
 

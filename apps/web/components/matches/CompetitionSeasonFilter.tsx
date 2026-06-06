@@ -8,8 +8,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DEFAULT_COMPETITION,
-  DEFAULT_SEASON,
   formatSeasonLabel,
   type CompetitionCatalogItem,
 } from "@/lib/competition-filter";
@@ -34,16 +32,23 @@ export function CompetitionSeasonFilter({
   isLoading,
   className,
 }: CompetitionSeasonFilterProps) {
-  const items = catalog?.length
-    ? catalog
-    : [{ name: DEFAULT_COMPETITION, seasons: [DEFAULT_SEASON] }];
+  const items = catalog ?? [];
+  const catalogReady = catalog !== undefined && !isLoading;
+  const hasData = items.length > 0;
+
+  if (catalogReady && !hasData) {
+    return (
+      <p className={cn("text-caption text-muted-foreground", className)}>
+        No competitions linked to this workspace.
+      </p>
+    );
+  }
 
   const activeComp =
     items.find((c) => c.name === competition) ?? items[0];
-  const seasons = activeComp.seasons.length
-    ? activeComp.seasons
-    : [DEFAULT_SEASON];
-  const activeSeason = seasons.includes(season) ? season : seasons[0];
+  const seasons = activeComp?.seasons ?? [];
+  const activeSeason =
+    seasons.length > 0 && seasons.includes(season) ? season : seasons[0];
 
   return (
     <div
@@ -60,9 +65,9 @@ export function CompetitionSeasonFilter({
           Competition
         </label>
         <Select
-          value={activeComp.name}
+          value={activeComp?.name}
           onValueChange={onCompetitionChange}
-          disabled={isLoading}
+          disabled={isLoading || !hasData}
         >
           <SelectTrigger id="competition-filter" className="h-9 bg-card/80">
             <SelectValue placeholder="Competition" />

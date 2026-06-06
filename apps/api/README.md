@@ -28,6 +28,19 @@ The API will be available at `http://localhost:8000`.
 - `GET /matches` — List matches (supports `competition`, `season`, and `limit`)
 - `GET /events` — Paginated events for a match (`match_id` required, supports `event_type`, `page`, `page_size`)
 - `GET /summary` — High-level data counts
+- `GET /auth/me` — Current user + profile (requires Bearer token)
+- `GET /workspaces/` — List workspaces for the signed-in user (always requires Bearer token)
+- `POST /workspaces/` — Create workspace (creator becomes `admin`)
+- `GET /workspaces/{id}` — Workspace detail with members
+
+## Authentication (Phase 3)
+
+- **`REQUIRE_AUTH=false`** (default): Routes use the service-role client when no Bearer token is sent (local dev).
+- **`REQUIRE_AUTH=true`**: Collaboration routes require a valid Supabase JWT. Read routes (`/matches`, `/events`, `/players`, `/competitions`, `/summary`) accept anonymous requests via the Supabase anon key; RLS limits guests to the public demo dataset.
+- Set **`SUPABASE_JWT_SECRET`** from Supabase → Settings → API → JWT Secret.
+- ETL and admin scripts should call `get_supabase_service_client()` directly, not the route dependency.
+
+See [supabase/README.md](../../supabase/README.md) for enabling auth on the web app.
 
 ## Configuration
 

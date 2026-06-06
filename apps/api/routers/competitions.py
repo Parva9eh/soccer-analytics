@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Depends
 from supabase import Client
 
-from core.supabase_client import get_supabase
+from core.supabase_client import get_supabase_public_read
 from schemas.competition import CompetitionCatalogItem
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/competitions", tags=["Competitions"])
     responses=COMMON_ERROR_RESPONSES,
 )
 def list_competitions_catalog(
-    supabase: Client = Depends(get_supabase),
+    supabase: Client = Depends(get_supabase_public_read),
 ) -> list[CompetitionCatalogItem]:
     """List competitions and their seasons for UI filters."""
     try:

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, Depends
 from typing import Optional
 from supabase import Client
 
-from core.supabase_client import get_supabase
+from core.supabase_client import get_supabase_public_read
 from schemas.event import EventListResponse
 from schemas.params import PaginationParams
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/events", tags=["Events"])
     responses=COMMON_ERROR_RESPONSES,
 )
 def get_events(
-    supabase: Client = Depends(get_supabase),
+    supabase: Client = Depends(get_supabase_public_read),
     match_id: int = Query(..., description="Database match ID"),
     event_type: Optional[str] = Query(None, description="Filter by event type (e.g. Pass, Shot)"),
     pagination: PaginationParams = Depends()

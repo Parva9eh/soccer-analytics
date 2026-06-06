@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from supabase import Client
 from typing import Optional
 
-from core.supabase_client import get_supabase
+from core.supabase_client import get_supabase_public_read
 from schemas.params import LimitParams
 from schemas.error import COMMON_ERROR_RESPONSES, raise_http_exception, ErrorCode
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/players", tags=["Players"])
     responses=COMMON_ERROR_RESPONSES,
 )
 def get_players(
-    supabase: Client = Depends(get_supabase),
+    supabase: Client = Depends(get_supabase_public_read),
     limit_params: LimitParams = Depends(),
     search: Optional[str] = Query(None, description="Search players by name"),
 ):
@@ -56,7 +56,7 @@ def get_players(
 )
 def get_player(
     player_id: int,
-    supabase: Client = Depends(get_supabase),
+    supabase: Client = Depends(get_supabase_public_read),
 ):
     """Get a single player by ID."""
     try:

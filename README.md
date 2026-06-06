@@ -69,6 +69,10 @@ uv run python etl/statsbomb_loader.py --help
 
 Start with a small dataset (recommended for testing).
 
+## Git workflow (phases)
+
+Each phase uses a dedicated branch (e.g. `phase3/auth-foundation`). When the phase is done, open a PR into `main` and merge with **“Create a merge commit”** — not squash. **Keep the phase branch** on the remote after merge. Details: [PLAN.md](./PLAN.md#how-to-contribute--review).
+
 ## Project Structure
 
 ```
