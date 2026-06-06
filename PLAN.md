@@ -18,7 +18,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 - **Professional Quality First**: Prioritize code quality, consistency, observability, and maintainability over rapid feature development.
 - **Supabase as the Platform**: Use Supabase (Postgres + Auth + Realtime + Storage) as the primary backend platform.
-- **Production Auth Model**: No anonymous production API; Row Level Security enforced in Supabase; service role limited to ETL and admin operations. Phases 0–2 use open API access with the service-role client for development velocity. Auth and RLS are enforced starting Phase 3, before any production deployment.
+- **Production Auth Model**: Row Level Security enforced in Supabase; service role limited to ETL and admin operations. Phases 0–2 use open API access with the service-role client for development velocity. Phase 3 adds authenticated workspace scoping; when auth is enabled, guests may read a limited public demo dataset via the Supabase `anon` role (see Phase 3).
 - **Multi-Competition Support**: Design schema, queries, UI, and data models to support multiple competitions from day one.
 - **Free-Tier Friendly Initially**: Target Vercel (frontend) + Render/Railway (backend) for early hosting, with awareness of limitations.
 - **Incremental & Reviewable**: All work is done in small, reviewable increments on dedicated branches with explicit approval gates.
@@ -129,21 +129,25 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 ---
 
-### Phase 3: Authentication, Authorization & Collaboration (Complete)
+### Phase 3: Authentication, Authorization & Collaboration (Completed)
 
-**Goal:** Implement secure access control and collaboration features.
+**Goal:** Implement secure access control, multi-user workspaces, and collaboration features.
 
 **Branch:** `phase3/auth-foundation`
 
-**Phase 3.1 — Authentication (complete)**
-- ✅ Supabase Auth (email/password) — login, signup, `/auth/callback`, `@supabase/ssr` session proxy
-- ✅ Optional route protection via `NEXT_PUBLIC_AUTH_ENABLED` (default off for local dev)
-- ✅ `apiFetch` attaches Bearer token when auth is enabled
-- ✅ FastAPI JWT validation (`SUPABASE_JWT_SECRET`), `GET /auth/me`, user-scoped Supabase client when token present
-- ✅ `REQUIRE_AUTH` flag on API (default off); ETL continues to use service role directly
-- ✅ OAuth sign-in (Google, GitHub) on login/signup
-- ✅ Dedicated auth layout (`(auth)` route group without sidebar)
-- ✅ JWT verification for OAuth (Auth API, JWKS, HS256); sidebar uses client session
+**Summary:** [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md)
+
+#### Phase 3.1 — Authentication (complete)
+
+- ✅ Supabase Auth (email/password, Google, GitHub) — `/login`, `/signup`, `/auth/callback`, `/auth/confirm`
+- ✅ `@supabase/ssr` session cookies; Next.js `proxy.ts` refresh + route guard
+- ✅ `NEXT_PUBLIC_AUTH_ENABLED` (web) and `REQUIRE_AUTH` (API) — default off for open local dev
+- ✅ `apiFetch` attaches Bearer token when a session exists
+- ✅ FastAPI JWT validation (`SUPABASE_JWT_SECRET`, JWKS); `GET/PATCH /auth/me`
+- ✅ User-scoped Supabase client (`postgrest.auth(token)`) for RLS-enforced routes
+- ✅ Dedicated `(auth)` layout without app sidebar
+- ✅ Email confirm via `verifyOtp` on `/auth/confirm`; invite signup preserves token through confirm
+- ✅ **Guest browsing** when auth is on — explore routes public; collaboration routes require sign-in
 
 #### Google OAuth setup (Supabase Auth)
 
@@ -154,7 +158,7 @@ Works on **Supabase free tier** (Auth MAU limits apply; the provider itself is n
 Authentication → **URL configuration**:
 
 - **Site URL:** `http://localhost:3000`
-- **Redirect URLs:** `http://localhost:3000/auth/callback`
+- **Redirect URLs:** `http://localhost:3000/auth/callback`, `http://localhost:3000/auth/confirm`
 
 **2. Supabase — enable Google (get callback URL)**
 
@@ -194,21 +198,46 @@ When deploying, repeat the same pattern for your live domain — see [Before pro
 
 GitHub OAuth: same flow with [GitHub OAuth Apps](https://github.com/settings/developers); callback URL is still Supabase’s `https://<project-ref>.supabase.co/auth/v1/callback`. Details: [supabase/README.md](./supabase/README.md).
 
-**Phase 3.2 — RLS & schema (in progress)**
-- ✅ Authenticated read policies for app data tables
-- ✅ `profiles` table + auth signup trigger
-- ✅ Migrations: `20250604130000_profiles`, `20250604140000_workspaces`, `20250604150000_profiles_workspace_peers`
-- ⏳ Apply all migrations on hosted Supabase
+#### Phase 3.2 — RLS & schema (complete)
 
-**Phase 3.3 — Collaboration (in progress)**
-- ✅ `workspaces` + `workspace_members` schema with RLS
-- ✅ API: `GET/POST /workspaces/`, `GET /workspaces/{id}`
-- ✅ Web: `/settings` workspace list + create (when auth enabled)
-- ✅ Active workspace on profile (`PATCH /auth/me`), sidebar switcher
-- ✅ Invitations: create/revoke, shareable link, accept flow (`/invitations/accept`)
-- ✅ Workspace-scoped match/data access (`workspace_datasets`, active-workspace RLS, Manage → Data access)
-- ✅ Private saved analyses (match filter/pitch views, `/analyses`, Save view on match page)
-- ✅ Reports and dashboards (`/analytics` live dashboard, `/reports`, CSV export, saved snapshots)
+- ✅ RLS on app data tables (`competitions`, `seasons`, `teams`, `matches`, `events`, `players`)
+- ✅ `profiles` + signup trigger; workspace peer visibility
+- ✅ `workspaces`, `workspace_members`, roles (`admin` / `member`)
+- ✅ `workspace_invitations` with token-based accept RPC
+- ✅ `workspace_datasets` — competition/season links per workspace
+- ✅ `saved_analyses`, `workspace_reports` tables with creator-only RLS
+- ✅ Scoped read policies via `effective_active_workspace_id()` and `user_can_access_match(bigint)`
+- ✅ Anon read policies for guest demo dataset (La Liga 2020/21)
+- ✅ Workspace create/seed RPCs; iterative SQL fix migrations documented in [supabase/README.md](./supabase/README.md)
+- ⏳ Apply all migrations on hosted Supabase (operator step)
+
+#### Phase 3.3 — Collaboration (complete)
+
+**Workspaces & invitations**
+- ✅ API: `GET/POST /workspaces/`, `GET /workspaces/{id}`, dataset link/unlink, invitation CRUD, `POST /workspaces/invitations/accept`
+- ✅ Web: `/settings`, `/settings/workspaces/[id]` (members, invites, **Data access**)
+- ✅ Active workspace on profile (`PATCH /auth/me`); sidebar switcher
+- ✅ `/invitations/accept` — preserves invite token through signup and email confirm
+
+**Workspace-scoped data**
+- ✅ Match/event/competition catalog scoped to active workspace datasets
+- ✅ New workspaces seed La Liga 2020/21; empty-workspace UX (no hardcoded fallback)
+- ✅ Players remain global (documented in UI)
+
+**Match views** (private saved analyses)
+- ✅ `GET/POST/PATCH/DELETE /analyses/`; `/analyses` list; **Save view** on match page; restore via `?saved=`
+- ✅ Nav: **Match views** under Library
+
+**Reports & dashboards**
+- ✅ `workspace_report_snapshot` RPC; `GET/POST/DELETE /reports/`, `GET /reports/dashboard`, CSV export
+- ✅ `/analytics` live dashboard (signed in); `/reports`, `/reports/[id]`
+- ✅ Nav: **Reports** under Library; sidebar grouped **Explore** / **Library** / **Workspaces**
+
+**Guest browsing** (auth on, not signed in)
+- ✅ Public explore routes: `/`, `/matches`, `/players`, `/analytics`
+- ✅ API read routes use anon client; RLS limits to demo dataset
+- ✅ Guest banner; **Continue browsing without signing in** on login
+- ✅ Library and Workspaces nav hidden until sign-in
 
 #### Before production deploy (auth / OAuth)
 
@@ -254,7 +283,7 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 
 - Real-time features using Supabase Realtime (live match updates, collaborative analysis)
 - Dedicated native mobile app (responsive web layout is largely covered in Phase 2)
-- Export capabilities (PDF reports, CSV, images)
+- Export capabilities beyond workspace report CSV (PDF, images)
 - Advanced sharing and embedding features
 - Integration with additional data sources
 - Community / public analysis sharing features
@@ -272,7 +301,7 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 | Phase 4 | Planned | Real analytics features |
 | Phase 5 | Planned | Testing, CI, and deployment |
 
-Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md).
+Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md).
 
 ---
 
