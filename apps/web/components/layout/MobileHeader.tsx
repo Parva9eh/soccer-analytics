@@ -11,6 +11,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { NavLinks } from "./NavLinks";
+import { SidebarUser } from "./SidebarUser";
 
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/players/")) return "Player Detail";
@@ -72,8 +73,9 @@ export function MobileHeader() {
             <NavLinks onLinkClick={() => setOpen(false)} />
           </div>
 
-          <div className="mt-auto border-t border-border p-4 text-caption">
-            v0.2.0 • La Liga 2020/21
+          <div className="mt-auto space-y-3 border-t border-border p-4">
+            <SidebarUser />
+            <p className="text-caption">v0.3.0 • Event-level data</p>
           </div>
         </SheetContent>
       </Sheet>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AUTH_ENABLED } from "@/lib/auth-config";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,14 +156,23 @@ export function AuthForm({ mode }: AuthFormProps) {
           </Button>
         </form>
 
-        <p className="text-caption mt-6 text-center">
-          <Link
-            href={`${alternateHref}${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`}
-            className="text-primary hover:underline"
-          >
-            {alternateLabel}
-          </Link>
-        </p>
+        <div className="text-caption mt-6 space-y-2 text-center">
+          <p>
+            <Link
+              href={`${alternateHref}${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`}
+              className="text-primary hover:underline"
+            >
+              {alternateLabel}
+            </Link>
+          </p>
+          {!AUTH_ENABLED && (
+            <p>
+              <Link href="/" className="text-muted-foreground hover:text-primary hover:underline">
+                Continue without signing in
+              </Link>
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
