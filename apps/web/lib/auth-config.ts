@@ -6,6 +6,7 @@ export const PUBLIC_PATH_PREFIXES = [
   "/login",
   "/signup",
   "/auth",
+  "/invitations",
 ] as const;
 
 export function isPublicPath(pathname: string): boolean {

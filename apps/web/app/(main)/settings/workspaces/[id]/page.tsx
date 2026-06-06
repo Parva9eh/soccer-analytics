@@ -343,7 +343,17 @@ export default function WorkspaceManagePage() {
                             {formatWorkspaceRole(inv.role)} · expires in 7 days
                           </p>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
+                          {inv.invite_url && (
+                            <Input
+                              readOnly
+                              value={inv.invite_url}
+                              className="h-8 font-mono text-[11px]"
+                              aria-label={`Invite link for ${inv.email}`}
+                              onFocus={(e) => e.target.select()}
+                            />
+                          )}
+                          <div className="flex flex-wrap gap-2">
                           <Button
                             type="button"
                             size="sm"
@@ -364,6 +374,7 @@ export default function WorkspaceManagePage() {
                           >
                             Revoke
                           </Button>
+                          </div>
                         </div>
                       </li>
                     ))}
