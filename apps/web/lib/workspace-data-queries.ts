@@ -6,4 +6,5 @@ export const WORKSPACE_SCOPED_QUERY_PREFIXES = [
   "match",
   "events",
   "pitch-events",
+  "saved-analyses",
 ] as const;

@@ -7,11 +7,14 @@ import "@/lib/three-patch";
 
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
+import { AUTH_ENABLED } from "@/lib/auth-config";
+import { parseMatchAnalysisConfig } from "@/lib/analysis-config";
+import { SaveAnalysisDialog } from "@/components/analysis/SaveAnalysisDialog";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,8 +89,11 @@ interface EventsResponse {
 
 export default function MatchDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const savedId = searchParams.get("saved");
   const matchId = params.id ? Number(params.id) : null;
   const workspaceId = useActiveWorkspaceId();
+  const appliedSavedRef = useRef<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEventType, setSelectedEventType] = useState<string>("all");
@@ -130,6 +136,36 @@ export default function MatchDetailPage() {
       }
     }
   }, [highlightedEventId]);
+
+  const { data: savedAnalysis } = useQuery<{
+    id: string;
+    title: string;
+    config: Record<string, unknown>;
+  }>({
+    queryKey: ["saved-analysis", savedId],
+    queryFn: () =>
+      apiFetchJson(`/analyses/${savedId}`),
+    enabled: AUTH_ENABLED && Boolean(savedId),
+  });
+
+  useEffect(() => {
+    if (!savedAnalysis || appliedSavedRef.current === savedAnalysis.id) {
+      return;
+    }
+    const config = parseMatchAnalysisConfig(savedAnalysis.config);
+    if (!config) {
+      return;
+    }
+    appliedSavedRef.current = savedAnalysis.id;
+    setSelectedEventType(config.selected_event_type);
+    if (config.visible_event_types.length > 0) {
+      setVisibleEventTypes(config.visible_event_types);
+    }
+    setUse3DView(config.use_3d_view);
+    setCurrent3DView(config.current_3d_view);
+    setCurrentPage(1);
+    setHighlightedEventId(null);
+  }, [savedAnalysis]);
 
   // Fetch match details
   const {
@@ -302,9 +338,26 @@ export default function MatchDetailPage() {
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2 text-caption sm:text-muted-foreground">
-          <Calendar className="h-4 w-4 shrink-0" />
-          <span>{formattedDate}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-caption sm:text-muted-foreground">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span>{formattedDate}</span>
+          </div>
+          {AUTH_ENABLED && matchId != null && (
+            <SaveAnalysisDialog
+              matchId={matchId}
+              matchLabel={`${match.home_team} vs ${match.away_team}`}
+              selectedEventType={selectedEventType}
+              visibleEventTypes={visibleEventTypes}
+              use3DView={use3DView}
+              current3DView={current3DView}
+            />
+          )}
+          {savedAnalysis && (
+            <span className="text-caption text-primary">
+              Loaded: {savedAnalysis.title}
+            </span>
+          )}
         </div>
       </div>
 
