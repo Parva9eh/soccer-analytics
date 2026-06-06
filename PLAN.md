@@ -1,7 +1,7 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 3.1 in progress (June 2026)  
+**Current Phase:** Phase 3 complete — ready to merge (June 2026)  
 **Active branch:** `phase3/auth-foundation`
 
 ---
@@ -129,7 +129,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 
 ---
 
-### Phase 3: Authentication, Authorization & Collaboration (In Progress)
+### Phase 3: Authentication, Authorization & Collaboration (Complete)
 
 **Goal:** Implement secure access control and collaboration features.
 
@@ -208,7 +208,7 @@ GitHub OAuth: same flow with [GitHub OAuth Apps](https://github.com/settings/dev
 - ✅ Invitations: create/revoke, shareable link, accept flow (`/invitations/accept`)
 - ✅ Workspace-scoped match/data access (`workspace_datasets`, active-workspace RLS, Manage → Data access)
 - ✅ Private saved analyses (match filter/pitch views, `/analyses`, Save view on match page)
-- ⏳ Reports and dashboards (broader exports / multi-match views)
+- ✅ Reports and dashboards (`/analytics` live dashboard, `/reports`, CSV export, saved snapshots)
 
 #### Before production deploy (auth / OAuth)
 
@@ -268,7 +268,7 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 | Phase 0 | ✅ Completed | Monorepo hygiene and foundation |
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
-| Phase 3 | 🚧 In progress | 3.1 auth on `phase3/auth-foundation`; 3.2 RLS migrations next |
+| Phase 3 | ✅ Completed | Auth, RLS, workspaces, collaboration — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
 | Phase 4 | Planned | Real analytics features |
 | Phase 5 | Planned | Testing, CI, and deployment |
 

@@ -9,6 +9,7 @@ import {
   BarChart3,
   Building2,
   Bookmark,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AUTH_ENABLED } from "@/lib/auth-config";
@@ -23,6 +24,7 @@ const baseNavItems = [
 export const navItems = AUTH_ENABLED
   ? [
       ...baseNavItems,
+      { href: "/reports", label: "Reports", icon: FileText },
       { href: "/analyses", label: "Saved", icon: Bookmark },
       { href: "/settings", label: "Workspaces", icon: Building2 },
     ]
