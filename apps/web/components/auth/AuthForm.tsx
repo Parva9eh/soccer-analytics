@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
+import { getAuthCallbackUrl } from "@/lib/auth/oauth";
 
 type AuthMode = "login" | "signup";
 
@@ -60,10 +61,19 @@ export function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: getAuthCallbackUrl(next),
+        },
+      });
       if (error) throw error;
+      const returningToInvite = next.includes("/invitations/accept");
       setMessage(
-        "Check your email to confirm your account, then sign in.",
+        returningToInvite
+          ? "Check your email to confirm your account. After confirming, you'll return to accept the workspace invitation."
+          : "Check your email to confirm your account, then sign in.",
       );
     } catch (err) {
       setMessage(
