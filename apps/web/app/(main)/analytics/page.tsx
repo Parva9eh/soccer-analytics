@@ -83,7 +83,11 @@ export default function AnalyticsPage() {
       <PageHeader
         eyebrow="Tactical analysis"
         title="Analytics"
-        description="Advanced metrics and visualizations for La Liga 2020/21."
+        description={
+          summary && summary.total_matches === 0
+            ? "No match data for the active workspace. Link datasets in workspace settings to analyze fixtures."
+            : "Metrics for the active workspace. Match and event counts follow linked competition seasons."
+        }
       />
 
       <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
@@ -102,15 +106,17 @@ export default function AnalyticsPage() {
         <StatCard
           label="Players tracked"
           value={summary?.total_players ?? "—"}
+          hint="All loaded players (not yet filtered by workspace)"
           icon={Users}
           loading={summaryLoading}
         />
         <StatCard
-          label="Competition"
-          value="La Liga"
-          hint="2020/21 season"
+          label="Workspace data"
+          value={summary?.total_matches ?? 0}
+          hint="Matches in linked datasets"
           icon={BarChart3}
           className="col-span-2 lg:col-span-1"
+          loading={summaryLoading}
         />
       </div>
 

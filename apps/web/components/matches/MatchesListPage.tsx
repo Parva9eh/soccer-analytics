@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
@@ -11,8 +12,11 @@ import {
   DEFAULT_COMPETITION,
   DEFAULT_SEASON,
   formatSeasonLabel,
+  getFirstCatalogFilters,
+  isFilterInCatalog,
   type CompetitionCatalogItem,
 } from "@/lib/competition-filter";
+import { AUTH_ENABLED } from "@/lib/auth-config";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { PageHeader } from "@/components/ui/page-header";
@@ -125,10 +129,33 @@ export function MatchesListPage() {
     updateFilters(competition, year);
   };
 
+  const catalogReady = !catalogLoading && catalog !== undefined;
+  const hasLinkedData = (catalog?.length ?? 0) > 0;
+  const filterInCatalog = isFilterInCatalog(catalog, competition, season);
+  const firstCatalog = getFirstCatalogFilters(catalog);
+
+  useEffect(() => {
+    if (!catalogReady || !hasLinkedData || !firstCatalog) {
+      return;
+    }
+    if (!filterInCatalog) {
+      updateFilters(firstCatalog.competition, firstCatalog.season);
+    }
+  }, [
+    catalogReady,
+    hasLinkedData,
+    filterInCatalog,
+    firstCatalog,
+    updateFilters,
+  ]);
+
   const description = useMemo(() => {
+    if (catalogReady && !hasLinkedData) {
+      return "No competition data linked to this workspace";
+    }
     const count = matches?.length ?? 0;
     return `${competition} • ${formatSeasonLabel(season)} • ${count} fixture${count === 1 ? "" : "s"}`;
-  }, [competition, season, matches?.length]);
+  }, [catalogReady, hasLinkedData, competition, season, matches?.length]);
 
   if (error) {
     return (
@@ -145,6 +172,7 @@ export function MatchesListPage() {
 
   const isEmpty = !isLoading && matches && matches.length === 0;
   const showGridLoading = isLoading || (isFetching && !matches);
+  const showNoLinkedData = catalogReady && !hasLinkedData;
 
   return (
     <PageShell>
@@ -163,7 +191,24 @@ export function MatchesListPage() {
         }
       />
 
-      {showGridLoading ? (
+      {showNoLinkedData ? (
+        <EmptyState
+          icon={CalendarDays}
+          title="No data linked to this workspace"
+          description={
+            AUTH_ENABLED
+              ? "This workspace has no competition seasons yet. A workspace admin can add datasets under Settings → Manage → Data access."
+              : "Load competition data via ETL, then link it to a workspace."
+          }
+          action={
+            AUTH_ENABLED ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/settings">Open workspaces</Link>
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : showGridLoading ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
@@ -191,17 +236,25 @@ export function MatchesListPage() {
         <EmptyState
           icon={CalendarDays}
           title="No matches for this selection"
-          description={`No fixtures found for ${competition} (${formatSeasonLabel(season)}). Try another season or load data via ETL.`}
+          description={`No fixtures found for ${competition} (${formatSeasonLabel(season)}). Try another season in the filter above, or ask an admin to link data for this workspace.`}
           action={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                updateFilters(DEFAULT_COMPETITION, DEFAULT_SEASON)
-              }
-            >
-              Reset to La Liga 2020/21
-            </Button>
+            firstCatalog &&
+            (competition !== firstCatalog.competition ||
+              season !== firstCatalog.season) ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  updateFilters(
+                    firstCatalog.competition,
+                    firstCatalog.season,
+                  )
+                }
+              >
+                Show {firstCatalog.competition}{" "}
+                {formatSeasonLabel(firstCatalog.season)}
+              </Button>
+            ) : undefined
           }
         />
       ) : (

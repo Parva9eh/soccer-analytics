@@ -42,9 +42,12 @@ export default function Dashboard() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="La Liga 2020/21"
         title="Dashboard"
-        description="Season overview — matches, events, and squad data at a glance."
+        description={
+          data && data.total_matches === 0
+            ? "No match data for the active workspace. Link competition seasons under Settings → Manage → Data access."
+            : "Overview for the active workspace — matches and events scoped to linked datasets."
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5">
@@ -65,7 +68,7 @@ export default function Dashboard() {
         <StatCard
           label="Players tracked"
           value={data?.total_players ?? 0}
-          hint="From match lineups"
+          hint="All loaded players (not yet filtered by workspace)"
           icon={Users}
           loading={isLoading || isFetching}
         />

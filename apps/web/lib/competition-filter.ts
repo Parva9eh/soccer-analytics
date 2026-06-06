@@ -23,3 +23,24 @@ export function buildMatchesQuery(
 export function formatSeasonLabel(season: string): string {
   return season.replace("/", "–");
 }
+
+export function isFilterInCatalog(
+  catalog: CompetitionCatalogItem[] | undefined,
+  competition: string,
+  season: string,
+): boolean {
+  const comp = catalog?.find((item) => item.name === competition);
+  return Boolean(comp?.seasons.includes(season));
+}
+
+/** First competition/season from workspace catalog, or null when none linked. */
+export function getFirstCatalogFilters(
+  catalog: CompetitionCatalogItem[] | undefined,
+): { competition: string; season: string } | null {
+  const first = catalog?.[0];
+  const season = first?.seasons[0];
+  if (!first?.name || !season) {
+    return null;
+  }
+  return { competition: first.name, season };
+}
