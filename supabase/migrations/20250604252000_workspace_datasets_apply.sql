@@ -1,4 +1,7 @@
--- Workspace datasets: link workspaces to competition + season pairs (Phase 3.3)
+-- Complete workspace datasets setup (use when earlier migrations failed partway).
+-- Safe to re-run: uses IF NOT EXISTS / CREATE OR REPLACE / DROP IF EXISTS.
+
+DROP FUNCTION IF EXISTS public.user_can_access_match(integer);
 
 GRANT SELECT ON public.competitions TO authenticated;
 GRANT SELECT ON public.seasons TO authenticated;
@@ -19,6 +22,8 @@ CREATE INDEX IF NOT EXISTS idx_workspace_datasets_competition_season
   ON public.workspace_datasets (competition_id, season_id);
 
 ALTER TABLE public.workspace_datasets ENABLE ROW LEVEL SECURITY;
+
+GRANT SELECT, INSERT, DELETE ON public.workspace_datasets TO authenticated;
 
 DROP POLICY IF EXISTS "workspace_datasets_select_member" ON public.workspace_datasets;
 CREATE POLICY "workspace_datasets_select_member"
@@ -43,7 +48,6 @@ CREATE POLICY "workspace_datasets_delete_admin"
   TO authenticated
   USING (public.user_is_workspace_admin(workspace_id));
 
--- Active workspace for data scoping (profile preference, validated membership)
 CREATE OR REPLACE FUNCTION public.effective_active_workspace_id()
 RETURNS uuid
 LANGUAGE sql
@@ -72,8 +76,6 @@ AS $$
   );
 $$;
 
-GRANT SELECT, INSERT, DELETE ON public.workspace_datasets TO authenticated;
-
 CREATE OR REPLACE FUNCTION public.user_can_access_match(p_match_id bigint)
 RETURNS boolean
 LANGUAGE sql
@@ -92,10 +94,12 @@ AS $$
   );
 $$;
 
+REVOKE ALL ON FUNCTION public.effective_active_workspace_id() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.effective_active_workspace_id() TO authenticated;
+
+REVOKE ALL ON FUNCTION public.user_can_access_match(bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.user_can_access_match(bigint) TO authenticated;
 
--- Seed default dataset (La Liga 2020/2021 when present)
 CREATE OR REPLACE FUNCTION public.seed_default_workspace_dataset(
   p_workspace_id uuid,
   p_added_by uuid DEFAULT NULL
@@ -131,7 +135,6 @@ $$;
 REVOKE ALL ON FUNCTION public.seed_default_workspace_dataset(uuid, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.seed_default_workspace_dataset(uuid, uuid) TO authenticated;
 
--- Backfill existing workspaces
 DO $$
 DECLARE
   ws record;
@@ -142,7 +145,6 @@ BEGIN
 END;
 $$;
 
--- Scope app data to active workspace datasets
 DROP POLICY IF EXISTS "authenticated_select_competitions" ON public.competitions;
 CREATE POLICY "authenticated_select_competitions"
   ON public.competitions
