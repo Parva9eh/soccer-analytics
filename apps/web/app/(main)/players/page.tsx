@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
+import { AUTH_ENABLED } from "@/lib/auth-config";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { QueryErrorState } from "@/components/ui/query-error-state";
@@ -88,7 +89,11 @@ export default function PlayersPage() {
     <PageShell>
       <PageHeader
         title="Players"
-        description={`${sortedPlayers.length} players in the database`}
+        description={
+          AUTH_ENABLED
+            ? `${sortedPlayers.length} players loaded globally — workspace filtering for squads is not enabled yet.`
+            : `${sortedPlayers.length} players in the database`
+        }
       />
 
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
