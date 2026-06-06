@@ -10,7 +10,19 @@ Versioned SQL for schema and Row Level Security (Phase 3.2+) lives under `migrat
    - `apps/api/.env` — see `apps/api/.env.example`
 3. In Supabase → Authentication → URL configuration, set:
    - **Site URL:** `http://localhost:3000` (dev)
-   - **Redirect URLs:** `http://localhost:3000/auth/callback`
+   - **Redirect URLs:** `http://localhost:3000/auth/callback`, `http://localhost:3000/auth/confirm`
+4. In Supabase → Authentication → **Email templates** → **Confirm signup**, replace the confirmation link with the SSR-friendly template (required for invite signup):
+
+   ```html
+   <h2>Confirm your email</h2>
+   <p>
+     <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next={{ .RedirectTo }}">
+       Confirm your email
+     </a>
+   </p>
+   ```
+
+   The app sets `emailRedirectTo` to the final destination (e.g. `/invitations/accept?token=…`). After confirmation, Supabase sends the user there with a signed-in session.
 
 ## OAuth (Google / GitHub)
 
