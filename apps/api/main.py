@@ -16,6 +16,7 @@ from routers.competitions import router as competitions_router
 from routers.auth import router as auth_router
 from routers.workspaces import router as workspaces_router
 from routers.invitations import router as invitations_router
+from routers.analyses import router as analyses_router
 
 from schemas.error import ErrorResponse, ErrorCode
 
@@ -68,6 +69,7 @@ app.include_router(competitions_router)
 app.include_router(auth_router)
 app.include_router(invitations_router)
 app.include_router(workspaces_router)
+app.include_router(analyses_router)
 
 # Add request logging middleware (after routers are included is fine)
 add_request_logging_middleware(app)

@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, Users, BarChart3, Building2 } from "lucide-react";
+import {
+  LayoutDashboard,
+  Calendar,
+  Users,
+  BarChart3,
+  Building2,
+  Bookmark,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 
@@ -16,6 +23,7 @@ const baseNavItems = [
 export const navItems = AUTH_ENABLED
   ? [
       ...baseNavItems,
+      { href: "/analyses", label: "Saved", icon: Bookmark },
       { href: "/settings", label: "Workspaces", icon: Building2 },
     ]
   : [...baseNavItems];

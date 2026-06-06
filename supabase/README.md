@@ -96,6 +96,7 @@ Apply migrations **in filename order**:
 | `20250604250000_fix_seed_dataset_ambiguous_season_id.sql` | Fix ambiguous `season_id` in seed RPC (if `20250604230000` failed) |
 | `20250604251000_fix_user_can_access_match_bigint.sql` | Fix `user_can_access_match` for bigint `matches.id` (if RLS policies fail) |
 | `20250604252000_workspace_datasets_apply.sql` | **One-shot apply** — full datasets setup if earlier migrations failed partway |
+| `20250604260000_saved_analyses.sql` | Private saved match analysis views per user/workspace |
 
 **Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql`, then `20250604210000_fix_create_workspace_ambiguous_id.sql` if you see an ambiguous `id` error. Restart the API after running migrations.
 
