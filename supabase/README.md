@@ -93,6 +93,7 @@ Apply migrations **in filename order**:
 | `20250604220000_accept_workspace_invitation_rpc.sql` | **Required for accept** — RPC for invitees joining workspace |
 | `20250604230000_workspace_datasets.sql` | **Required for scoped data** — link workspaces to competition/season + RLS |
 | `20250604240000_workspace_create_seed_dataset.sql` | Seed default dataset when creating a workspace |
+| `20250604250000_fix_seed_dataset_ambiguous_season_id.sql` | Fix ambiguous `season_id` in seed RPC (if `20250604230000` failed) |
 
 **Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql`, then `20250604210000_fix_create_workspace_ambiguous_id.sql` if you see an ambiguous `id` error. Restart the API after running migrations.
 
