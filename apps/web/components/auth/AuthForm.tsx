@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
-import { getAuthCallbackUrl } from "@/lib/auth/oauth";
+import {
+  getAuthCallbackUrl,
+  getEmailConfirmDestination,
+} from "@/lib/auth/oauth";
 
 type AuthMode = "login" | "signup";
 
@@ -27,6 +30,9 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [message, setMessage] = useState<string | null>(() => {
     if (errorParam === "auth_callback") {
       return "Sign-in could not be completed. Try again.";
+    }
+    if (errorParam === "email_link_expired") {
+      return "This confirmation link has expired. Sign in, or create your account again to get a new email.";
     }
     if (errorParam === "missing_supabase_env") {
       return "Auth is enabled but Supabase URL/anon key are missing in .env.local. Restart the dev server after fixing.";
@@ -65,7 +71,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         email,
         password,
         options: {
-          emailRedirectTo: getAuthCallbackUrl(next),
+          emailRedirectTo: getEmailConfirmDestination(next),
         },
       });
       if (error) throw error;

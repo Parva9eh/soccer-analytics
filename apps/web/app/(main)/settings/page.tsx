@@ -112,7 +112,7 @@ export default function SettingsPage() {
     <PageShell>
       <PageHeader
         title="Workspaces"
-        description="Create a team space, invite colleagues, and pick an active workspace in the sidebar."
+        description="Anyone can create a workspace (you become its admin). Inviting colleagues into an existing workspace is admin-only — use Manage on a workspace you own."
       />
 
       <Card className="surface-card mb-6 border">

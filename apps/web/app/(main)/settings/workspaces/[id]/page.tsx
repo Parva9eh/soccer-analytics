@@ -386,10 +386,26 @@ export default function WorkspaceManagePage() {
         </>
       ) : (
         <Card className="surface-card border">
-          <CardContent className="py-6">
+          <CardContent className="space-y-3 py-6">
             <p className="text-caption text-muted-foreground">
-              Only workspace admins can invite members. Contact an admin if you
-              need access changes.
+              You joined as{" "}
+              <strong className="text-foreground">
+                {formatWorkspaceRole(workspace.role)}
+              </strong>
+              . Use the sidebar to work in this workspace — match data and
+              analysis use whichever workspace is active there.
+            </p>
+            <p className="text-caption text-muted-foreground">
+              Only workspace admins can invite or remove members. Ask an admin
+              if you need teammates added or your role changed.
+            </p>
+            <p className="text-caption text-muted-foreground">
+              Need your own separate team space? Go to{" "}
+              <Link href="/settings" className="text-primary hover:underline">
+                Workspaces
+              </Link>{" "}
+              and use <strong className="text-foreground">Create workspace</strong>{" "}
+              — you&apos;ll be admin of that new workspace.
             </p>
           </CardContent>
         </Card>

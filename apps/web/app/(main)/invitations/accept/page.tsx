@@ -49,6 +49,11 @@ function AcceptInvitationContent() {
       .then((data) => {
         setResult(data);
         setStatus("done");
+        return apiFetchJson("/auth/me", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active_workspace_id: data.workspace_id }),
+        });
       })
       .catch((err: unknown) => {
         setStatus("error");
