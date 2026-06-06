@@ -38,6 +38,18 @@ def client_with_user_jwt(access_token: str) -> Client:
     return client
 
 
+def get_supabase_public_read(
+    authorization: Annotated[Optional[str], Header()] = None,
+) -> Client:
+    """
+    Read routes: Bearer token → user-scoped RLS; no token → anon public-read RLS.
+    """
+    token = _extract_bearer(authorization)
+    if token:
+        return client_with_user_jwt(token)
+    return get_supabase_anon_client()
+
+
 def get_supabase(
     authorization: Annotated[Optional[str], Header()] = None,
 ) -> Client:

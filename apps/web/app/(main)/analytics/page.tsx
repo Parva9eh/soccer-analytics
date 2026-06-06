@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import {
   DEFAULT_COMPETITION,
   DEFAULT_SEASON,
@@ -345,7 +346,7 @@ function AuthAnalyticsDashboard() {
   );
 }
 
-function LegacyAnalyticsPage() {
+function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
   const workspaceId = useActiveWorkspaceId();
   const {
     data: summary,
@@ -376,9 +377,11 @@ function LegacyAnalyticsPage() {
         eyebrow="Tactical analysis"
         title="Analytics"
         description={
-          summary && summary.total_matches === 0
-            ? "No match data for the active workspace. Link datasets in workspace settings to analyze fixtures."
-            : "Metrics for the active workspace. Match and event counts follow linked competition seasons."
+          guestMode
+            ? "Guest overview for the public La Liga 2020/21 demo dataset. Sign in for workspace dashboards and reports."
+            : summary && summary.total_matches === 0
+              ? "No match data for the active workspace. Link datasets in workspace settings to analyze fixtures."
+              : "Metrics for the active workspace. Match and event counts follow linked competition seasons."
         }
       />
 
@@ -414,16 +417,28 @@ function LegacyAnalyticsPage() {
 
       <AnalyticsRoadmap />
 
-      <p className="text-caption mt-8">
-        Enable authentication to unlock workspace dashboards, saved reports, and CSV export.
-      </p>
+      {guestMode ? (
+        <p className="text-caption mt-8">
+          <Link href="/login" className="text-primary hover:underline">
+            Sign in
+          </Link>{" "}
+          to unlock workspace dashboards, saved reports, and CSV export.
+        </p>
+      ) : (
+        <p className="text-caption mt-8">
+          Enable authentication to unlock workspace dashboards, saved reports, and CSV export.
+        </p>
+      )}
     </PageShell>
   );
 }
 
 export default function AnalyticsPage() {
-  if (AUTH_ENABLED) {
+  const { session, isLoading } = useAuthSession();
+
+  if (AUTH_ENABLED && !isLoading && session) {
     return <AuthAnalyticsDashboard />;
   }
-  return <LegacyAnalyticsPage />;
+
+  return <LegacyAnalyticsPage guestMode={AUTH_ENABLED && !session} />;
 }

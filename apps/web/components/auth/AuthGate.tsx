@@ -2,12 +2,16 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AUTH_ENABLED, isPublicPath } from "@/lib/auth-config";
+import {
+  AUTH_ENABLED,
+  isAuthRequiredPath,
+  isPublicPath,
+} from "@/lib/auth-config";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 
 /**
- * Client guard when auth is enabled: redirects to login if there is no session.
- * Complements the server proxy (e.g. when env was missing at proxy build time).
+ * When auth is enabled, redirects to login only for collaboration/private routes.
+ * Explore routes (dashboard, matches, players, analytics) allow guest browsing.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,7 +20,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!AUTH_ENABLED || isLoading || isPublicPath(pathname)) return;
-    if (!session) {
+    if (!session && isAuthRequiredPath(pathname)) {
       const search =
         typeof window !== "undefined" ? window.location.search : "";
       const next =
@@ -39,7 +43,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session && !isPublicPath(pathname)) {
+  if (!session && isAuthRequiredPath(pathname)) {
     return null;
   }
 

@@ -98,6 +98,7 @@ Apply migrations **in filename order**:
 | `20250604252000_workspace_datasets_apply.sql` | **One-shot apply** — full datasets setup if earlier migrations failed partway |
 | `20250604260000_saved_analyses.sql` | Private saved match analysis views per user/workspace |
 | `20250604270000_workspace_reports.sql` | Workspace report snapshots + `workspace_report_snapshot` dashboard RPC |
+| `20250604280000_anon_public_read.sql` | Guest read-only access to La Liga 2020/21 demo data (`anon` role) |
 
 **Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql`, then `20250604210000_fix_create_workspace_ambiguous_id.sql` if you see an ambiguous `id` error. Restart the API after running migrations.
 

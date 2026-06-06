@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AUTH_ENABLED } from "@/lib/auth-config";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,13 +164,14 @@ export function AuthForm({ mode }: AuthFormProps) {
               {alternateLabel}
             </Link>
           </p>
-          {!AUTH_ENABLED && (
-            <p>
-              <Link href="/" className="text-muted-foreground hover:text-primary hover:underline">
-                Continue without signing in
-              </Link>
-            </p>
-          )}
+          <p>
+            <Link
+              href="/"
+              className="text-muted-foreground hover:text-primary hover:underline"
+            >
+              Continue browsing without signing in
+            </Link>
+          </p>
         </div>
       </CardContent>
     </Card>

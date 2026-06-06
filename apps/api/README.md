@@ -36,7 +36,7 @@ The API will be available at `http://localhost:8000`.
 ## Authentication (Phase 3)
 
 - **`REQUIRE_AUTH=false`** (default): Routes use the service-role client when no Bearer token is sent (local dev).
-- **`REQUIRE_AUTH=true`**: All data routes require a valid Supabase JWT; the API uses an anon client with `postgrest.auth(token)` so Row Level Security applies.
+- **`REQUIRE_AUTH=true`**: Collaboration routes require a valid Supabase JWT. Read routes (`/matches`, `/events`, `/players`, `/competitions`, `/summary`) accept anonymous requests via the Supabase anon key; RLS limits guests to the public demo dataset.
 - Set **`SUPABASE_JWT_SECRET`** from Supabase → Settings → API → JWT Secret.
 - ETL and admin scripts should call `get_supabase_service_client()` directly, not the route dependency.
 

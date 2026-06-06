@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_ENABLED, isPublicPath } from "@/lib/auth-config";
+import {
+  AUTH_ENABLED,
+  isAuthRequiredPath,
+  isPublicPath,
+} from "@/lib/auth-config";
 import { hasSupabaseEnv } from "./env";
 
 /** Refresh Supabase session cookies and enforce auth redirects in Next.js proxy. */
@@ -44,7 +48,7 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (!user && !isPublicPath(pathname)) {
+  if (!user && isAuthRequiredPath(pathname)) {
     const loginUrl = request.nextUrl.clone();
     const returnTo = `${pathname}${request.nextUrl.search}`;
     loginUrl.pathname = "/login";
