@@ -83,10 +83,10 @@ export function SaveAnalysisDialog({
       </SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>Save analysis view</SheetTitle>
+          <SheetTitle>Save match view</SheetTitle>
           <SheetDescription>
-            Private to you in the active workspace. Restores filters and pitch
-            layers for {matchLabel}.
+            Private to you in the active workspace. Appears under Match views and
+            restores filters and pitch layers for {matchLabel}.
           </SheetDescription>
         </SheetHeader>
         <form
@@ -127,14 +127,14 @@ export function SaveAnalysisDialog({
             </p>
           )}
           {saveMutation.isSuccess && (
-            <p className="text-caption text-primary">Saved to your library.</p>
+            <p className="text-caption text-primary">Saved to Match views.</p>
           )}
           <Button
             type="submit"
             className="w-full"
             disabled={saveMutation.isPending || !title.trim()}
           >
-            {saveMutation.isPending ? "Saving…" : "Save analysis"}
+            {saveMutation.isPending ? "Saving…" : "Save view"}
           </Button>
         </form>
       </SheetContent>
