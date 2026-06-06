@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 3 complete — ready to merge (June 2026)  
-**Active branch:** `phase3/auth-foundation`
+**Current Phase:** Phase 4 in progress (June 2026)  
+**Active branch:** `phase4/xg-foundation`
 
 ---
 
@@ -249,12 +249,21 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 
 ---
 
-### Phase 4: Core Analytics Capabilities (Planned)
+### Phase 4: Core Analytics Capabilities (In Progress)
 
 **Goal:** Deliver meaningful analytical value beyond raw event data.
 
-**Planned Areas:**
-- Expected Goals (xG) models and visualizations
+**Branch:** `phase4/xg-foundation`
+
+**Phase 4.1 — Expected goals (in progress)**
+- ✅ StatsBomb `statsbomb_xg` extraction from shot event `details`
+- ✅ `GET /analytics/xg/matches/{match_id}` — per-team match xG summary
+- ✅ `GET /analytics/xg/season?competition=&season=` — season aggregates
+- ✅ Match detail score card — home/away xG strip
+- ✅ Analytics dashboard — season **Total xG** KPI; xG roadmap card marked live
+- ⏳ Player/team xG leaderboards, shot maps, rolling form
+
+**Planned next (4.2+)**
 - Passing networks and progressive passing metrics
 - Possession chains and build-up analysis
 - Player and team aggregates / profiles
@@ -297,8 +306,8 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 | Phase 0 | ✅ Completed | Monorepo hygiene and foundation |
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
-| Phase 3 | ✅ Completed | Auth, RLS, workspaces, collaboration — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
-| Phase 4 | Planned | Real analytics features |
+| Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
+| Phase 4 | 🚧 In progress | xG foundation on `phase4/xg-foundation` |
 | Phase 5 | Planned | Testing, CI, and deployment |
 
 Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md).
@@ -337,7 +346,9 @@ git push origin main
 
 **Example (Phase 2):** `phase2/frontend-completion` → merge commit `8c3c56c` on `main`; branch kept on `origin`.
 
-**Current (Phase 3):** When `phase3/auth-foundation` is complete, merge it into `main` the same way and keep the branch.
+**Phase 3 (done):** `phase3/auth-foundation` merged to `main` as `503c8d2`; branch kept on `origin`.
+
+**Current (Phase 4):** Work on `phase4/xg-foundation`; merge to `main` when 4.1 (or the phase) is complete.
 
 ### Rebasing a long-running phase branch
 

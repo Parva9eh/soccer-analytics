@@ -32,6 +32,7 @@ import {
   type ReportScope,
   type WorkspaceDashboard,
 } from "@/lib/report-types";
+import { formatXg, type SeasonXg } from "@/lib/xg-types";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { DashboardPanels } from "@/components/reports/DashboardPanels";
@@ -76,33 +77,38 @@ function AnalyticsRoadmap() {
     {
       title: "Expected Goals (xG)",
       icon: Target,
-      body: "Shot quality and xG models for players and teams.",
+      body: "StatsBomb shot xG on match pages; season totals in the dashboard KPIs.",
+      live: true,
     },
     {
       title: "Passing networks",
       icon: GitBranch,
       body: "Interactive passing networks and progressive passes.",
+      live: false,
     },
     {
       title: "Possession & build-up",
       icon: BarChart3,
       body: "Possession chains, build-up patterns, and territory.",
+      live: false,
     },
     {
       title: "Player insights",
       icon: Users,
       body: "Advanced profiles, radar charts, and comparisons.",
+      live: false,
     },
     {
       title: "Trends & form",
       icon: TrendingUp,
       body: "Rolling form, momentum metrics, and trend analysis.",
+      live: false,
     },
   ];
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {roadmap.map(({ title, icon: Icon, body }) => (
+      {roadmap.map(({ title, icon: Icon, body, live }) => (
         <Card key={title} className="surface-card card-compact">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -111,9 +117,13 @@ function AnalyticsRoadmap() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-body-sm text-muted-foreground">
-              Coming soon — {body}
-            </p>
+              <p className="text-body-sm text-muted-foreground">
+                {live ? (
+                  <span className="text-primary">Live — {body}</span>
+                ) : (
+                  <>Coming soon — {body}</>
+                )}
+              </p>
           </CardContent>
         </Card>
       ))}
@@ -197,6 +207,21 @@ function AuthAnalyticsDashboard() {
     queryKey: ["reports-dashboard", workspaceId, scope, competition, season],
     queryFn: () => apiFetchJson<WorkspaceDashboard>(dashboardPath),
     enabled: catalogReady && (scope === "all" || filterInCatalog),
+  });
+
+  const seasonXgParams = new URLSearchParams({
+    competition,
+    season,
+  });
+  const { data: seasonXg, isLoading: seasonXgLoading } = useQuery<SeasonXg>({
+    queryKey: ["season-xg", workspaceId, competition, season],
+    queryFn: () =>
+      apiFetchJson<SeasonXg>(`/analytics/xg/season?${seasonXgParams}`),
+    enabled:
+      catalogReady &&
+      scope === "filtered" &&
+      filterInCatalog &&
+      hasLinkedData,
   });
 
   const scopeLabel = reportScopeLabel(
@@ -335,6 +360,22 @@ function AuthAnalyticsDashboard() {
               icon={BarChart3}
               loading={loading}
             />
+            {scope === "filtered" && (
+              <StatCard
+                label="Total xG"
+                value={
+                  seasonXg ? formatXg(seasonXg.total_xg) : "—"
+                }
+                hint={
+                  seasonXg
+                    ? `${seasonXg.total_shots} shots · ${formatSeasonLabel(season)}`
+                    : undefined
+                }
+                icon={Target}
+                loading={loading || seasonXgLoading}
+                className="col-span-2 lg:col-span-1"
+              />
+            )}
           </div>
 
           {dashboard && (
@@ -356,6 +397,16 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
   } = useQuery<SummaryData>({
     queryKey: ["summary", workspaceId],
     queryFn: () => apiFetchJson<SummaryData>("/summary/"),
+  });
+
+  const legacyXgParams = new URLSearchParams({
+    competition: DEFAULT_COMPETITION,
+    season: DEFAULT_SEASON,
+  });
+  const { data: seasonXg, isLoading: seasonXgLoading } = useQuery<SeasonXg>({
+    queryKey: ["season-xg", workspaceId, DEFAULT_COMPETITION, DEFAULT_SEASON],
+    queryFn: () =>
+      apiFetchJson<SeasonXg>(`/analytics/xg/season?${legacyXgParams}`),
   });
 
   if (error) {
@@ -406,12 +457,16 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
           loading={summaryLoading}
         />
         <StatCard
-          label="Workspace data"
-          value={summary?.total_matches ?? 0}
-          hint="Matches in linked datasets"
-          icon={BarChart3}
+          label="Total xG"
+          value={seasonXg ? formatXg(seasonXg.total_xg) : "—"}
+          hint={
+            seasonXg
+              ? `${seasonXg.total_shots} shots · ${formatSeasonLabel(DEFAULT_SEASON)}`
+              : "StatsBomb shot xG"
+          }
+          icon={Target}
           className="col-span-2 lg:col-span-1"
-          loading={summaryLoading}
+          loading={summaryLoading || seasonXgLoading}
         />
       </div>
 
