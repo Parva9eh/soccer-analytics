@@ -92,17 +92,27 @@ function AcceptInvitationContent() {
   }
 
   if (!session) {
+    const authNext = encodeURIComponent(loginNext);
     return (
       <PageShell>
         <PageHeader
-          title="Sign in to accept"
-          description="Use the same email address that received the invitation."
+          title="Accept workspace invitation"
+          description="Sign in or create an account with the same email address that was invited."
         />
-        <Button asChild>
-          <Link href={`/login?next=${encodeURIComponent(loginNext)}`}>
-            Sign in
-          </Link>
-        </Button>
+        <Card className="surface-card max-w-md border">
+          <CardContent className="flex flex-col gap-3 py-6">
+            <Button asChild>
+              <Link href={`/login?next=${authNext}`}>Sign in</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/signup?next=${authNext}`}>Create account</Link>
+            </Button>
+            <p className="text-caption text-muted-foreground">
+              New here? Use Create account with the invited email. After email
+              confirmation you&apos;ll come back to this invitation automatically.
+            </p>
+          </CardContent>
+        </Card>
       </PageShell>
     );
   }

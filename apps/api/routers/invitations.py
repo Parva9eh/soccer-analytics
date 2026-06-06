@@ -1,6 +1,5 @@
 import logging
 import secrets
-from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -86,88 +85,57 @@ def accept_invitation(
         )
 
     try:
-        result = (
-            supabase.table("workspace_invitations")
-            .select(
-                "id, workspace_id, email, role, status, expires_at, workspaces(name)"
-            )
-            .eq("token", body.token.strip())
-            .limit(1)
-            .execute()
-        )
-        if not result.data:
+        result = supabase.rpc(
+            "accept_workspace_invitation",
+            {"p_token": body.token.strip()},
+        ).execute()
+
+        rows = result.data or []
+        if not rows:
             raise_http_exception(
-                status_code=404,
-                detail="Invitation not found or no longer valid",
-                code=ErrorCode.NOT_FOUND,
+                status_code=500,
+                detail="Failed to accept invitation",
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
             )
 
-        invite = result.data[0]
-        if invite["status"] != InvitationStatus.pending.value:
-            raise_http_exception(
-                status_code=409,
-                detail="Invitation is no longer pending",
-                code=ErrorCode.CONFLICT,
-            )
-
-        expires_at = invite["expires_at"]
-        if isinstance(expires_at, str):
-            expires_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
-        else:
-            expires_dt = expires_at
-
-        if expires_dt.tzinfo is None:
-            expires_dt = expires_dt.replace(tzinfo=timezone.utc)
-
-        if expires_dt < datetime.now(timezone.utc):
-            supabase.table("workspace_invitations").update(
-                {"status": InvitationStatus.revoked.value}
-            ).eq("id", invite["id"]).execute()
-            raise_http_exception(
-                status_code=410,
-                detail="Invitation has expired",
-                code=ErrorCode.BAD_REQUEST,
-            )
-
-        if normalize_email(invite["email"]) != normalize_email(user.email):
-            raise_http_exception(
-                status_code=403,
-                detail="Sign in with the email address that received this invitation",
-                code=ErrorCode.FORBIDDEN,
-            )
-
-        workspace_id = str(invite["workspace_id"])
-        existing = (
-            supabase.table("workspace_members")
-            .select("user_id")
-            .eq("workspace_id", workspace_id)
-            .eq("user_id", user.id)
-            .limit(1)
-            .execute()
-        )
-        if not existing.data:
-            supabase.table("workspace_members").insert(
-                {
-                    "workspace_id": workspace_id,
-                    "user_id": user.id,
-                    "role": invite["role"],
-                }
-            ).execute()
-
-        supabase.table("workspace_invitations").update(
-            {"status": InvitationStatus.accepted.value}
-        ).eq("id", invite["id"]).execute()
-
-        ws = invite.get("workspaces") or {}
+        row = rows[0] if isinstance(rows, list) else rows
         return InvitationAcceptResponse(
-            workspace_id=invite["workspace_id"],
-            workspace_name=ws.get("name") or "Workspace",
-            role=WorkspaceRole(invite["role"]),
+            workspace_id=row["workspace_id"],
+            workspace_name=row["workspace_name"] or "Workspace",
+            role=WorkspaceRole(row["role"]),
         )
 
     except HTTPException:
         raise
     except APIError as exc:
+        message = (exc.message or "").lower()
+        if "not found" in message or exc.code == "P0002":
+            raise_http_exception(
+                status_code=404,
+                detail="Invitation not found or no longer valid",
+                code=ErrorCode.NOT_FOUND,
+            )
+        if "expired" in message:
+            raise_http_exception(
+                status_code=410,
+                detail="Invitation has expired",
+                code=ErrorCode.BAD_REQUEST,
+            )
+        if "email address that received" in message or exc.code == "42501":
+            raise_http_exception(
+                status_code=403,
+                detail="Sign in with the email address that received this invitation",
+                code=ErrorCode.FORBIDDEN,
+            )
+        if "PGRST202" in str(exc.code) or "accept_workspace_invitation" in message:
+            raise_http_exception(
+                status_code=503,
+                detail=(
+                    "Invitation accept function is missing. "
+                    "Apply migration 20250604220000_accept_workspace_invitation_rpc.sql."
+                ),
+                code=ErrorCode.SERVICE_UNAVAILABLE,
+            )
         raise_for_supabase_error(
             exc,
             fallback_detail="Failed to accept invitation",
