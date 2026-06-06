@@ -8,6 +8,12 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str
     DATABASE_URL: str
 
+    # JWT secret from Supabase project Settings → API → JWT Secret (HS256)
+    SUPABASE_JWT_SECRET: str | None = None
+
+    # When true, API routes require Authorization: Bearer <access_token>
+    REQUIRE_AUTH: bool = False
+
     # Logging configuration
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "text"          # "text" or "json"
@@ -15,6 +21,16 @@ class Settings(BaseSettings):
 
     # CORS - comma-separated list of allowed origins
     CORS_ORIGINS: str = "http://localhost:3000"
+
+    # Web app origin for invite links (defaults to first CORS origin)
+    WEB_APP_URL: str | None = None
+
+    @property
+    def web_app_url(self) -> str:
+        if self.WEB_APP_URL:
+            return self.WEB_APP_URL.rstrip("/")
+        origins = self.cors_origins_list
+        return origins[0].rstrip("/") if origins else "http://localhost:3000"
 
     # Environment (used in health checks and observability)
     ENVIRONMENT: str = "development"   # development | staging | production
