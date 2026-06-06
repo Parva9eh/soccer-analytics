@@ -7,4 +7,6 @@ export const WORKSPACE_SCOPED_QUERY_PREFIXES = [
   "events",
   "pitch-events",
   "saved-analyses",
+  "reports-dashboard",
+  "workspace-reports",
 ] as const;
