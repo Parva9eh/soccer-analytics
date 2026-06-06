@@ -16,6 +16,8 @@ import { AUTH_ENABLED } from "@/lib/auth-config";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { parseMatchAnalysisConfig } from "@/lib/analysis-config";
 import { SaveAnalysisDialog } from "@/components/analysis/SaveAnalysisDialog";
+import { MatchXgStrip } from "@/components/analytics/MatchXgStrip";
+import type { MatchXg } from "@/lib/xg-types";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -181,6 +183,12 @@ export default function MatchDetailPage() {
     queryKey: ["match", workspaceId, matchId],
     queryFn: () => apiFetchJson<Match>(`/matches/${matchId}`),
     enabled: !!matchId,
+  });
+
+  const { data: matchXg } = useQuery<MatchXg>({
+    queryKey: ["match-xg", workspaceId, matchId],
+    queryFn: () => apiFetchJson<MatchXg>(`/analytics/xg/matches/${matchId}`),
+    enabled: matchId != null,
   });
 
   // Fetch events for table
@@ -396,6 +404,7 @@ export default function MatchDetailPage() {
 
             <p className="text-center text-caption sm:hidden">{formattedDate}</p>
           </div>
+          {matchXg && <MatchXgStrip data={matchXg} />}
         </CardContent>
       </Card>
 
