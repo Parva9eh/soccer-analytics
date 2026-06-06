@@ -4,7 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Calendar, Target, Users, BarChart3 } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
+import { AUTH_ENABLED } from "@/lib/auth-config";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
+import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { StatCard } from "@/components/ui/stat-card";
@@ -21,6 +23,8 @@ interface SummaryData {
 
 export default function Dashboard() {
   const workspaceId = useActiveWorkspaceId();
+  const { session } = useAuthSession();
+  const isGuest = AUTH_ENABLED && !session;
   const { data, isLoading, error, refetch, isFetching } = useQuery<SummaryData>({
     queryKey: ["summary", workspaceId],
     queryFn: () => apiFetchJson<SummaryData>("/summary/"),
@@ -44,9 +48,11 @@ export default function Dashboard() {
       <PageHeader
         title="Dashboard"
         description={
-          data && data.total_matches === 0
-            ? "No match data for the active workspace. Link competition seasons under Settings → Manage → Data access."
-            : "Overview for the active workspace — matches and events scoped to linked datasets."
+          isGuest
+            ? "Guest overview for the public La Liga 2020/21 demo dataset."
+            : data && data.total_matches === 0
+              ? "No match data for the active workspace. Link competition seasons under Settings → Manage → Data access."
+              : "Overview for the active workspace — matches and events scoped to linked datasets."
         }
       />
 

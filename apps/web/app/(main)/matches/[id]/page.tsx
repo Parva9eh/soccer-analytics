@@ -13,6 +13,7 @@ import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { parseMatchAnalysisConfig } from "@/lib/analysis-config";
 import { SaveAnalysisDialog } from "@/components/analysis/SaveAnalysisDialog";
 
@@ -93,6 +94,9 @@ export default function MatchDetailPage() {
   const savedId = searchParams.get("saved");
   const matchId = params.id ? Number(params.id) : null;
   const workspaceId = useActiveWorkspaceId();
+  const { session } = useAuthSession();
+  const canSaveView =
+    AUTH_ENABLED && Boolean(session?.access_token) && matchId != null;
   const appliedSavedRef = useRef<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -343,7 +347,7 @@ export default function MatchDetailPage() {
             <Calendar className="h-4 w-4 shrink-0" />
             <span>{formattedDate}</span>
           </div>
-          {AUTH_ENABLED && matchId != null && (
+          {canSaveView && (
             <SaveAnalysisDialog
               matchId={matchId}
               matchLabel={`${match.home_team} vs ${match.away_team}`}

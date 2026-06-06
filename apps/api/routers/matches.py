@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, Depends
 from typing import List, Optional
 from supabase import Client
 
-from core.supabase_client import get_supabase
+from core.supabase_client import get_supabase_public_read
 from schemas.match import MatchResponse
 from schemas.params import MatchListParams
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/matches", tags=["Matches"])
     responses=COMMON_ERROR_RESPONSES,
 )
 def get_matches(
-    supabase: Client = Depends(get_supabase),
+    supabase: Client = Depends(get_supabase_public_read),
     filters: MatchListParams = Depends()
 ) -> List[MatchResponse]:
     """Get list of matches with team names."""
@@ -85,7 +85,9 @@ def get_matches(
     response_model=MatchResponse,
     responses=COMMON_ERROR_RESPONSES,
 )
-def get_match(match_id: int, supabase: Client = Depends(get_supabase)) -> MatchResponse:
+def get_match(
+    match_id: int, supabase: Client = Depends(get_supabase_public_read)
+) -> MatchResponse:
     """Get a single match by ID."""
     try:
         response = (

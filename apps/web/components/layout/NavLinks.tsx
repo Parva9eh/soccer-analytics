@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useAuthSession } from "@/lib/supabase/use-auth-session";
 
 interface NavItem {
   href: string;
@@ -39,9 +40,11 @@ const workspaceItem: NavItem = {
   icon: Building2,
 };
 
-export const navItems: NavItem[] = AUTH_ENABLED
-  ? [...exploreItems, ...libraryItems, workspaceItem]
-  : exploreItems;
+export const navItems: NavItem[] = [
+  ...exploreItems,
+  ...libraryItems,
+  workspaceItem,
+];
 
 interface NavLinksProps {
   onLinkClick?: () => void;
@@ -102,6 +105,8 @@ function NavLink({
 
 export function NavLinks({ onLinkClick, className = "" }: NavLinksProps) {
   const pathname = usePathname();
+  const { session } = useAuthSession();
+  const showCollaboration = AUTH_ENABLED && Boolean(session);
 
   const isActive = (href: string) =>
     pathname === href ||
@@ -135,24 +140,28 @@ export function NavLinks({ onLinkClick, className = "" }: NavLinksProps) {
         ))}
       </NavSection>
 
-      <NavSection label="Library">
-        {libraryItems.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            isActive={isActive(item.href)}
-            onLinkClick={onLinkClick}
-          />
-        ))}
-      </NavSection>
+      {showCollaboration && (
+        <>
+          <NavSection label="Library">
+            {libraryItems.map((item) => (
+              <NavLink
+                key={item.href}
+                item={item}
+                isActive={isActive(item.href)}
+                onLinkClick={onLinkClick}
+              />
+            ))}
+          </NavSection>
 
-      <div className="mt-2 border-t border-border pt-2">
-        <NavLink
-          item={workspaceItem}
-          isActive={isActive(workspaceItem.href)}
-          onLinkClick={onLinkClick}
-        />
-      </div>
+          <div className="mt-2 border-t border-border pt-2">
+            <NavLink
+              item={workspaceItem}
+              isActive={isActive(workspaceItem.href)}
+              onLinkClick={onLinkClick}
+            />
+          </div>
+        </>
+      )}
     </nav>
   );
 }

@@ -17,6 +17,7 @@ import {
   type CompetitionCatalogItem,
 } from "@/lib/competition-filter";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { PageHeader } from "@/components/ui/page-header";
@@ -85,6 +86,8 @@ export function MatchesListPage() {
   const searchParams = useSearchParams();
 
   const workspaceId = useActiveWorkspaceId();
+  const { session } = useAuthSession();
+  const isSignedIn = AUTH_ENABLED && Boolean(session?.access_token);
   const competition = readFilter(searchParams, "competition", DEFAULT_COMPETITION);
   const season = readFilter(searchParams, "season", DEFAULT_SEASON);
 
@@ -196,14 +199,20 @@ export function MatchesListPage() {
           icon={CalendarDays}
           title="No data linked to this workspace"
           description={
-            AUTH_ENABLED
+            isSignedIn
               ? "This workspace has no competition seasons yet. A workspace admin can add datasets under Settings → Manage → Data access."
-              : "Load competition data via ETL, then link it to a workspace."
+              : AUTH_ENABLED
+                ? "Guest demo data is unavailable. Sign in for workspace-scoped datasets, or apply the anon public-read migration."
+                : "Load competition data via ETL, then link it to a workspace."
           }
           action={
-            AUTH_ENABLED ? (
+            isSignedIn ? (
               <Button asChild variant="outline" size="sm">
                 <Link href="/settings">Open workspaces</Link>
+              </Button>
+            ) : AUTH_ENABLED ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/login">Sign in</Link>
               </Button>
             ) : undefined
           }
