@@ -30,6 +30,8 @@ The API will be available at `http://localhost:8000`.
 - `GET /summary` — High-level data counts
 - `GET /analytics/xg/matches/{id}` — Match expected goals (StatsBomb shot xG)
 - `GET /analytics/xg/season?competition=&season=` — Season xG aggregates
+- `GET /analytics/xg/players?competition=&season=&limit=` — Player xG leaderboard
+- `GET /analytics/xg/teams?competition=&season=` — Team xG leaderboard
 - `GET /auth/me` — Current user + profile (requires Bearer token)
 - `GET /workspaces/` — List workspaces for the signed-in user (always requires Bearer token)
 - `POST /workspaces/` — Create workspace (creator becomes `admin`)
