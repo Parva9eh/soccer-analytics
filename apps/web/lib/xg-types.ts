@@ -23,6 +23,26 @@ export interface SeasonXg {
   avg_xg_per_match: number;
 }
 
+export interface PlayerXgSummary {
+  player: string;
+  team: string | null;
+  shots: number;
+  goals: number;
+  xg: number;
+}
+
+export interface PlayerXgLeaderboard {
+  competition: string;
+  season: string;
+  players: PlayerXgSummary[];
+}
+
+export interface TeamXgLeaderboard {
+  competition: string;
+  season: string;
+  teams: TeamXgSummary[];
+}
+
 export function formatXg(value: number): string {
   return value.toFixed(2);
 }

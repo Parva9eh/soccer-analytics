@@ -7,12 +7,20 @@ from supabase import Client
 from analytics.xg import (
     is_goal_outcome,
     shot_outcome,
+    shot_player_name,
     shot_team_name,
     shot_xg_from_details,
 )
 from core.supabase_client import get_supabase_public_read
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
-from schemas.xg import MatchXgResponse, SeasonXgResponse, TeamXgSummary
+from schemas.xg import (
+    MatchXgResponse,
+    PlayerXgLeaderboardResponse,
+    PlayerXgSummary,
+    SeasonXgResponse,
+    TeamXgLeaderboardResponse,
+    TeamXgSummary,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +31,11 @@ def _empty_team_summary(team: str) -> TeamXgSummary:
     return TeamXgSummary(team=team, shots=0, goals=0, xg=0.0)
 
 
-def _accumulate_shot(
+def _empty_player_summary(player: str) -> PlayerXgSummary:
+    return PlayerXgSummary(player=player, shots=0, goals=0, xg=0.0)
+
+
+def _accumulate_team_shot(
     summaries: dict[str, TeamXgSummary],
     team_name: str | None,
     xg: float | None,
@@ -35,6 +47,28 @@ def _accumulate_shot(
     if entry is None:
         entry = _empty_team_summary(team_name)
         summaries[team_name] = entry
+    entry.shots += 1
+    if xg is not None:
+        entry.xg = round(entry.xg + xg, 4)
+    if is_goal_outcome(outcome):
+        entry.goals += 1
+
+
+def _accumulate_player_shot(
+    summaries: dict[str, PlayerXgSummary],
+    player_name: str | None,
+    team_name: str | None,
+    xg: float | None,
+    outcome: str | None,
+) -> None:
+    if not player_name:
+        return
+    entry = summaries.get(player_name)
+    if entry is None:
+        entry = _empty_player_summary(player_name)
+        summaries[player_name] = entry
+    if team_name:
+        entry.team = team_name
     entry.shots += 1
     if xg is not None:
         entry.xg = round(entry.xg + xg, 4)
@@ -104,6 +138,23 @@ def _match_ids_for_season(
     return [int(row["id"]) for row in matches.data or [] if row.get("id") is not None]
 
 
+def _shots_for_season(
+    supabase: Client, competition: str, season: str
+) -> tuple[list[int], list[dict[str, Any]]]:
+    match_ids = _match_ids_for_season(supabase, competition, season)
+    if not match_ids:
+        return [], []
+
+    shots = (
+        supabase.table("events")
+        .select("details")
+        .eq("event_type", "Shot")
+        .in_("match_id", match_ids)
+        .execute()
+    )
+    return match_ids, shots.data or []
+
+
 @router.get(
     "/matches/{match_id}",
     response_model=MatchXgResponse,
@@ -131,7 +182,7 @@ def get_match_xg(
 
         for row in shots.data or []:
             details = row.get("details")
-            _accumulate_shot(
+            _accumulate_team_shot(
                 summaries,
                 shot_team_name(details),
                 shot_xg_from_details(details),
@@ -168,7 +219,7 @@ def get_season_xg(
 ) -> SeasonXgResponse:
     """Aggregate expected goals for a competition season in the current data scope."""
     try:
-        match_ids = _match_ids_for_season(supabase, competition, season)
+        match_ids, shot_rows = _shots_for_season(supabase, competition, season)
         if not match_ids:
             return SeasonXgResponse(
                 competition=competition,
@@ -180,19 +231,11 @@ def get_season_xg(
                 avg_xg_per_match=0.0,
             )
 
-        shots = (
-            supabase.table("events")
-            .select("details")
-            .eq("event_type", "Shot")
-            .in_("match_id", match_ids)
-            .execute()
-        )
-
         total_shots = 0
         total_goals = 0
         total_xg = 0.0
 
-        for row in shots.data or []:
+        for row in shot_rows:
             details = row.get("details")
             xg = shot_xg_from_details(details)
             outcome = shot_outcome(details)
@@ -223,5 +266,99 @@ def get_season_xg(
         raise_http_exception(
             status_code=500,
             detail="Failed to compute season expected goals",
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get(
+    "/players",
+    response_model=PlayerXgLeaderboardResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
+def get_player_xg_leaderboard(
+    competition: str = Query(..., min_length=1),
+    season: str = Query(..., min_length=1),
+    limit: int = Query(10, ge=1, le=50),
+    supabase: Client = Depends(get_supabase_public_read),
+) -> PlayerXgLeaderboardResponse:
+    """Top players by total expected goals in a competition season."""
+    try:
+        _, shot_rows = _shots_for_season(supabase, competition, season)
+        players: dict[str, PlayerXgSummary] = {}
+
+        for row in shot_rows:
+            details = row.get("details")
+            _accumulate_player_shot(
+                players,
+                shot_player_name(details),
+                shot_team_name(details),
+                shot_xg_from_details(details),
+                shot_outcome(details),
+            )
+
+        ranked = sorted(players.values(), key=lambda item: item.xg, reverse=True)[
+            :limit
+        ]
+
+        return PlayerXgLeaderboardResponse(
+            competition=competition,
+            season=season,
+            players=ranked,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Failed to compute player xG leaderboard for %s %s",
+            competition,
+            season,
+        )
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to compute player expected goals leaderboard",
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get(
+    "/teams",
+    response_model=TeamXgLeaderboardResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
+def get_team_xg_leaderboard(
+    competition: str = Query(..., min_length=1),
+    season: str = Query(..., min_length=1),
+    supabase: Client = Depends(get_supabase_public_read),
+) -> TeamXgLeaderboardResponse:
+    """Teams ranked by total expected goals in a competition season."""
+    try:
+        _, shot_rows = _shots_for_season(supabase, competition, season)
+        teams: dict[str, TeamXgSummary] = {}
+
+        for row in shot_rows:
+            details = row.get("details")
+            _accumulate_team_shot(
+                teams,
+                shot_team_name(details),
+                shot_xg_from_details(details),
+                shot_outcome(details),
+            )
+
+        ranked = sorted(teams.values(), key=lambda item: item.xg, reverse=True)
+
+        return TeamXgLeaderboardResponse(
+            competition=competition,
+            season=season,
+            teams=ranked,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Failed to compute team xG leaderboard for %s %s", competition, season
+        )
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to compute team expected goals leaderboard",
             code=ErrorCode.INTERNAL_SERVER_ERROR,
         )

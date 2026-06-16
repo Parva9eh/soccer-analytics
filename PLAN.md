@@ -261,7 +261,8 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ `GET /analytics/xg/season?competition=&season=` — season aggregates
 - ✅ Match detail score card — home/away xG strip
 - ✅ Analytics dashboard — season **Total xG** KPI; xG roadmap card marked live
-- ⏳ Player/team xG leaderboards, shot maps, rolling form
+- ✅ Player/team xG leaderboards (`GET /analytics/xg/players`, `/teams`; analytics page panels)
+- ⏳ Shot maps on pitch, rolling xG form
 
 **Planned next (4.2+)**
 - Passing networks and progressive passing metrics

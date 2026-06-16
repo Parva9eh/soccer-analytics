@@ -28,6 +28,18 @@ def shot_team_name(details: Any) -> str | None:
     return None
 
 
+def shot_player_id(details: Any) -> int | None:
+    if not isinstance(details, dict):
+        return None
+    player = details.get("player")
+    if isinstance(player, dict) and player.get("id") is not None:
+        try:
+            return int(player["id"])
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 def shot_player_name(details: Any) -> str | None:
     if not isinstance(details, dict):
         return None
