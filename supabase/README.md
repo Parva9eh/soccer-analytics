@@ -99,6 +99,7 @@ Apply migrations **in filename order**:
 | `20250604260000_saved_analyses.sql` | Private saved match analysis views per user/workspace |
 | `20250604270000_workspace_reports.sql` | Workspace report snapshots + `workspace_report_snapshot` dashboard RPC |
 | `20250604280000_anon_public_read.sql` | Guest read-only access to La Liga 2020/21 demo data (`anon` role) |
+| `20250604290000_player_match_stats_rls.sql` | Enable RLS on `player_match_stats` if present (fixes Supabase advisor warning) |
 
 **Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql`, then `20250604210000_fix_create_workspace_ambiguous_id.sql` if you see an ambiguous `id` error. Restart the API after running migrations.
 
@@ -111,6 +112,31 @@ Apply migrations **in filename order**:
 `competitions`, `seasons`, `teams`, `matches`, `events`, `players`
 
 ETL and admin scripts continue to use the **service role** (bypasses RLS).
+
+### Supabase advisor: `player_match_stats` without RLS
+
+This table is **not** created by repo migrations — it may exist only on your hosted project (manual SQL, experiment, or external script). The advisor flags any `public` table exposed to PostgREST without RLS.
+
+**1. Inspect the table (SQL editor):**
+
+```sql
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'player_match_stats'
+ORDER BY ordinal_position;
+
+SELECT COUNT(*) AS rows FROM public.player_match_stats;
+```
+
+**2. Choose a fix:**
+
+| Situation | Action |
+|-----------|--------|
+| Empty / unused | `DROP TABLE IF EXISTS public.player_match_stats;` — warning clears |
+| In use, has `match_id` | Run `20250604290000_player_match_stats_rls.sql` — workspace + guest demo SELECT |
+| In use, no `match_id` | Same migration — falls back to global authenticated SELECT |
+
+Writes stay on **service_role** (ETL); the migration only adds SELECT policies.
 
 ### Apply via Supabase CLI
 
