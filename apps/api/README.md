@@ -35,6 +35,8 @@ The API will be available at `http://localhost:8000`.
 - `GET /analytics/xg/form?competition=&season=&team=&window=` — Per-match xG for/against with rolling averages
 - `GET /analytics/passes/matches/{id}?team=` — Completed-pass network for one team in a match
 - `GET /analytics/passes/progressive?competition=&season=&limit=` — Teams ranked by progressive passes
+- `GET /analytics/possession/matches/{id}?team=&limit=` — Possession chains for a match
+- `GET /analytics/possession/season?competition=&season=` — Team possession build-up summaries
 - `GET /auth/me` — Current user + profile (requires Bearer token)
 - `GET /workspaces/` — List workspaces for the signed-in user (always requires Bearer token)
 - `POST /workspaces/` — Create workspace (creator becomes `admin`)

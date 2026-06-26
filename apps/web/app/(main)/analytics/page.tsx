@@ -32,7 +32,9 @@ import {
   type ReportScope,
   type WorkspaceDashboard,
 } from "@/lib/report-types";
+import { PossessionSummaryPanel } from "@/components/analytics/PossessionSummaryPanel";
 import { ProgressivePassLeaderboardPanel } from "@/components/analytics/ProgressivePassLeaderboard";
+import type { SeasonPossessionSummary } from "@/lib/possession-types";
 import { XgFormChart } from "@/components/analytics/XgFormChart";
 import { XgLeaderboards } from "@/components/analytics/XgLeaderboards";
 import type { ProgressivePassLeaderboard } from "@/lib/pass-types";
@@ -98,8 +100,8 @@ function AnalyticsRoadmap() {
     {
       title: "Possession & build-up",
       icon: BarChart3,
-      body: "Possession chains, build-up patterns, and territory.",
-      live: false,
+      body: "Possession chains on match pages; season build-up summary on Analytics.",
+      live: true,
     },
     {
       title: "Player insights",
@@ -258,6 +260,16 @@ function AuthAnalyticsDashboard() {
       queryFn: () =>
         apiFetchJson<ProgressivePassLeaderboard>(
           `/analytics/passes/progressive?${seasonXgParams}&limit=10`,
+        ),
+      enabled: xgScopeEnabled,
+    });
+
+  const { data: possessionSummary, isLoading: possessionSummaryLoading } =
+    useQuery<SeasonPossessionSummary>({
+      queryKey: ["season-possession", workspaceId, competition, season],
+      queryFn: () =>
+        apiFetchJson<SeasonPossessionSummary>(
+          `/analytics/possession/season?${seasonXgParams}`,
         ),
       enabled: xgScopeEnabled,
     });
@@ -444,6 +456,15 @@ function AuthAnalyticsDashboard() {
             />
           )}
 
+          {scope === "filtered" && (
+            <PossessionSummaryPanel
+              competition={competition}
+              season={season}
+              data={possessionSummary}
+              loading={possessionSummaryLoading}
+            />
+          )}
+
           {dashboard && (
             <DashboardPanels dashboard={dashboard} />
           )}
@@ -509,6 +530,20 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
       queryFn: () =>
         apiFetchJson<ProgressivePassLeaderboard>(
           `/analytics/passes/progressive?${legacyXgParams}&limit=10`,
+        ),
+    });
+
+  const { data: possessionSummary, isLoading: possessionSummaryLoading } =
+    useQuery<SeasonPossessionSummary>({
+      queryKey: [
+        "season-possession",
+        workspaceId,
+        DEFAULT_COMPETITION,
+        DEFAULT_SEASON,
+      ],
+      queryFn: () =>
+        apiFetchJson<SeasonPossessionSummary>(
+          `/analytics/possession/season?${legacyXgParams}`,
         ),
     });
 
@@ -593,6 +628,13 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
         season={DEFAULT_SEASON}
         data={progressivePasses}
         loading={progressivePassesLoading}
+      />
+
+      <PossessionSummaryPanel
+        competition={DEFAULT_COMPETITION}
+        season={DEFAULT_SEASON}
+        data={possessionSummary}
+        loading={possessionSummaryLoading}
       />
 
       <AnalyticsRoadmap />
