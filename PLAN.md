@@ -289,10 +289,18 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Player detail page — season stat cards
 - ✅ `/analytics/compare` — side-by-side player and team comparison
 
-#### Planned next (4.5+)
-- Tactical event filtering and pattern detection
-- Match vs match comparison
-- Radar charts and richer player visuals
+#### Phase 4.5 — Tactical filters & richer comparisons (complete)
+
+- ✅ Tactical event presets on match page (final third, set pieces, counters, shots)
+- ✅ `GET /analytics/profiles/matches/{match_id}` — single-match analytics profile
+- ✅ `GET /analytics/profiles/compare/matches?match_a=&match_b=` — match vs match comparison
+- ✅ `/analytics/compare` — Matches tab with side-by-side metrics
+- ✅ Player detail — season radar chart (goals, xG, shots, passes, progressive passes)
+- ✅ Match detail — link to compare this fixture
+
+#### Planned next (4.6+)
+- Deeper tactical pattern analytics (heatmaps, phase tagging)
+- Multi-player radar overlays on compare page
 
 ---
 

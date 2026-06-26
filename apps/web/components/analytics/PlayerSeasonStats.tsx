@@ -11,7 +11,7 @@ import {
 } from "@/lib/competition-filter";
 import type { PlayerSeasonProfile } from "@/lib/profile-types";
 import { formatXg } from "@/lib/xg-types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlayerRadarChart } from "@/components/analytics/PlayerRadarChart";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Goal, Target, GitBranch, Activity } from "lucide-react";
@@ -97,6 +97,7 @@ export function PlayerSeasonStats({
           icon={GitBranch}
         />
       </div>
+      <PlayerRadarChart profile={data} />
     </div>
   );
 }
