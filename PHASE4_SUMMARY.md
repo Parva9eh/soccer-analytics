@@ -158,8 +158,16 @@ Keep `phase4/xg-foundation` on the remote for Phase 4.2 work.
 
 ---
 
-## Suggested next (Phase 4.7+)
+### 4.7 (merged)
+- [x] Team-split heatmaps (All / Home / Away / Split) on match page
+- [x] Zone comparison panel by pitch third
+- [x] Position-aware radar benchmarks on player and compare pages
+- [x] Compare CSV export and radar PNG download
 
-1. Team-split heatmaps and zone comparison
-2. PDF/image export for comparisons
-3. Dynamic radar axis scaling by position
+---
+
+## Suggested next (Phase 4.8+)
+
+1. PDF export for full comparison reports
+2. Season-level zone aggregates
+3. Team heatmaps on analytics dashboard
