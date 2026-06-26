@@ -1,12 +1,12 @@
 # Phase 4.1: Expected Goals (xG) — Summary
 
 **Branch:** `phase4/xg-foundation`  
-**Status:** Phase 4.1–4.2 merged to `main`; 4.3 in progress  
+**Status:** Phase 4.1–4.3 merged to `main`; 4.4 in progress on branch
 **Date:** June 2026
 
 ## Purpose
 
-Phase 4 delivers real analytics on StatsBomb event data. **4.1 (xG)** and **4.2 (passing)** are merged to `main`. **4.3 (possession chains)** continues on `phase4/xg-foundation`.
+Phase 4 delivers real analytics on StatsBomb event data. **4.1–4.3** are merged to `main`. **4.4 (profiles & compare)** continues on `phase4/xg-foundation`.
 
 All analytics reads use the same workspace / guest demo RLS scope as existing match and event routes.
 
@@ -131,15 +131,20 @@ Keep `phase4/xg-foundation` on the remote for Phase 4.2 work.
 - [x] Pass network API + match UI
 - [x] Progressive pass season leaderboard + analytics panel
 
-### 4.3 (on `phase4/xg-foundation`)
+### 4.3 (merged)
 - [x] Possession chain API (match + season)
 - [x] Match page possession panel + pitch filter
 - [x] Analytics possession summary panel
 
+### 4.4 (on branch)
+- [x] Player and team season profile APIs
+- [x] Player vs player and team vs team compare APIs
+- [x] Player page season stats; `/analytics/compare` UI
+
 ---
 
-## Suggested next (Phase 4.3+)
+## Suggested next (Phase 4.5+)
 
-1. Possession chains and build-up on match pages
-2. Player/team aggregate profiles
-3. Comparison tools
+1. Tactical event filtering and pattern detection
+2. Match vs match comparison
+3. Radar charts and richer visuals

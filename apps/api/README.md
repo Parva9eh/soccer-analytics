@@ -37,6 +37,10 @@ The API will be available at `http://localhost:8000`.
 - `GET /analytics/passes/progressive?competition=&season=&limit=` — Teams ranked by progressive passes
 - `GET /analytics/possession/matches/{id}?team=&limit=` — Possession chains for a match
 - `GET /analytics/possession/season?competition=&season=` — Team possession build-up summaries
+- `GET /analytics/profiles/players/{id}?competition=&season=` — Player season profile (xG, passes, shots)
+- `GET /analytics/profiles/teams?team=&competition=&season=` — Team season profile
+- `GET /analytics/profiles/compare/players?player_a=&player_b=&competition=&season=` — Compare two players
+- `GET /analytics/profiles/compare/teams?team_a=&team_b=&competition=&season=` — Compare two teams
 - `GET /auth/me` — Current user + profile (requires Bearer token)
 - `GET /workspaces/` — List workspaces for the signed-in user (always requires Bearer token)
 - `POST /workspaces/` — Create workspace (creator becomes `admin`)
