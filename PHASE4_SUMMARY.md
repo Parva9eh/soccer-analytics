@@ -136,15 +136,22 @@ Keep `phase4/xg-foundation` on the remote for Phase 4.2 work.
 - [x] Match page possession panel + pitch filter
 - [x] Analytics possession summary panel
 
-### 4.4 (on branch)
+### 4.4 (merged)
 - [x] Player and team season profile APIs
 - [x] Player vs player and team vs team compare APIs
 - [x] Player page season stats; `/analytics/compare` UI
 
+### 4.5 (merged)
+- [x] Tactical event filtering on match page (final third, set pieces, counters, shots)
+- [x] Match analytics profile API + match vs match compare API
+- [x] `/analytics/compare` Matches tab
+- [x] Player season radar chart on player detail page
+- [x] Compare-match link from match detail page
+
 ---
 
-## Suggested next (Phase 4.5+)
+## Suggested next (Phase 4.6+)
 
-1. Tactical event filtering and pattern detection
-2. Match vs match comparison
-3. Radar charts and richer visuals
+1. Tactical heatmaps and phase tagging
+2. Multi-player radar overlays on compare page
+3. Export/share comparison views

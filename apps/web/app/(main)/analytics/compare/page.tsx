@@ -16,6 +16,7 @@ import {
   type CompetitionCatalogItem,
 } from "@/lib/competition-filter";
 import type {
+  CompareMatchesResult,
   CompareMode,
   ComparePlayersResult,
   CompareTeamsResult,
@@ -41,13 +42,27 @@ interface PlayerOption {
   name: string;
 }
 
+interface MatchOption {
+  id: number;
+  home_team: string | null;
+  away_team: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  match_week: number | null;
+}
+
 export default function AnalyticsComparePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const workspaceId = useActiveWorkspaceId();
 
-  const initialMode =
-    searchParams.get("mode") === "teams" ? "teams" : "players";
+  const modeParam = searchParams.get("mode");
+  const initialMode: CompareMode =
+    modeParam === "teams"
+      ? "teams"
+      : modeParam === "matches"
+        ? "matches"
+        : "players";
 
   const [mode, setMode] = useState<CompareMode>(initialMode);
   const [competition, setCompetition] = useState(
@@ -64,6 +79,8 @@ export default function AnalyticsComparePage() {
   );
   const [teamA, setTeamA] = useState(searchParams.get("team_a")?.trim() || "");
   const [teamB, setTeamB] = useState(searchParams.get("team_b")?.trim() || "");
+  const [matchA, setMatchA] = useState(searchParams.get("match_a")?.trim() || "");
+  const [matchB, setMatchB] = useState(searchParams.get("match_b")?.trim() || "");
 
   const { data: catalog, isLoading: catalogLoading } = useQuery<
     CompetitionCatalogItem[]
@@ -100,6 +117,15 @@ export default function AnalyticsComparePage() {
 
   const teamOptions = teamXg?.teams.map((team) => team.team) ?? [];
 
+  const { data: matchOptions } = useQuery<MatchOption[]>({
+    queryKey: ["matches-compare", workspaceId, competition, season],
+    queryFn: () =>
+      apiFetchJson<MatchOption[]>(
+        `/matches/?competition=${encodeURIComponent(competition)}&season=${encodeURIComponent(season)}&limit=80`,
+      ),
+    enabled: mode === "matches",
+  });
+
   const syncUrl = useCallback(() => {
     const params = new URLSearchParams({
       mode,
@@ -109,12 +135,26 @@ export default function AnalyticsComparePage() {
     if (mode === "players") {
       if (playerA) params.set("player_a", playerA);
       if (playerB) params.set("player_b", playerB);
-    } else {
+    } else if (mode === "teams") {
       if (teamA) params.set("team_a", teamA);
       if (teamB) params.set("team_b", teamB);
+    } else {
+      if (matchA) params.set("match_a", matchA);
+      if (matchB) params.set("match_b", matchB);
     }
     router.replace(`/analytics/compare?${params.toString()}`);
-  }, [mode, competition, season, playerA, playerB, teamA, teamB, router]);
+  }, [
+    mode,
+    competition,
+    season,
+    playerA,
+    playerB,
+    teamA,
+    teamB,
+    matchA,
+    matchB,
+    router,
+  ]);
 
   useEffect(() => {
     syncUrl();
@@ -124,6 +164,8 @@ export default function AnalyticsComparePage() {
     mode === "players" && Boolean(playerA) && Boolean(playerB) && playerA !== playerB;
   const compareTeamsEnabled =
     mode === "teams" && Boolean(teamA) && Boolean(teamB) && teamA !== teamB;
+  const compareMatchesEnabled =
+    mode === "matches" && Boolean(matchA) && Boolean(matchB) && matchA !== matchB;
 
   const {
     data: playerComparison,
@@ -167,13 +209,37 @@ export default function AnalyticsComparePage() {
     enabled: compareTeamsEnabled,
   });
 
+  const {
+    data: matchComparison,
+    isLoading: matchesLoading,
+    error: matchesError,
+    refetch: refetchMatches,
+  } = useQuery<CompareMatchesResult>({
+    queryKey: ["compare-matches", workspaceId, matchA, matchB],
+    queryFn: () =>
+      apiFetchJson<CompareMatchesResult>(
+        `/analytics/profiles/compare/matches?match_a=${matchA}&match_b=${matchB}`,
+      ),
+    enabled: compareMatchesEnabled,
+  });
+
   const scopeLabel = useMemo(
     () => `${competition} · ${formatSeasonLabel(season)}`,
     [competition, season],
   );
 
-  const loading = mode === "players" ? playersLoading : teamsLoading;
-  const error = mode === "players" ? playersError : teamsError;
+  const loading =
+    mode === "players"
+      ? playersLoading
+      : mode === "teams"
+        ? teamsLoading
+        : matchesLoading;
+  const error =
+    mode === "players"
+      ? playersError
+      : mode === "teams"
+        ? teamsError
+        : matchesError;
 
   return (
     <PageShell>
@@ -188,7 +254,11 @@ export default function AnalyticsComparePage() {
       <PageHeader
         eyebrow="Phase 4 analytics"
         title="Compare"
-        description={`Side-by-side season profiles for ${scopeLabel}.`}
+        description={
+          mode === "matches"
+            ? `Compare match analytics within ${scopeLabel}.`
+            : `Side-by-side season profiles for ${scopeLabel}.`
+        }
       />
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
@@ -197,6 +267,7 @@ export default function AnalyticsComparePage() {
           options={[
             { value: "players", label: "Players" },
             { value: "teams", label: "Teams" },
+            { value: "matches", label: "Matches" },
           ]}
           value={mode}
           onChange={(value) => setMode(value as CompareMode)}
@@ -235,7 +306,7 @@ export default function AnalyticsComparePage() {
                 onChange={setPlayerB}
               />
             </>
-          ) : (
+          ) : mode === "teams" ? (
             <>
               <TeamSelect
                 label="Team A"
@@ -250,6 +321,21 @@ export default function AnalyticsComparePage() {
                 onChange={setTeamB}
               />
             </>
+          ) : (
+            <>
+              <MatchSelect
+                label="Match A"
+                value={matchA}
+                options={matchOptions ?? []}
+                onChange={setMatchA}
+              />
+              <MatchSelect
+                label="Match B"
+                value={matchB}
+                options={matchOptions ?? []}
+                onChange={setMatchB}
+              />
+            </>
           )}
         </CardContent>
       </Card>
@@ -258,7 +344,13 @@ export default function AnalyticsComparePage() {
         <QueryErrorState
           error={error}
           fallbackMessage="Could not load comparison."
-          onRetry={() => (mode === "players" ? refetchPlayers() : refetchTeams())}
+          onRetry={() =>
+            mode === "players"
+              ? refetchPlayers()
+              : mode === "teams"
+                ? refetchTeams()
+                : refetchMatches()
+          }
         />
       ) : loading ? (
         <div className="surface-card h-64 animate-pulse rounded-xl border" />
@@ -274,9 +366,21 @@ export default function AnalyticsComparePage() {
             <CompareMetrics mode="teams" teams={teamComparison} />
           </CardContent>
         </Card>
+      ) : mode === "matches" && matchComparison ? (
+        <Card className="surface-card border">
+          <CardContent className="pt-6">
+            <CompareMetrics mode="matches" matches={matchComparison} />
+          </CardContent>
+        </Card>
       ) : (
         <p className="text-caption text-muted-foreground">
-          Pick two different {mode === "players" ? "players" : "teams"} to compare.
+          Pick two different{" "}
+          {mode === "players"
+            ? "players"
+            : mode === "teams"
+              ? "teams"
+              : "matches"}{" "}
+          to compare.
         </p>
       )}
     </PageShell>
@@ -305,6 +409,46 @@ function PlayerSelect({
           {options.map((player) => (
             <SelectItem key={player.id} value={String(player.id)}>
               {player.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function formatMatchOptionLabel(match: MatchOption): string {
+  const score =
+    match.home_score != null && match.away_score != null
+      ? ` (${match.home_score}–${match.away_score})`
+      : "";
+  const week =
+    match.match_week != null ? `W${match.match_week}: ` : "";
+  return `${week}${match.home_team ?? "Home"} vs ${match.away_team ?? "Away"}${score}`;
+}
+
+function MatchSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: MatchOption[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="text-label mb-1.5 block">{label}</label>
+      <Select value={value || undefined} onValueChange={onChange}>
+        <SelectTrigger className="h-9 bg-card/80">
+          <SelectValue placeholder="Select match" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((match) => (
+            <SelectItem key={match.id} value={String(match.id)}>
+              {formatMatchOptionLabel(match)}
             </SelectItem>
           ))}
         </SelectContent>
