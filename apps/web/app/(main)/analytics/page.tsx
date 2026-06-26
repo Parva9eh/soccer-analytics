@@ -34,6 +34,9 @@ import {
 } from "@/lib/report-types";
 import { PossessionSummaryPanel } from "@/components/analytics/PossessionSummaryPanel";
 import { ProgressivePassLeaderboardPanel } from "@/components/analytics/ProgressivePassLeaderboard";
+import { SeasonZonePanel } from "@/components/analytics/SeasonZonePanel";
+import { SeasonTeamHeatmapPanel } from "@/components/analytics/SeasonTeamHeatmapPanel";
+import type { SeasonZonesSummary } from "@/lib/zone-types";
 import type { SeasonPossessionSummary } from "@/lib/possession-types";
 import { XgFormChart } from "@/components/analytics/XgFormChart";
 import { XgLeaderboards } from "@/components/analytics/XgLeaderboards";
@@ -274,6 +277,16 @@ function AuthAnalyticsDashboard() {
       enabled: xgScopeEnabled,
     });
 
+  const { data: seasonZones, isLoading: seasonZonesLoading } =
+    useQuery<SeasonZonesSummary>({
+      queryKey: ["season-zones", workspaceId, competition, season],
+      queryFn: () =>
+        apiFetchJson<SeasonZonesSummary>(
+          `/analytics/zones/season?${seasonXgParams}`,
+        ),
+      enabled: xgScopeEnabled,
+    });
+
   const scopeLabel = reportScopeLabel(
     scope === "filtered" ? competition : null,
     scope === "filtered" ? season : null,
@@ -471,6 +484,24 @@ function AuthAnalyticsDashboard() {
             />
           )}
 
+          {scope === "filtered" && (
+            <SeasonZonePanel
+              competition={competition}
+              season={season}
+              data={seasonZones}
+              loading={seasonZonesLoading}
+            />
+          )}
+
+          {scope === "filtered" && (
+            <SeasonTeamHeatmapPanel
+              competition={competition}
+              season={season}
+              zoneData={seasonZones}
+              zoneLoading={seasonZonesLoading}
+            />
+          )}
+
           {dashboard && (
             <DashboardPanels dashboard={dashboard} />
           )}
@@ -550,6 +581,20 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
       queryFn: () =>
         apiFetchJson<SeasonPossessionSummary>(
           `/analytics/possession/season?${legacyXgParams}`,
+        ),
+    });
+
+  const { data: seasonZones, isLoading: seasonZonesLoading } =
+    useQuery<SeasonZonesSummary>({
+      queryKey: [
+        "season-zones",
+        workspaceId,
+        DEFAULT_COMPETITION,
+        DEFAULT_SEASON,
+      ],
+      queryFn: () =>
+        apiFetchJson<SeasonZonesSummary>(
+          `/analytics/zones/season?${legacyXgParams}`,
         ),
     });
 
@@ -641,6 +686,20 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
         season={DEFAULT_SEASON}
         data={possessionSummary}
         loading={possessionSummaryLoading}
+      />
+
+      <SeasonZonePanel
+        competition={DEFAULT_COMPETITION}
+        season={DEFAULT_SEASON}
+        data={seasonZones}
+        loading={seasonZonesLoading}
+      />
+
+      <SeasonTeamHeatmapPanel
+        competition={DEFAULT_COMPETITION}
+        season={DEFAULT_SEASON}
+        zoneData={seasonZones}
+        zoneLoading={seasonZonesLoading}
       />
 
       <AnalyticsRoadmap />

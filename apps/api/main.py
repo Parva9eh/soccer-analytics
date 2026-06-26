@@ -22,6 +22,7 @@ from routers.analytics_passes import router as analytics_passes_router
 from routers.analytics_possession import router as analytics_possession_router
 from routers.analytics_profiles import router as analytics_profiles_router
 from routers.analytics_xg import router as analytics_xg_router
+from routers.analytics_zones import router as analytics_zones_router
 
 from schemas.error import ErrorResponse, ErrorCode
 
@@ -80,6 +81,7 @@ app.include_router(analytics_xg_router)
 app.include_router(analytics_passes_router)
 app.include_router(analytics_possession_router)
 app.include_router(analytics_profiles_router)
+app.include_router(analytics_zones_router)
 
 # Add request logging middleware (after routers are included is fine)
 add_request_logging_middleware(app)

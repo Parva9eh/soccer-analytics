@@ -186,6 +186,134 @@ export function downloadCompareCsv(
   downloadTextFile(lines.join("\n"), `compare-${mode}-${slug || "export"}.csv`, "text/csv");
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function openComparePdfReport(
+  mode: CompareMode,
+  data: ComparePlayersResult | CompareTeamsResult | CompareMatchesResult,
+  scopeLabel: string,
+  radarImageDataUrl?: string | null,
+) {
+  const payload = buildCompareExport(mode, data);
+  if (!payload) {
+    return;
+  }
+
+  const generatedAt = new Date().toLocaleString();
+  const rowsHtml = payload.rows
+    .map(
+      (row) => `
+        <tr>
+          <td>${escapeHtml(row.left)}</td>
+          <td>${escapeHtml(row.metric)}</td>
+          <td>${escapeHtml(row.right)}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const radarSection = radarImageDataUrl
+    ? `<section class="radar"><h2>Radar overlay</h2><img src="${radarImageDataUrl}" alt="Radar comparison" /></section>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Compare report — ${escapeHtml(scopeLabel)}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; color: #0f172a; margin: 2rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .meta { color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: center; }
+    th { background: #f8fafc; font-weight: 600; }
+    td:first-child, th:first-child { text-align: right; }
+    td:last-child, th:last-child { text-align: left; }
+    .radar { margin-top: 2rem; page-break-inside: avoid; }
+    .radar img { max-width: 280px; height: auto; display: block; margin-top: 0.5rem; }
+    @media print { body { margin: 1rem; } }
+  </style>
+</head>
+<body>
+  <h1>Analytics comparison</h1>
+  <p class="meta">${escapeHtml(scopeLabel)} · ${escapeHtml(mode)} mode · ${escapeHtml(generatedAt)}</p>
+  <table>
+    <thead>
+      <tr>
+        <th>${escapeHtml(payload.leftLabel)}</th>
+        <th>Metric</th>
+        <th>${escapeHtml(payload.rightLabel)}</th>
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  ${radarSection}
+  <script>window.onload = () => { window.print(); };</script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const popup = window.open(url, "_blank", "noopener,noreferrer");
+  if (!popup) {
+    URL.revokeObjectURL(url);
+    return;
+  }
+  popup.addEventListener("load", () => URL.revokeObjectURL(url), { once: true });
+}
+
+export async function radarSvgToDataUrl(
+  svg: SVGSVGElement,
+  scale = 2,
+): Promise<string | null> {
+  try {
+    const cloned = svg.cloneNode(true) as SVGSVGElement;
+    const bbox = svg.getBoundingClientRect();
+    const width = bbox.width || 220;
+    const height = bbox.height || 220;
+    cloned.setAttribute("width", String(width));
+    cloned.setAttribute("height", String(height));
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(cloned);
+    const svgBlob = new Blob([svgString], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Failed to render SVG"));
+        img.src = url;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        return null;
+      }
+      context.fillStyle = "#0c1929";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/png");
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  } catch {
+    return null;
+  }
+}
+
 export async function downloadSvgAsPng(
   svg: SVGSVGElement,
   filename: string,
