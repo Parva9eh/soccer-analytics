@@ -10,14 +10,23 @@ from analytics.passes import (
     is_completed_pass,
     is_progressive_pass,
 )
-from analytics.players import event_player_id, event_player_name, event_team_name
+from analytics.players import event_player_id, event_team_name
+from analytics.possession import possession_id, possession_team_name
+from analytics.tactical import (
+    is_counter_pattern,
+    is_final_third_location,
+    is_set_piece_pattern,
+    play_pattern_name,
+)
 from analytics.xg import is_goal_outcome, shot_outcome, shot_team_name, shot_xg_from_details
 from core.supabase_client import get_supabase_public_read
 from routers.analytics_possession import _aggregate_team_possession, _build_chains
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.profiles import (
+    CompareMatchesResponse,
     ComparePlayersResponse,
     CompareTeamsResponse,
+    MatchAnalyticsProfile,
     PlayerSeasonProfile,
     TeamSeasonProfile,
 )
@@ -318,6 +327,134 @@ def _build_team_profile(
     )
 
 
+def _fetch_match_row(supabase: Client, match_id: int) -> dict[str, Any]:
+    result = (
+        supabase.table("matches")
+        .select(
+            "id, match_date, match_week, home_score, away_score, "
+            "home_team:teams!home_team_id(name), "
+            "away_team:teams!away_team_id(name)"
+        )
+        .eq("id", match_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        raise_http_exception(
+            status_code=404,
+            detail="Match not found",
+            code=ErrorCode.MATCH_NOT_FOUND,
+        )
+    return result.data[0]
+
+
+def _match_events(supabase: Client, match_id: int) -> list[dict[str, Any]]:
+    return (
+        supabase.table("events")
+        .select("id, x, end_x, event_type, details")
+        .eq("match_id", match_id)
+        .execute()
+    ).data or []
+
+
+def _build_match_profile(
+    supabase: Client, match_id: int
+) -> MatchAnalyticsProfile:
+    row = _fetch_match_row(supabase, match_id)
+    home = (row.get("home_team") or {}).get("name") or "Home"
+    away = (row.get("away_team") or {}).get("name") or "Away"
+    home_score = row.get("home_score")
+    away_score = row.get("away_score")
+    label = f"{home} {home_score if home_score is not None else '–'}–{away_score if away_score is not None else '–'} {away}"
+
+    event_rows = _match_events(supabase, match_id)
+    shots = 0
+    passes = 0
+    completed = 0
+    progressive = 0
+    set_piece_events = 0
+    counter_events = 0
+    final_third_events = 0
+    home_xg = 0.0
+    away_xg = 0.0
+
+    team_pass_x: dict[str, list[float]] = {home: [], away: []}
+    possession_keys: set[tuple[int, str]] = set()
+
+    for event in event_rows:
+        details = event.get("details")
+        pattern = play_pattern_name(details)
+        x = event.get("x")
+        if is_set_piece_pattern(pattern):
+            set_piece_events += 1
+        if is_counter_pattern(pattern):
+            counter_events += 1
+        if is_final_third_location(x):
+            final_third_events += 1
+
+        pid = possession_id(details)
+        pteam = possession_team_name(details)
+        if pid is not None and pteam:
+            possession_keys.add((pid, pteam))
+
+        event_type = event.get("event_type")
+        if event_type == "Shot":
+            shots += 1
+            shot_team = shot_team_name(details)
+            xg_val = shot_xg_from_details(details)
+            if xg_val is not None:
+                if shot_team == home:
+                    home_xg += xg_val
+                elif shot_team == away:
+                    away_xg += xg_val
+        elif event_type == "Pass":
+            passes += 1
+            team = event_team_name(details)
+            if team in team_pass_x and x is not None:
+                team_pass_x[team].append(float(x))
+            if is_completed_pass(details):
+                completed += 1
+
+    attack_direction = {
+        team: infer_team_attacks_high_x(values)
+        for team, values in team_pass_x.items()
+    }
+    for event in event_rows:
+        if event.get("event_type") != "Pass":
+            continue
+        details = event.get("details")
+        team = event_team_name(details)
+        if not team or not is_completed_pass(details):
+            continue
+        if is_progressive_pass(
+            event.get("x"),
+            event.get("end_x"),
+            attack_direction.get(team, True),
+        ):
+            progressive += 1
+
+    return MatchAnalyticsProfile(
+        match_id=match_id,
+        label=label,
+        home_team=home,
+        away_team=away,
+        home_score=home_score,
+        away_score=away_score,
+        match_week=row.get("match_week"),
+        home_xg=round(home_xg, 2),
+        away_xg=round(away_xg, 2),
+        total_events=len(event_rows),
+        shots=shots,
+        passes=passes,
+        completed_passes=completed,
+        progressive_passes=progressive,
+        possession_sequences=len(possession_keys),
+        set_piece_events=set_piece_events,
+        counter_events=counter_events,
+        final_third_events=final_third_events,
+    )
+
+
 def _season_event_bundle(
     supabase: Client, competition: str, season: str
 ) -> tuple[list[int], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
@@ -511,5 +648,63 @@ def compare_teams(
         raise_http_exception(
             status_code=500,
             detail="Failed to compare teams",
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get(
+    "/matches/{match_id}",
+    response_model=MatchAnalyticsProfile,
+    responses=COMMON_ERROR_RESPONSES,
+)
+def get_match_analytics_profile(
+    match_id: int,
+    supabase: Client = Depends(get_supabase_public_read),
+) -> MatchAnalyticsProfile:
+    """Analytics summary for a single match."""
+    try:
+        return _build_match_profile(supabase, match_id)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Failed to build match profile for %s", match_id)
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to build match analytics profile",
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get(
+    "/compare/matches",
+    response_model=CompareMatchesResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
+def compare_matches(
+    match_a_id: int = Query(..., alias="match_a"),
+    match_b_id: int = Query(..., alias="match_b"),
+    supabase: Client = Depends(get_supabase_public_read),
+) -> CompareMatchesResponse:
+    """Side-by-side match analytics profiles."""
+    try:
+        if match_a_id == match_b_id:
+            raise_http_exception(
+                status_code=400,
+                detail="Choose two different matches",
+                code=ErrorCode.VALIDATION_ERROR,
+            )
+        return CompareMatchesResponse(
+            match_a=_build_match_profile(supabase, match_a_id),
+            match_b=_build_match_profile(supabase, match_b_id),
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Failed to compare matches %s and %s", match_a_id, match_b_id
+        )
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to compare matches",
             code=ErrorCode.INTERNAL_SERVER_ERROR,
         )
