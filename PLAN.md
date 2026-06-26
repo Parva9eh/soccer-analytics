@@ -305,9 +305,16 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Multi-player radar overlay on `/analytics/compare` (players mode)
 - ✅ Copy link button on compare page for sharing selections
 
-#### Planned next (4.7+)
-- Team-split heatmaps and zone comparison
-- PDF/image export for comparisons
+#### Phase 4.7 — Team heatmaps, zones & export (complete)
+
+- ✅ Team-split heatmap modes on match page (All / Home / Away / Split side-by-side)
+- ✅ Zone comparison panel — event counts by pitch third per team
+- ✅ Position-aware radar scaling (goalkeeper, defender, midfielder, forward benchmarks)
+- ✅ Compare page CSV export and radar PNG download
+
+#### Planned next (4.8+)
+- PDF export for full comparison reports
+- Season-level zone aggregates and team heatmaps
 
 ---
 

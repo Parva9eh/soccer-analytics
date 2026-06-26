@@ -15,13 +15,25 @@ import { buildHeatmapGrid } from "@/lib/heatmap-utils";
 export interface HeatmapEvent {
   x: number | null;
   y: number | null;
+  details?: unknown;
 }
 
 interface TacticalHeatmapPitchProps {
   events: HeatmapEvent[];
+  label?: string;
+  fillColor?: string;
+  instanceId?: string;
 }
 
-export function TacticalHeatmapPitch({ events }: TacticalHeatmapPitchProps) {
+export function TacticalHeatmapPitch({
+  events,
+  label = "Tactical heatmap",
+  fillColor = "hsl(var(--primary))",
+  instanceId = "default",
+}: TacticalHeatmapPitchProps) {
+  const filterId = `heatmapBlur-${instanceId}`;
+  const patternId = `heatmapGrassStripes-${instanceId}`;
+  const vignetteId = `heatmapVignette-${instanceId}`;
   const { width, height, padding } = SVG_VIEW;
   const innerW = width - padding * 2;
   const innerH = height - padding * 2;
@@ -31,14 +43,11 @@ export function TacticalHeatmapPitch({ events }: TacticalHeatmapPitchProps) {
 
   const grid = useMemo(() => buildHeatmapGrid(events), [events]);
 
-  const cellWidth = innerW / grid.cols;
-  const cellHeight = innerH / grid.rows;
-
   const scaleX = (x: number) => statsbombToSvg(x, 0, width, height, padding).sx;
   const scaleY = (y: number) => statsbombToSvg(0, y, width, height, padding).sy;
 
   return (
-    <PitchFrame mode="2d" label="Tactical heatmap">
+    <PitchFrame mode="2d" label={label}>
       <div className="relative p-2 sm:p-3">
         <svg
           viewBox={`0 0 ${width} ${height}`}
@@ -48,14 +57,14 @@ export function TacticalHeatmapPitch({ events }: TacticalHeatmapPitchProps) {
           aria-label={`Tactical heatmap with ${grid.totalEvents} positioned events`}
         >
           <defs>
-            <filter id="heatmapBlur" x="-20%" y="-20%" width="140%" height="140%">
+            <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
             </filter>
-            <pattern id="heatmapGrassStripes" patternUnits="userSpaceOnUse" width="28" height={innerH}>
+            <pattern id={patternId} patternUnits="userSpaceOnUse" width="28" height={innerH}>
               <rect width="14" height={innerH} fill="#0c4a12" />
               <rect x="14" width="14" height={innerH} fill="#15803d" opacity="0.22" />
             </pattern>
-            <radialGradient id="heatmapVignette" cx="50%" cy="50%" r="58%">
+            <radialGradient id={vignetteId} cx="50%" cy="50%" r="58%">
               <stop offset="55%" stopColor="#000" stopOpacity="0" />
               <stop offset="100%" stopColor="#000" stopOpacity="0.45" />
             </radialGradient>
@@ -67,7 +76,7 @@ export function TacticalHeatmapPitch({ events }: TacticalHeatmapPitchProps) {
             width={innerW}
             height={innerH}
             rx="4"
-            fill="url(#heatmapGrassStripes)"
+            fill={`url(#${patternId})`}
           />
 
           <g
@@ -112,7 +121,7 @@ export function TacticalHeatmapPitch({ events }: TacticalHeatmapPitchProps) {
 
           <Goals2D padding={padding} width={width} height={height} cy={cy} m={m} />
 
-          <g filter="url(#heatmapBlur)">
+          <g filter={`url(#${filterId})`}>
             {grid.bins.map((bin) => {
               const x0 = (bin.col / grid.cols) * PITCH_LENGTH_U;
               const y0 = (bin.row / grid.rows) * PITCH_WIDTH_U;
@@ -131,7 +140,7 @@ export function TacticalHeatmapPitch({ events }: TacticalHeatmapPitchProps) {
                   y={sy}
                   width={sw}
                   height={sh}
-                  fill="hsl(var(--primary))"
+                  fill={fillColor}
                   fillOpacity={opacity}
                   rx="2"
                 />
@@ -145,7 +154,7 @@ export function TacticalHeatmapPitch({ events }: TacticalHeatmapPitchProps) {
             width={innerW}
             height={innerH}
             rx="4"
-            fill="url(#heatmapVignette)"
+            fill={`url(#${vignetteId})`}
             pointerEvents="none"
           />
         </svg>
