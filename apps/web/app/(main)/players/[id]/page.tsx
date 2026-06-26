@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageShell } from "@/components/ui/page-shell";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { PlayerSeasonStats } from "@/components/analytics/PlayerSeasonStats";
 
 interface Player {
   id: number;
@@ -54,7 +55,7 @@ export default function PlayerDetailPage() {
 
   if (isLoading) {
     return (
-      <PageShell className="max-w-2xl">
+      <PageShell className="max-w-4xl">
         {backButton}
         <div className="mb-8 h-9 w-full max-w-xs animate-pulse rounded bg-muted/50" />
         <div className="mb-8 h-5 w-48 animate-pulse rounded bg-muted/50" />
@@ -76,7 +77,7 @@ export default function PlayerDetailPage() {
 
   if (error || !player) {
     return (
-      <PageShell className="max-w-2xl">
+      <PageShell className="max-w-4xl">
         {backButton}
         <QueryErrorState
           error={error ?? new Error("Player not found")}
@@ -89,7 +90,7 @@ export default function PlayerDetailPage() {
   }
 
   return (
-    <PageShell className="max-w-2xl">
+    <PageShell className="max-w-4xl">
       {backButton}
 
       <div
@@ -143,9 +144,7 @@ export default function PlayerDetailPage() {
           </CardContent>
         </Card>
 
-        <p className="text-caption mt-6">
-          More detailed statistics and match history coming soon.
-        </p>
+        <PlayerSeasonStats playerId={player.id} />
       </div>
     </PageShell>
   );
