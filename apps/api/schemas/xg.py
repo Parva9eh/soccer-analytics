@@ -44,3 +44,25 @@ class TeamXgLeaderboardResponse(BaseModel):
     competition: str
     season: str
     teams: list[TeamXgSummary] = []
+
+
+class MatchXgFormPoint(BaseModel):
+    match_id: int
+    match_week: int | None = None
+    match_date: str | None = None
+    opponent: str
+    is_home: bool
+    xg_for: float = 0
+    xg_against: float = 0
+    goals_for: int | None = None
+    goals_against: int | None = None
+    rolling_xg_for: float = 0
+    rolling_xg_against: float = 0
+
+
+class TeamXgFormResponse(BaseModel):
+    competition: str
+    season: str
+    team: str
+    window: int = Field(ge=1, le=15)
+    points: list[MatchXgFormPoint] = []
