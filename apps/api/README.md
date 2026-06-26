@@ -43,6 +43,8 @@ The API will be available at `http://localhost:8000`.
 - `GET /analytics/profiles/compare/teams?team_a=&team_b=&competition=&season=` — Compare two teams
 - `GET /analytics/profiles/matches/{id}` — Match analytics profile (xG, passes, possession, tactical counts)
 - `GET /analytics/profiles/compare/matches?match_a=&match_b=` — Compare two matches
+- `GET /analytics/zones/season?competition=&season=` — Team event counts by pitch third
+- `GET /analytics/zones/heatmap?competition=&season=&team=` — Season spatial heatmap bins for one team
 - `GET /auth/me` — Current user + profile (requires Bearer token)
 - `GET /workspaces/` — List workspaces for the signed-in user (always requires Bearer token)
 - `POST /workspaces/` — Create workspace (creator becomes `admin`)
