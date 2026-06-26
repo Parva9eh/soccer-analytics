@@ -16,6 +16,18 @@ import { AUTH_ENABLED } from "@/lib/auth-config";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { parseMatchAnalysisConfig } from "@/lib/analysis-config";
 import { SaveAnalysisDialog } from "@/components/analysis/SaveAnalysisDialog";
+import { MatchXgStrip } from "@/components/analytics/MatchXgStrip";
+import { ShotMapLegend } from "@/components/analytics/ShotMapLegend";
+import { ShotMapPitch } from "@/components/analytics/ShotMapPitch";
+import { formatXg, type MatchXg } from "@/lib/xg-types";
+import {
+  formatShotOutcome,
+  isShotEvent,
+  parseShotMeta,
+  shotMatchesTeamFilter,
+  shotOutcomeColor,
+  type ShotTeamFilter,
+} from "@/lib/shot-utils";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,7 +91,10 @@ interface Event {
   y: number | null;
   end_x: number | null;
   end_y: number | null;
+  details?: unknown;
 }
+
+type PitchViewMode = "events" | "shots";
 
 interface EventsResponse {
   total: number;
@@ -107,6 +122,8 @@ export default function MatchDetailPage() {
   const [isControlsOpen, setIsControlsOpen] = useState(false);
   const [isTableFilterOpen, setIsTableFilterOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [pitchViewMode, setPitchViewMode] = useState<PitchViewMode>("events");
+  const [shotTeamFilter, setShotTeamFilter] = useState<ShotTeamFilter>("all");
   const [use3DView, setUse3DView] = useState(false);
   const [current3DView, setCurrent3DView] = useState<'top' | 'side' | 'goal' | 'iso'>('iso');
   const [autoOrbit3D, setAutoOrbit3D] = useState(false); // advanced interactivity for 3D stadium tour feel
@@ -183,6 +200,12 @@ export default function MatchDetailPage() {
     enabled: !!matchId,
   });
 
+  const { data: matchXg } = useQuery<MatchXg>({
+    queryKey: ["match-xg", workspaceId, matchId],
+    queryFn: () => apiFetchJson<MatchXg>(`/analytics/xg/matches/${matchId}`),
+    enabled: matchId != null,
+  });
+
   // Fetch events for table
   const { data: eventsData, isLoading: eventsLoading } =
     useQuery<EventsResponse>({
@@ -212,14 +235,49 @@ export default function MatchDetailPage() {
     enabled: !!matchId,
   });
 
+  const allPitchEvents = pitchEventsData?.events ?? [];
+
+  const shotMapEvents = allPitchEvents.filter((event) => {
+    if (!isShotEvent(event.event_type) || event.x == null || event.y == null) {
+      return false;
+    }
+    if (!match) {
+      return true;
+    }
+    const meta = parseShotMeta(event.details);
+    return shotMatchesTeamFilter(
+      meta.team,
+      shotTeamFilter,
+      match.home_team ?? "",
+      match.away_team ?? "",
+    );
+  });
+
+  const shotMapSummary = shotMapEvents.reduce(
+    (acc, event) => {
+      const meta = parseShotMeta(event.details);
+      acc.shots += 1;
+      if (meta.xg != null) {
+        acc.xg += meta.xg;
+      }
+      if (meta.outcome === "Goal") {
+        acc.goals += 1;
+      }
+      return acc;
+    },
+    { shots: 0, goals: 0, xg: 0 },
+  );
+
   // Filter events shown on pitch
   const filteredPitchEvents =
-    pitchEventsData?.events?.filter((event) => {
-      if (!event.event_type) return false;
-      return visibleEventTypes.some((type) =>
-        event.event_type!.toLowerCase().includes(type.toLowerCase()),
-      );
-    }) || [];
+    pitchViewMode === "shots"
+      ? shotMapEvents
+      : allPitchEvents.filter((event) => {
+          if (!event.event_type) return false;
+          return visibleEventTypes.some((type) =>
+            event.event_type!.toLowerCase().includes(type.toLowerCase()),
+          );
+        });
 
   const eventTypes = pitchEventsData?.events
     ? (Array.from(
@@ -396,38 +454,75 @@ export default function MatchDetailPage() {
 
             <p className="text-center text-caption sm:hidden">{formattedDate}</p>
           </div>
+          {matchXg && <MatchXgStrip data={matchXg} />}
         </CardContent>
       </Card>
 
       {/* Pitch Visualization - Elevated as primary view */}
       <div className="mb-8">
         <SectionHeader
-          title="Pitch view"
+          title={pitchViewMode === "shots" ? "Shot map" : "Pitch view"}
           description={
-            use3DView
-              ? "Click events to inspect • Shift+drag to box-select"
-              : "Click events on the pitch to inspect"
+            pitchViewMode === "shots"
+              ? `${shotMapSummary.shots} shots · ${formatXg(shotMapSummary.xg)} xG · ${shotMapSummary.goals} goals`
+              : use3DView
+                ? "Click events to inspect • Shift+drag to box-select"
+                : "Click events on the pitch to inspect"
           }
           action={
           <div className="flex flex-wrap items-center justify-end gap-2">
             <SegmentedControl
-              aria-label="Pitch view mode"
+              aria-label="Pitch content mode"
               options={[
-                { value: "2d", label: "2D" },
-                { value: "3d", label: "3D" },
+                { value: "events", label: "Events" },
+                { value: "shots", label: "Shot map" },
               ]}
-              value={use3DView ? "3d" : "2d"}
-              onChange={(v) => setUse3DView(v === "3d")}
+              value={pitchViewMode}
+              onChange={(value) => {
+                const mode = value as PitchViewMode;
+                setPitchViewMode(mode);
+                if (mode === "shots") {
+                  setUse3DView(false);
+                }
+              }}
             />
 
-            <div className="hidden items-center gap-1.5 border-l border-border pl-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:flex">
-              {EVENT_TYPES.map((t) => (
-                <span key={t} className="inline-flex items-center gap-0.5">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getEventColor(t) }} />
-                  {t}
-                </span>
-              ))}
-            </div>
+            {pitchViewMode === "shots" && match && (
+              <SegmentedControl
+                aria-label="Shot map team filter"
+                size="sm"
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "home", label: "Home" },
+                  { value: "away", label: "Away" },
+                ]}
+                value={shotTeamFilter}
+                onChange={(value) => setShotTeamFilter(value as ShotTeamFilter)}
+              />
+            )}
+
+            {pitchViewMode === "events" && (
+              <SegmentedControl
+                aria-label="Pitch view mode"
+                options={[
+                  { value: "2d", label: "2D" },
+                  { value: "3d", label: "3D" },
+                ]}
+                value={use3DView ? "3d" : "2d"}
+                onChange={(v) => setUse3DView(v === "3d")}
+              />
+            )}
+
+            {pitchViewMode === "events" && (
+              <div className="hidden items-center gap-1.5 border-l border-border pl-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:flex">
+                {EVENT_TYPES.map((t) => (
+                  <span key={t} className="inline-flex items-center gap-0.5">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getEventColor(t) }} />
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {highlightedEventId && (
               <Button
@@ -442,7 +537,7 @@ export default function MatchDetailPage() {
               </Button>
             )}
 
-            {use3DView && (
+            {pitchViewMode === "events" && use3DView && (
               <>
                 <SegmentedControl
                   aria-label="Camera view"
@@ -466,38 +561,47 @@ export default function MatchDetailPage() {
               </>
             )}
 
-            <PitchLayersPopover
-              open={isControlsOpen}
-              onOpenChange={setIsControlsOpen}
-              visibleTypes={visibleEventTypes}
-              onToggleType={toggleEventType}
-              onSelectAll={() => setVisibleEventTypes([...EVENT_TYPES])}
-              onClearAll={() => setVisibleEventTypes([])}
-            />
+            {pitchViewMode === "events" && (
+              <PitchLayersPopover
+                open={isControlsOpen}
+                onOpenChange={setIsControlsOpen}
+                visibleTypes={visibleEventTypes}
+                onToggleType={toggleEventType}
+                onSelectAll={() => setVisibleEventTypes([...EVENT_TYPES])}
+                onClearAll={() => setVisibleEventTypes([])}
+              />
+            )}
           </div>
           }
         />
 
-        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:hidden">
-          {EVENT_TYPES.map((t) => (
-            <span
-              key={t}
-              className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
-            >
+        {pitchViewMode === "shots" ? (
+          <div className="mb-3">
+            <ShotMapLegend />
+          </div>
+        ) : (
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:hidden">
+            {EVENT_TYPES.map((t) => (
               <span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: getEventColor(t) }}
-              />
-              {t}
-            </span>
-          ))}
-        </div>
+                key={t}
+                className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: getEventColor(t) }}
+                />
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mb-3 mt-1">
           <div className="mb-1.5 flex items-center justify-between text-label">
             <span>Event timeline</span>
             <span className="normal-case tracking-normal text-muted-foreground">
-              {filteredPitchEvents.length} events
+              {filteredPitchEvents.length}{" "}
+              {pitchViewMode === "shots" ? "shots" : "events"}
             </span>
           </div>
           <div className="relative h-8 w-full rounded-md border border-border/80 bg-background px-3">
@@ -508,8 +612,19 @@ export default function MatchDetailPage() {
                 .map((event, index) => {
                   const minute = event.minute ?? 0;
                   const leftPct = timelinePercentFromMinute(minute);
-                  const color = getEventColor(event.event_type);
+                  const shotMeta =
+                    pitchViewMode === "shots"
+                      ? parseShotMeta(event.details)
+                      : null;
+                  const color =
+                    pitchViewMode === "shots"
+                      ? shotOutcomeColor(shotMeta?.outcome ?? null)
+                      : getEventColor(event.event_type);
                   const isActive = highlightedEventId === event.id;
+                  const title =
+                    pitchViewMode === "shots"
+                      ? `${shotMeta?.player ?? "Shot"} · ${minute}'`
+                      : `${event.event_type} — ${minute}'`;
 
                   return (
                     <button
@@ -524,7 +639,7 @@ export default function MatchDetailPage() {
                           : "opacity-80 hover:opacity-100"
                       }`}
                       style={{ left: `${leftPct}%`, backgroundColor: color }}
-                      title={`${event.event_type} — ${minute}'`}
+                      title={title}
                     />
                   );
                 })}
@@ -574,7 +689,30 @@ export default function MatchDetailPage() {
             }
           }}
         >
-          {use3DView ? (
+          {pitchViewMode === "shots" ? (
+            shotMapEvents.length > 0 ? (
+              <ShotMapPitch
+                events={shotMapEvents}
+                onEventClick={handlePitchEventClick}
+                highlightedEventId={highlightedEventId}
+              />
+            ) : (
+              <EmptyState
+                icon={MapPin}
+                title="No shots in this filter"
+                description="Try showing all teams or switch back to the full event view."
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShotTeamFilter("all")}
+                  >
+                    Show all teams
+                  </Button>
+                }
+              />
+            )
+          ) : use3DView ? (
             <ThreeDPitch
               events={filteredPitchEvents}
               onEventClick={handlePitchEventClick}
@@ -876,10 +1014,50 @@ export default function MatchDetailPage() {
               </div>
             )}
 
-            {/* Richer context placeholder */}
-            <p className="border-t border-border/80 pt-2 text-caption">
-              Player context and advanced metrics would appear here with richer event data.
-            </p>
+            {selectedEvent && isShotEvent(selectedEvent.event_type) && (
+              <div className="border-t border-border/80 pt-4">
+                <div className="text-label mb-2">Shot details</div>
+                {(() => {
+                  const meta = parseShotMeta(selectedEvent.details);
+                  return (
+                    <div className="space-y-3">
+                      {meta.player && (
+                        <div>
+                          <div className="text-caption mb-0.5">Player</div>
+                          <div className="font-medium text-foreground">{meta.player}</div>
+                        </div>
+                      )}
+                      {meta.team && (
+                        <div>
+                          <div className="text-caption mb-0.5">Team</div>
+                          <div className="font-medium text-foreground">{meta.team}</div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-caption mb-0.5">xG</div>
+                          <div className="font-mono-data text-2xl font-semibold tabular-nums text-foreground">
+                            {meta.xg != null ? formatXg(meta.xg) : "—"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-caption mb-0.5">Outcome</div>
+                          <div className="flex items-center gap-2 font-medium text-foreground">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{
+                                backgroundColor: shotOutcomeColor(meta.outcome),
+                              }}
+                            />
+                            {formatShotOutcome(meta.outcome)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
