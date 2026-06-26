@@ -106,8 +106,8 @@ function AnalyticsRoadmap() {
     {
       title: "Player insights",
       icon: Users,
-      body: "Advanced profiles, radar charts, and comparisons.",
-      live: false,
+      body: "Season stats on player pages; side-by-side compare for players and teams.",
+      live: true,
     },
     {
       title: "Trends & form",
@@ -354,6 +354,12 @@ function AuthAnalyticsDashboard() {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/analytics/compare">
+                  <Users className="mr-2 h-4 w-4" />
+                  Compare
+                </Link>
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="/reports">
                   <FileText className="mr-2 h-4 w-4" />

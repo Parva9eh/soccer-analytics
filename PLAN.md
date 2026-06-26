@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 4.3 in progress (June 2026)  
-**Active branch:** `phase4/xg-foundation` (4.1–4.2 merged to `main`)
+**Current Phase:** Phase 4.4 in progress (June 2026)  
+**Active branch:** `phase4/xg-foundation` (4.1–4.3 on `main`)
 
 ---
 
@@ -274,17 +274,25 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Match detail — **Pass network** pitch mode (home/away, volume-weighted edges)
 - ✅ Analytics dashboard — progressive passes by team panel
 
-#### Phase 4.3 — Possession & build-up (complete on branch)
+#### Phase 4.3 — Possession & build-up (complete)
 
 - ✅ `GET /analytics/possession/matches/{match_id}` — possession chains ranked by pass count
 - ✅ `GET /analytics/possession/season` — team avg duration, passes/possession, shot rate
 - ✅ Match page possession panel — click chain to filter pitch events
 - ✅ Analytics dashboard — possession & build-up summary panel
 
-#### Planned next (4.4+)
-- Player and team aggregates / profiles
+#### Phase 4.4 — Profiles & comparisons (in progress)
+
+- ✅ `GET /analytics/profiles/players/{id}` — player season profile (xG, shots, passes)
+- ✅ `GET /analytics/profiles/teams` — team season profile (xG for/against, build-up)
+- ✅ `GET /analytics/profiles/compare/players` and `/compare/teams`
+- ✅ Player detail page — season stat cards
+- ✅ `/analytics/compare` — side-by-side player and team comparison
+
+#### Planned next (4.5+)
 - Tactical event filtering and pattern detection
-- Comparison tools (player vs player, team vs team, match vs match)
+- Match vs match comparison
+- Radar charts and richer player visuals
 
 ---
 
@@ -323,7 +331,7 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
-| Phase 4 | 🚧 In progress | 4.1–4.2 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md); 4.3 on `phase4/xg-foundation` |
+| Phase 4 | 🚧 In progress | 4.1–4.3 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md); 4.4 on `phase4/xg-foundation` |
 | Phase 5 | Planned | Testing, CI, and deployment |
 
 Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md), [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) (4.1 slice).
