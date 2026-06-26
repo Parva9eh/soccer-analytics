@@ -21,6 +21,8 @@ import { ShotMapLegend } from "@/components/analytics/ShotMapLegend";
 import { PassNetworkPitch } from "@/components/analytics/PassNetworkPitch";
 import { ShotMapPitch } from "@/components/analytics/ShotMapPitch";
 import { PossessionChainsPanel } from "@/components/analytics/PossessionChainsPanel";
+import { TacticalHeatmapPitch } from "@/components/analytics/TacticalHeatmapPitch";
+import { MatchPhaseBreakdown } from "@/components/analytics/MatchPhaseBreakdown";
 import type { MatchPassNetwork, PassTeamFilter } from "@/lib/pass-types";
 import { chainKey } from "@/lib/possession-utils";
 import type { PossessionChainSummary } from "@/lib/possession-types";
@@ -112,6 +114,7 @@ interface Event {
 }
 
 type PitchViewMode = "events" | "shots" | "passes";
+type EventsDisplayMode = "dots" | "heatmap";
 
 interface EventsResponse {
   total: number;
@@ -140,6 +143,8 @@ export default function MatchDetailPage() {
   const [isTableFilterOpen, setIsTableFilterOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [pitchViewMode, setPitchViewMode] = useState<PitchViewMode>("events");
+  const [eventsDisplayMode, setEventsDisplayMode] =
+    useState<EventsDisplayMode>("dots");
   const [tacticalPreset, setTacticalPreset] = useState<TacticalPreset>("all");
   const [shotTeamFilter, setShotTeamFilter] = useState<ShotTeamFilter>("all");
   const [passTeamFilter, setPassTeamFilter] = useState<PassTeamFilter>("home");
@@ -324,6 +329,20 @@ export default function MatchDetailPage() {
     },
     [],
   );
+
+  const phaseBreakdownEvents = allPitchEvents.filter((event) => {
+    if (!event.event_type) {
+      return false;
+    }
+    if (
+      !visibleEventTypes.some((type) =>
+        event.event_type!.toLowerCase().includes(type.toLowerCase()),
+      )
+    ) {
+      return false;
+    }
+    return matchesTacticalPreset(event, tacticalPreset);
+  });
 
   const selectedChainKey = selectedPossessionChain
     ? chainKey(
@@ -550,7 +569,9 @@ export default function MatchDetailPage() {
               ? "Shot map"
               : pitchViewMode === "passes"
                 ? "Pass network"
-                : "Pitch view"
+                : eventsDisplayMode === "heatmap"
+                  ? "Tactical heatmap"
+                  : "Pitch view"
           }
           description={
             pitchViewMode === "shots"
@@ -612,6 +633,25 @@ export default function MatchDetailPage() {
             )}
 
             {pitchViewMode === "events" && (
+              <SegmentedControl
+                aria-label="Events display mode"
+                size="sm"
+                options={[
+                  { value: "dots", label: "Dots" },
+                  { value: "heatmap", label: "Heatmap" },
+                ]}
+                value={eventsDisplayMode}
+                onChange={(value) => {
+                  const mode = value as EventsDisplayMode;
+                  setEventsDisplayMode(mode);
+                  if (mode === "heatmap") {
+                    setUse3DView(false);
+                  }
+                }}
+              />
+            )}
+
+            {pitchViewMode === "events" && eventsDisplayMode === "dots" && (
               <SegmentedControl
                 aria-label="Pitch view mode"
                 options={[
@@ -884,6 +924,8 @@ export default function MatchDetailPage() {
                 </Button>
               }
             />
+          ) : pitchViewMode === "events" && eventsDisplayMode === "heatmap" ? (
+            <TacticalHeatmapPitch events={filteredPitchEvents} />
           ) : use3DView ? (
             <ThreeDPitch
               events={filteredPitchEvents}
@@ -927,6 +969,12 @@ export default function MatchDetailPage() {
           selectedChainKey={selectedChainKey}
           onSelectChain={handleSelectPossessionChain}
         />
+      )}
+
+      {pitchViewMode === "events" && phaseBreakdownEvents.length > 0 && (
+        <div className="mb-8">
+          <MatchPhaseBreakdown events={phaseBreakdownEvents} />
+        </div>
       )}
 
       {/* Events Table - Tightly integrated with Pitch */}

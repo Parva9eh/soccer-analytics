@@ -150,8 +150,16 @@ Keep `phase4/xg-foundation` on the remote for Phase 4.2 work.
 
 ---
 
-## Suggested next (Phase 4.6+)
+### 4.6 (merged)
+- [x] Tactical spatial heatmap on match page (client-side binning)
+- [x] Phase breakdown panel (play pattern tagging)
+- [x] Multi-player radar overlay on compare page
+- [x] Copy link for sharing compare selections
 
-1. Tactical heatmaps and phase tagging
-2. Multi-player radar overlays on compare page
-3. Export/share comparison views
+---
+
+## Suggested next (Phase 4.7+)
+
+1. Team-split heatmaps and zone comparison
+2. PDF/image export for comparisons
+3. Dynamic radar axis scaling by position

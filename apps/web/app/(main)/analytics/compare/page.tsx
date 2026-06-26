@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Link2, Check } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import {
@@ -23,11 +23,13 @@ import type {
 } from "@/lib/profile-types";
 import type { TeamXgLeaderboard } from "@/lib/xg-types";
 import { CompareMetrics } from "@/components/analytics/CompareMetrics";
+import { ComparePlayerRadarChart } from "@/components/analytics/PlayerRadarChart";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import {
   Select,
@@ -81,6 +83,7 @@ export default function AnalyticsComparePage() {
   const [teamB, setTeamB] = useState(searchParams.get("team_b")?.trim() || "");
   const [matchA, setMatchA] = useState(searchParams.get("match_a")?.trim() || "");
   const [matchB, setMatchB] = useState(searchParams.get("match_b")?.trim() || "");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const { data: catalog, isLoading: catalogLoading } = useQuery<
     CompetitionCatalogItem[]
@@ -251,15 +254,44 @@ export default function AnalyticsComparePage() {
         Back to analytics
       </Link>
 
-      <PageHeader
-        eyebrow="Phase 4 analytics"
-        title="Compare"
-        description={
-          mode === "matches"
-            ? `Compare match analytics within ${scopeLabel}.`
-            : `Side-by-side season profiles for ${scopeLabel}.`
-        }
-      />
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <PageHeader
+          eyebrow="Phase 4 analytics"
+          title="Compare"
+          description={
+            mode === "matches"
+              ? `Compare match analytics within ${scopeLabel}.`
+              : `Side-by-side season profiles for ${scopeLabel}.`
+          }
+          className="mb-0"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-2"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              setLinkCopied(true);
+              window.setTimeout(() => setLinkCopied(false), 2000);
+            } catch {
+              setLinkCopied(false);
+            }
+          }}
+        >
+          {linkCopied ? (
+            <>
+              <Check className="h-4 w-4" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Link2 className="h-4 w-4" />
+              Copy link
+            </>
+          )}
+        </Button>
+      </div>
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <SegmentedControl
@@ -355,11 +387,17 @@ export default function AnalyticsComparePage() {
       ) : loading ? (
         <div className="surface-card h-64 animate-pulse rounded-xl border" />
       ) : mode === "players" && playerComparison ? (
-        <Card className="surface-card border">
-          <CardContent className="pt-6">
-            <CompareMetrics mode="players" players={playerComparison} />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card className="surface-card border">
+            <CardContent className="pt-6">
+              <CompareMetrics mode="players" players={playerComparison} />
+            </CardContent>
+          </Card>
+          <ComparePlayerRadarChart
+            playerA={playerComparison.player_a}
+            playerB={playerComparison.player_b}
+          />
+        </div>
       ) : mode === "teams" && teamComparison ? (
         <Card className="surface-card border">
           <CardContent className="pt-6">
