@@ -274,7 +274,7 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Match detail — **Pass network** pitch mode (home/away, volume-weighted edges)
 - ✅ Analytics dashboard — progressive passes by team panel
 
-#### Phase 4.3 — Possession & build-up (in progress)
+#### Phase 4.3 — Possession & build-up (complete on branch)
 
 - ✅ `GET /analytics/possession/matches/{match_id}` — possession chains ranked by pass count
 - ✅ `GET /analytics/possession/season` — team avg duration, passes/possession, shot rate
