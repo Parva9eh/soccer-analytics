@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Link2, Check, Download, ImageDown } from "lucide-react";
+import { ArrowLeft, Link2, Check, Download, ImageDown, FileText } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import {
@@ -27,6 +27,8 @@ import { ComparePlayerRadarChart } from "@/components/analytics/PlayerRadarChart
 import {
   downloadCompareCsv,
   downloadSvgAsPng,
+  openComparePdfReport,
+  radarSvgToDataUrl,
 } from "@/lib/compare-export";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { PageHeader } from "@/components/ui/page-header";
@@ -290,17 +292,39 @@ export default function AnalyticsComparePage() {
         />
         <div className="flex shrink-0 flex-wrap gap-2">
           {canExport && activeComparison && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() =>
-                downloadCompareCsv(mode, activeComparison, scopeLabel)
-              }
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() =>
+                  downloadCompareCsv(mode, activeComparison, scopeLabel)
+                }
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={async () => {
+                  const radarImage =
+                    mode === "players" && radarRef.current
+                      ? await radarSvgToDataUrl(radarRef.current)
+                      : null;
+                  openComparePdfReport(
+                    mode,
+                    activeComparison,
+                    scopeLabel,
+                    radarImage,
+                  );
+                }}
+              >
+                <FileText className="h-4 w-4" />
+                Export PDF
+              </Button>
+            </>
           )}
           {mode === "players" && playerComparison && (
             <Button

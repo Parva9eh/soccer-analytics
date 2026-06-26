@@ -166,8 +166,16 @@ Keep `phase4/xg-foundation` on the remote for Phase 4.2 work.
 
 ---
 
-## Suggested next (Phase 4.8+)
+### 4.8 (merged)
+- [x] Season zone aggregates API (`/analytics/zones/season`)
+- [x] Team season heatmap API (`/analytics/zones/heatmap`)
+- [x] Analytics dashboard zone panel + team heatmap selector
+- [x] Compare PDF export (printable report with metrics + radar)
 
-1. PDF export for full comparison reports
-2. Season-level zone aggregates
-3. Team heatmaps on analytics dashboard
+---
+
+## Suggested next (Phase 5+)
+
+1. Automated testing and CI/CD
+2. Materialized views / caching for large season aggregates
+3. Multi-team heatmap overlays on compare

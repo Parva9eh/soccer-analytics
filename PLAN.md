@@ -312,9 +312,16 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Position-aware radar scaling (goalkeeper, defender, midfielder, forward benchmarks)
 - ✅ Compare page CSV export and radar PNG download
 
-#### Planned next (4.8+)
-- PDF export for full comparison reports
-- Season-level zone aggregates and team heatmaps
+#### Phase 4.8 — Season zones, team heatmaps & PDF export (complete)
+
+- ✅ `GET /analytics/zones/season` — team zone aggregates for a competition season
+- ✅ `GET /analytics/zones/heatmap` — binned season heatmap per team
+- ✅ Analytics dashboard — season zone panel and team heatmap selector
+- ✅ Compare page — printable PDF report (metrics table + optional radar image)
+
+#### Planned next (4.9+ / Phase 5)
+- Automated testing and CI/CD (Phase 5 kickoff)
+- Cached/materialized season aggregates for large datasets
 
 ---
 
