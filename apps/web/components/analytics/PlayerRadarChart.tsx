@@ -1,37 +1,44 @@
 "use client";
 
+import { forwardRef } from "react";
 import type { PlayerSeasonProfile } from "@/lib/profile-types";
 import { formatXg } from "@/lib/xg-types";
 import {
-  RADAR_AXES,
+  BASE_AXES,
   buildRadarPoints,
+  positionGroupLabel,
+  radarAxesForPosition,
   radarPolygonPoints,
+  type RadarAxis,
 } from "@/lib/radar-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const RADAR_SIZE = 220;
 const RADAR_CENTER = RADAR_SIZE / 2;
 const RADAR_RADIUS = 82;
-const ANGLE_STEP = (Math.PI * 2) / RADAR_AXES.length;
+const AXIS_COUNT = BASE_AXES.length;
 
 interface PlayerRadarChartProps {
   profile: PlayerSeasonProfile;
+  position?: string | null;
 }
 
-export function PlayerRadarChart({ profile }: PlayerRadarChartProps) {
-  const points = buildRadarPoints(profile, RADAR_CENTER, RADAR_RADIUS);
+export function PlayerRadarChart({ profile, position }: PlayerRadarChartProps) {
+  const axes = radarAxesForPosition(position);
+  const points = buildRadarPoints(profile, RADAR_CENTER, RADAR_RADIUS, axes);
 
   return (
     <Card className="surface-card border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Season profile</CardTitle>
         <p className="text-caption text-muted-foreground">
-          Normalized radar — shape shows playing style in this season scope
+          {positionGroupLabel(position)} — shape vs role expectations
         </p>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
         <RadarSvg
           ariaLabel={`Radar chart for ${profile.player_name}`}
+          axes={axes}
           layers={[
             {
               points,
@@ -51,6 +58,8 @@ export function PlayerRadarChart({ profile }: PlayerRadarChartProps) {
 interface ComparePlayerRadarChartProps {
   playerA: PlayerSeasonProfile;
   playerB: PlayerSeasonProfile;
+  positionA?: string | null;
+  positionB?: string | null;
 }
 
 const COMPARE_COLORS = {
@@ -58,24 +67,32 @@ const COMPARE_COLORS = {
   b: { fill: "hsl(199 89% 48%)", stroke: "hsl(199 89% 48%)" },
 } as const;
 
-export function ComparePlayerRadarChart({
-  playerA,
-  playerB,
-}: ComparePlayerRadarChartProps) {
-  const pointsA = buildRadarPoints(playerA, RADAR_CENTER, RADAR_RADIUS);
-  const pointsB = buildRadarPoints(playerB, RADAR_CENTER, RADAR_RADIUS);
+export const ComparePlayerRadarChart = forwardRef<
+  SVGSVGElement,
+  ComparePlayerRadarChartProps
+>(function ComparePlayerRadarChart(
+  { playerA, playerB, positionA, positionB },
+  ref,
+) {
+  const axesA = radarAxesForPosition(positionA);
+  const axesB = radarAxesForPosition(positionB);
+  const pointsA = buildRadarPoints(playerA, RADAR_CENTER, RADAR_RADIUS, axesA);
+  const pointsB = buildRadarPoints(playerB, RADAR_CENTER, RADAR_RADIUS, axesB);
 
   return (
     <Card className="surface-card border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Radar overlay</CardTitle>
         <p className="text-caption text-muted-foreground">
-          Same axes and scale — compare playing style shapes side by side
+          Each player normalized to their position — {positionGroupLabel(positionA)} vs{" "}
+          {positionGroupLabel(positionB).toLowerCase()}
         </p>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4 lg:flex-row lg:items-start">
         <RadarSvg
+          ref={ref}
           ariaLabel={`Radar comparison of ${playerA.player_name} and ${playerB.player_name}`}
+          axes={axesA}
           layers={[
             {
               points: pointsB,
@@ -96,8 +113,14 @@ export function ComparePlayerRadarChart({
         <div className="w-full space-y-4 lg:max-w-xs">
           <RadarLegend
             items={[
-              { label: playerA.player_name, color: COMPARE_COLORS.a.stroke },
-              { label: playerB.player_name, color: COMPARE_COLORS.b.stroke },
+              {
+                label: `${playerA.player_name}${positionA ? ` · ${positionA}` : ""}`,
+                color: COMPARE_COLORS.a.stroke,
+              },
+              {
+                label: `${playerB.player_name}${positionB ? ` · ${positionB}` : ""}`,
+                color: COMPARE_COLORS.b.stroke,
+              },
             ]}
           />
           <RadarStatGrid points={pointsA} secondaryPoints={pointsB} />
@@ -105,16 +128,17 @@ export function ComparePlayerRadarChart({
       </CardContent>
     </Card>
   );
-}
+});
 
-function RadarGrid() {
+function RadarGrid({ axisCount }: { axisCount: number }) {
+  const angleStep = (Math.PI * 2) / axisCount;
   return (
     <>
       {[0.25, 0.5, 0.75, 1].map((level) => (
         <polygon
           key={level}
-          points={RADAR_AXES.map((_, index) => {
-            const angle = -Math.PI / 2 + index * ANGLE_STEP;
+          points={Array.from({ length: axisCount }, (_, index) => {
+            const angle = -Math.PI / 2 + index * angleStep;
             const r = RADAR_RADIUS * level;
             return `${RADAR_CENTER + Math.cos(angle) * r},${RADAR_CENTER + Math.sin(angle) * r}`;
           }).join(" ")}
@@ -123,8 +147,8 @@ function RadarGrid() {
           strokeOpacity="0.6"
         />
       ))}
-      {RADAR_AXES.map((_, index) => {
-        const angle = -Math.PI / 2 + index * ANGLE_STEP;
+      {Array.from({ length: axisCount }, (_, index) => {
+        const angle = -Math.PI / 2 + index * angleStep;
         return (
           <line
             key={index}
@@ -141,31 +165,32 @@ function RadarGrid() {
   );
 }
 
-function RadarSvg({
-  ariaLabel,
-  layers,
-  showAxisLabels,
-}: {
-  ariaLabel: string;
-  layers: {
-    points: ReturnType<typeof buildRadarPoints>;
-    fill: string;
-    stroke: string;
-    fillOpacity?: number;
-    showVertices?: boolean;
-  }[];
-  showAxisLabels?: boolean;
-}) {
+const RadarSvg = forwardRef<
+  SVGSVGElement,
+  {
+    ariaLabel: string;
+    axes: RadarAxis[];
+    layers: {
+      points: ReturnType<typeof buildRadarPoints>;
+      fill: string;
+      stroke: string;
+      fillOpacity?: number;
+      showVertices?: boolean;
+    }[];
+    showAxisLabels?: boolean;
+  }
+>(function RadarSvg({ ariaLabel, axes, layers, showAxisLabels }, ref) {
   const labelPoints = layers[layers.length - 1]?.points ?? [];
 
   return (
     <svg
+      ref={ref}
       viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`}
       className="h-52 w-52 shrink-0"
       role="img"
       aria-label={ariaLabel}
     >
-      <RadarGrid />
+      <RadarGrid axisCount={axes.length || AXIS_COUNT} />
       {layers.map((layer, index) => (
         <g key={index}>
           <polygon
@@ -202,7 +227,7 @@ function RadarSvg({
         ))}
     </svg>
   );
-}
+});
 
 function RadarLegend({
   items,

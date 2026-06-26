@@ -18,12 +18,14 @@ import { Goal, Target, GitBranch, Activity } from "lucide-react";
 
 interface PlayerSeasonStatsProps {
   playerId: number;
+  position?: string | null;
   competition?: string;
   season?: string;
 }
 
 export function PlayerSeasonStats({
   playerId,
+  position,
   competition = DEFAULT_COMPETITION,
   season = DEFAULT_SEASON,
 }: PlayerSeasonStatsProps) {
@@ -97,7 +99,7 @@ export function PlayerSeasonStats({
           icon={GitBranch}
         />
       </div>
-      <PlayerRadarChart profile={data} />
+      <PlayerRadarChart profile={data} position={position} />
     </div>
   );
 }

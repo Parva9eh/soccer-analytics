@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Link2, Check } from "lucide-react";
+import { ArrowLeft, Link2, Check, Download, ImageDown } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import {
@@ -24,6 +24,10 @@ import type {
 import type { TeamXgLeaderboard } from "@/lib/xg-types";
 import { CompareMetrics } from "@/components/analytics/CompareMetrics";
 import { ComparePlayerRadarChart } from "@/components/analytics/PlayerRadarChart";
+import {
+  downloadCompareCsv,
+  downloadSvgAsPng,
+} from "@/lib/compare-export";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -42,6 +46,7 @@ import {
 interface PlayerOption {
   id: number;
   name: string;
+  position: string | null;
 }
 
 interface MatchOption {
@@ -84,6 +89,7 @@ export default function AnalyticsComparePage() {
   const [matchA, setMatchA] = useState(searchParams.get("match_a")?.trim() || "");
   const [matchB, setMatchB] = useState(searchParams.get("match_b")?.trim() || "");
   const [linkCopied, setLinkCopied] = useState(false);
+  const radarRef = useRef<SVGSVGElement>(null);
 
   const { data: catalog, isLoading: catalogLoading } = useQuery<
     CompetitionCatalogItem[]
@@ -231,6 +237,23 @@ export default function AnalyticsComparePage() {
     [competition, season],
   );
 
+  const playerPositionById = useMemo(() => {
+    const map = new Map<number, string | null>();
+    for (const player of players ?? []) {
+      map.set(player.id, player.position);
+    }
+    return map;
+  }, [players]);
+
+  const activeComparison =
+    mode === "players"
+      ? playerComparison
+      : mode === "teams"
+        ? teamComparison
+        : matchComparison;
+
+  const canExport = Boolean(activeComparison);
+
   const loading =
     mode === "players"
       ? playersLoading
@@ -265,32 +288,66 @@ export default function AnalyticsComparePage() {
           }
           className="mb-0"
         />
-        <Button
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-2"
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(window.location.href);
-              setLinkCopied(true);
-              window.setTimeout(() => setLinkCopied(false), 2000);
-            } catch {
-              setLinkCopied(false);
-            }
-          }}
-        >
-          {linkCopied ? (
-            <>
-              <Check className="h-4 w-4" />
-              Copied
-            </>
-          ) : (
-            <>
-              <Link2 className="h-4 w-4" />
-              Copy link
-            </>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {canExport && activeComparison && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() =>
+                downloadCompareCsv(mode, activeComparison, scopeLabel)
+              }
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
           )}
-        </Button>
+          {mode === "players" && playerComparison && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={async () => {
+                if (!radarRef.current) {
+                  return;
+                }
+                await downloadSvgAsPng(
+                  radarRef.current,
+                  `compare-radar-${playerComparison.player_a.player_name}-vs-${playerComparison.player_b.player_name}.png`,
+                );
+              }}
+            >
+              <ImageDown className="h-4 w-4" />
+              Radar PNG
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(window.location.href);
+                setLinkCopied(true);
+                window.setTimeout(() => setLinkCopied(false), 2000);
+              } catch {
+                setLinkCopied(false);
+              }
+            }}
+          >
+            {linkCopied ? (
+              <>
+                <Check className="h-4 w-4" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Link2 className="h-4 w-4" />
+                Copy link
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
@@ -394,8 +451,11 @@ export default function AnalyticsComparePage() {
             </CardContent>
           </Card>
           <ComparePlayerRadarChart
+            ref={radarRef}
             playerA={playerComparison.player_a}
             playerB={playerComparison.player_b}
+            positionA={playerPositionById.get(playerComparison.player_a.player_id)}
+            positionB={playerPositionById.get(playerComparison.player_b.player_id)}
           />
         </div>
       ) : mode === "teams" && teamComparison ? (
