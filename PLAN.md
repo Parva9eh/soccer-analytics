@@ -298,9 +298,16 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Player detail — season radar chart (goals, xG, shots, passes, progressive passes)
 - ✅ Match detail — link to compare this fixture
 
-#### Planned next (4.6+)
-- Deeper tactical pattern analytics (heatmaps, phase tagging)
-- Multi-player radar overlays on compare page
+#### Phase 4.6 — Heatmaps, phase tagging & radar overlays (complete)
+
+- ✅ Tactical spatial heatmap on match page (Dots / Heatmap toggle, respects filters)
+- ✅ Phase breakdown panel — events grouped by play pattern (regular, set pieces, counters)
+- ✅ Multi-player radar overlay on `/analytics/compare` (players mode)
+- ✅ Copy link button on compare page for sharing selections
+
+#### Planned next (4.7+)
+- Team-split heatmaps and zone comparison
+- PDF/image export for comparisons
 
 ---
 

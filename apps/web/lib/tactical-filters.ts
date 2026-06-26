@@ -54,6 +54,15 @@ export function playPatternFromDetails(details: unknown): string | null {
   return typeof name === "string" ? name : null;
 }
 
+export type PlayPhaseTag = "regular" | "set_piece" | "counter" | "other";
+
+export const PLAY_PHASE_LABELS: Record<PlayPhaseTag, string> = {
+  regular: "Regular play",
+  set_piece: "Set pieces",
+  counter: "Counters",
+  other: "Other patterns",
+};
+
 function isSetPiecePattern(pattern: string | null): boolean {
   if (!pattern) {
     return false;
@@ -70,6 +79,20 @@ function isFinalThird(x: number | null): boolean {
     return false;
   }
   return x >= 80 || x <= 40;
+}
+
+export function classifyPlayPhase(details: unknown): PlayPhaseTag {
+  const pattern = playPatternFromDetails(details);
+  if (isCounterPattern(pattern)) {
+    return "counter";
+  }
+  if (isSetPiecePattern(pattern)) {
+    return "set_piece";
+  }
+  if (!pattern || pattern === "Regular Play") {
+    return "regular";
+  }
+  return "other";
 }
 
 export function matchesTacticalPreset(
