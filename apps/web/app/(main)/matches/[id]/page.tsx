@@ -18,7 +18,9 @@ import { parseMatchAnalysisConfig } from "@/lib/analysis-config";
 import { SaveAnalysisDialog } from "@/components/analysis/SaveAnalysisDialog";
 import { MatchXgStrip } from "@/components/analytics/MatchXgStrip";
 import { ShotMapLegend } from "@/components/analytics/ShotMapLegend";
+import { PassNetworkPitch } from "@/components/analytics/PassNetworkPitch";
 import { ShotMapPitch } from "@/components/analytics/ShotMapPitch";
+import type { MatchPassNetwork, PassTeamFilter } from "@/lib/pass-types";
 import { formatXg, type MatchXg } from "@/lib/xg-types";
 import {
   formatShotOutcome,
@@ -94,7 +96,7 @@ interface Event {
   details?: unknown;
 }
 
-type PitchViewMode = "events" | "shots";
+type PitchViewMode = "events" | "shots" | "passes";
 
 interface EventsResponse {
   total: number;
@@ -124,6 +126,7 @@ export default function MatchDetailPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [pitchViewMode, setPitchViewMode] = useState<PitchViewMode>("events");
   const [shotTeamFilter, setShotTeamFilter] = useState<ShotTeamFilter>("all");
+  const [passTeamFilter, setPassTeamFilter] = useState<PassTeamFilter>("home");
   const [use3DView, setUse3DView] = useState(false);
   const [current3DView, setCurrent3DView] = useState<'top' | 'side' | 'goal' | 'iso'>('iso');
   const [autoOrbit3D, setAutoOrbit3D] = useState(false); // advanced interactivity for 3D stadium tour feel
@@ -205,6 +208,29 @@ export default function MatchDetailPage() {
     queryFn: () => apiFetchJson<MatchXg>(`/analytics/xg/matches/${matchId}`),
     enabled: matchId != null,
   });
+
+  const passNetworkTeam =
+    match && passTeamFilter === "home"
+      ? match.home_team ?? ""
+      : match?.away_team ?? "";
+
+  const { data: passNetwork, isLoading: passNetworkLoading } =
+    useQuery<MatchPassNetwork>({
+      queryKey: [
+        "match-pass-network",
+        workspaceId,
+        matchId,
+        passNetworkTeam,
+      ],
+      queryFn: () =>
+        apiFetchJson<MatchPassNetwork>(
+          `/analytics/passes/matches/${matchId}?team=${encodeURIComponent(passNetworkTeam)}`,
+        ),
+      enabled:
+        pitchViewMode === "passes" &&
+        matchId != null &&
+        Boolean(passNetworkTeam),
+    });
 
   // Fetch events for table
   const { data: eventsData, isLoading: eventsLoading } =
@@ -461,13 +487,23 @@ export default function MatchDetailPage() {
       {/* Pitch Visualization - Elevated as primary view */}
       <div className="mb-8">
         <SectionHeader
-          title={pitchViewMode === "shots" ? "Shot map" : "Pitch view"}
+          title={
+            pitchViewMode === "shots"
+              ? "Shot map"
+              : pitchViewMode === "passes"
+                ? "Pass network"
+                : "Pitch view"
+          }
           description={
             pitchViewMode === "shots"
               ? `${shotMapSummary.shots} shots · ${formatXg(shotMapSummary.xg)} xG · ${shotMapSummary.goals} goals`
-              : use3DView
-                ? "Click events to inspect • Shift+drag to box-select"
-                : "Click events on the pitch to inspect"
+              : pitchViewMode === "passes" && passNetwork
+                ? `${passNetwork.completed_passes} completed · ${passNetwork.progressive_passes} progressive · ${passNetwork.nodes.length} players`
+                : pitchViewMode === "passes" && passNetworkLoading
+                  ? "Loading pass network…"
+                  : use3DView
+                    ? "Click events to inspect • Shift+drag to box-select"
+                    : "Click events on the pitch to inspect"
           }
           action={
           <div className="flex flex-wrap items-center justify-end gap-2">
@@ -476,16 +512,30 @@ export default function MatchDetailPage() {
               options={[
                 { value: "events", label: "Events" },
                 { value: "shots", label: "Shot map" },
+                { value: "passes", label: "Pass network" },
               ]}
               value={pitchViewMode}
               onChange={(value) => {
                 const mode = value as PitchViewMode;
                 setPitchViewMode(mode);
-                if (mode === "shots") {
+                if (mode === "shots" || mode === "passes") {
                   setUse3DView(false);
                 }
               }}
             />
+
+            {pitchViewMode === "passes" && (
+              <SegmentedControl
+                aria-label="Pass network team"
+                size="sm"
+                options={[
+                  { value: "home", label: "Home" },
+                  { value: "away", label: "Away" },
+                ]}
+                value={passTeamFilter}
+                onChange={(value) => setPassTeamFilter(value as PassTeamFilter)}
+              />
+            )}
 
             {pitchViewMode === "shots" && match && (
               <SegmentedControl
@@ -579,7 +629,7 @@ export default function MatchDetailPage() {
           <div className="mb-3">
             <ShotMapLegend />
           </div>
-        ) : (
+        ) : pitchViewMode === "passes" ? null : (
           <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:hidden">
             {EVENT_TYPES.map((t) => (
               <span
@@ -596,6 +646,7 @@ export default function MatchDetailPage() {
           </div>
         )}
 
+        {pitchViewMode !== "passes" && (
         <div className="mb-3 mt-1">
           <div className="mb-1.5 flex items-center justify-between text-label">
             <span>Event timeline</span>
@@ -646,8 +697,10 @@ export default function MatchDetailPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Advanced: Event Density Heatmap */}
+        {pitchViewMode !== "passes" && (
         <div className="mb-3">
           <div className="mb-1 flex items-center justify-between text-label">
             <span>Event density (per minute)</span>
@@ -664,12 +717,13 @@ export default function MatchDetailPage() {
             <span>0'</span><span>45'</span><span>90'+</span>
           </div>
         </div>
+        )}
 
         <div
-          className={`relative transition-all ${use3DView ? "min-h-[min(420px,58vh)] sm:min-h-[560px] md:min-h-[720px] lg:min-h-[800px]" : "h-auto"}`}
-          tabIndex={0}
+          className={`relative transition-all ${use3DView && pitchViewMode === "events" ? "min-h-[min(420px,58vh)] sm:min-h-[560px] md:min-h-[720px] lg:min-h-[800px]" : "h-auto"}`}
+          tabIndex={pitchViewMode === "events" ? 0 : undefined}
           onKeyDown={(e) => {
-            if (!filteredPitchEvents.length) return;
+            if (pitchViewMode !== "events" || !filteredPitchEvents.length) return;
             const currentIndex = filteredPitchEvents.findIndex(e => e.id === highlightedEventId);
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
               e.preventDefault();
@@ -708,6 +762,27 @@ export default function MatchDetailPage() {
                     onClick={() => setShotTeamFilter("all")}
                   >
                     Show all teams
+                  </Button>
+                }
+              />
+            )
+          ) : pitchViewMode === "passes" ? (
+            passNetworkLoading ? (
+              <div className="surface-card min-h-[320px] animate-pulse rounded-xl border" />
+            ) : passNetwork && passNetwork.nodes.length > 0 ? (
+              <PassNetworkPitch network={passNetwork} />
+            ) : (
+              <EmptyState
+                icon={MapPin}
+                title="No pass network for this team"
+                description="Completed passes with recipients are required to draw the network."
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPitchViewMode("events")}
+                  >
+                    Back to events
                   </Button>
                 }
               />

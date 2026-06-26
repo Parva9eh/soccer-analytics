@@ -267,8 +267,14 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Analytics dashboard — Total xG KPI, leaderboards, rolling xG form chart
 - ✅ Conditional RLS migration for `player_match_stats` (hosted Supabase operator step)
 
-#### Planned next (4.2+)
-- Passing networks and progressive passing metrics
+#### Phase 4.2 — Passing (complete)
+
+- ✅ `GET /analytics/passes/matches/{match_id}?team=` — completed-pass network (nodes + edges)
+- ✅ `GET /analytics/passes/progressive?competition=&season=` — team progressive pass rankings
+- ✅ Match detail — **Pass network** pitch mode (home/away, volume-weighted edges)
+- ✅ Analytics dashboard — progressive passes by team panel
+
+#### Planned next (4.3+)
 - Possession chains and build-up analysis
 - Player and team aggregates / profiles
 - Tactical event filtering and pattern detection
