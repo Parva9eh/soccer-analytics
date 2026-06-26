@@ -32,8 +32,10 @@ import {
   type ReportScope,
   type WorkspaceDashboard,
 } from "@/lib/report-types";
+import { ProgressivePassLeaderboardPanel } from "@/components/analytics/ProgressivePassLeaderboard";
 import { XgFormChart } from "@/components/analytics/XgFormChart";
 import { XgLeaderboards } from "@/components/analytics/XgLeaderboards";
+import type { ProgressivePassLeaderboard } from "@/lib/pass-types";
 import {
   formatXg,
   type PlayerXgLeaderboard,
@@ -90,8 +92,8 @@ function AnalyticsRoadmap() {
     {
       title: "Passing networks",
       icon: GitBranch,
-      body: "Interactive passing networks and progressive passes.",
-      live: false,
+      body: "Pass network on match pages; progressive pass rankings on Analytics.",
+      live: true,
     },
     {
       title: "Possession & build-up",
@@ -246,6 +248,16 @@ function AuthAnalyticsDashboard() {
       queryFn: () =>
         apiFetchJson<TeamXgLeaderboard>(
           `/analytics/xg/teams?${seasonXgParams}`,
+        ),
+      enabled: xgScopeEnabled,
+    });
+
+  const { data: progressivePasses, isLoading: progressivePassesLoading } =
+    useQuery<ProgressivePassLeaderboard>({
+      queryKey: ["progressive-passes", workspaceId, competition, season],
+      queryFn: () =>
+        apiFetchJson<ProgressivePassLeaderboard>(
+          `/analytics/passes/progressive?${seasonXgParams}&limit=10`,
         ),
       enabled: xgScopeEnabled,
     });
@@ -423,6 +435,15 @@ function AuthAnalyticsDashboard() {
             />
           )}
 
+          {scope === "filtered" && (
+            <ProgressivePassLeaderboardPanel
+              competition={competition}
+              season={season}
+              data={progressivePasses}
+              loading={progressivePassesLoading}
+            />
+          )}
+
           {dashboard && (
             <DashboardPanels dashboard={dashboard} />
           )}
@@ -474,6 +495,20 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
       queryFn: () =>
         apiFetchJson<TeamXgLeaderboard>(
           `/analytics/xg/teams?${legacyXgParams}`,
+        ),
+    });
+
+  const { data: progressivePasses, isLoading: progressivePassesLoading } =
+    useQuery<ProgressivePassLeaderboard>({
+      queryKey: [
+        "progressive-passes",
+        workspaceId,
+        DEFAULT_COMPETITION,
+        DEFAULT_SEASON,
+      ],
+      queryFn: () =>
+        apiFetchJson<ProgressivePassLeaderboard>(
+          `/analytics/passes/progressive?${legacyXgParams}&limit=10`,
         ),
     });
 
@@ -551,6 +586,13 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
         season={DEFAULT_SEASON}
         teams={teamXg}
         teamsLoading={teamXgLoading}
+      />
+
+      <ProgressivePassLeaderboardPanel
+        competition={DEFAULT_COMPETITION}
+        season={DEFAULT_SEASON}
+        data={progressivePasses}
+        loading={progressivePassesLoading}
       />
 
       <AnalyticsRoadmap />
