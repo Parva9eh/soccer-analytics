@@ -1,9 +1,11 @@
 "use client";
 
 import type {
+  CompareMatchesResult,
   CompareMode,
   ComparePlayersResult,
   CompareTeamsResult,
+  MatchAnalyticsProfile,
   PlayerSeasonProfile,
   TeamSeasonProfile,
 } from "@/lib/profile-types";
@@ -13,6 +15,7 @@ interface CompareMetricsProps {
   mode: CompareMode;
   players?: ComparePlayersResult;
   teams?: CompareTeamsResult;
+  matches?: CompareMatchesResult;
 }
 
 type MetricRow = {
@@ -65,7 +68,23 @@ function buildTeamRows(a: TeamSeasonProfile, b: TeamSeasonProfile): MetricRow[] 
   ];
 }
 
-export function CompareMetrics({ mode, players, teams }: CompareMetricsProps) {
+function buildMatchRows(a: MatchAnalyticsProfile, b: MatchAnalyticsProfile): MetricRow[] {
+  const totalXg = (match: MatchAnalyticsProfile) =>
+    match.home_xg + match.away_xg;
+  return [
+    { label: "Total xG", left: totalXg(a), right: totalXg(b), format: formatXg },
+    { label: "Shots", left: a.shots, right: b.shots },
+    { label: "Passes", left: a.passes, right: b.passes },
+    { label: "Progressive passes", left: a.progressive_passes, right: b.progressive_passes },
+    { label: "Possession sequences", left: a.possession_sequences, right: b.possession_sequences },
+    { label: "Set-piece events", left: a.set_piece_events, right: b.set_piece_events },
+    { label: "Counter events", left: a.counter_events, right: b.counter_events },
+    { label: "Final-third events", left: a.final_third_events, right: b.final_third_events },
+    { label: "Total events", left: a.total_events, right: b.total_events },
+  ];
+}
+
+export function CompareMetrics({ mode, players, teams, matches }: CompareMetricsProps) {
   if (mode === "players" && players) {
     return (
       <CompareTable
@@ -82,6 +101,16 @@ export function CompareMetrics({ mode, players, teams }: CompareMetricsProps) {
         leftLabel={teams.team_a.team}
         rightLabel={teams.team_b.team}
         rows={buildTeamRows(teams.team_a, teams.team_b)}
+      />
+    );
+  }
+
+  if (mode === "matches" && matches) {
+    return (
+      <CompareTable
+        leftLabel={matches.match_a.label}
+        rightLabel={matches.match_b.label}
+        rows={buildMatchRows(matches.match_a, matches.match_b)}
       />
     );
   }

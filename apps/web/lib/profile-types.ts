@@ -43,4 +43,30 @@ export interface CompareTeamsResult {
   team_b: TeamSeasonProfile;
 }
 
-export type CompareMode = "players" | "teams";
+export interface MatchAnalyticsProfile {
+  match_id: number;
+  label: string;
+  home_team: string;
+  away_team: string;
+  home_score: number | null;
+  away_score: number | null;
+  match_week: number | null;
+  home_xg: number;
+  away_xg: number;
+  total_events: number;
+  shots: number;
+  passes: number;
+  completed_passes: number;
+  progressive_passes: number;
+  possession_sequences: number;
+  set_piece_events: number;
+  counter_events: number;
+  final_third_events: number;
+}
+
+export interface CompareMatchesResult {
+  match_a: MatchAnalyticsProfile;
+  match_b: MatchAnalyticsProfile;
+}
+
+export type CompareMode = "players" | "teams" | "matches";

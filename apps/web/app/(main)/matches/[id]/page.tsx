@@ -33,6 +33,11 @@ import {
   shotOutcomeColor,
   type ShotTeamFilter,
 } from "@/lib/shot-utils";
+import {
+  matchesTacticalPreset,
+  TACTICAL_PRESET_OPTIONS,
+  type TacticalPreset,
+} from "@/lib/tactical-filters";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +49,13 @@ import { PitchLayersPopover } from "@/components/pitch/PitchLayersPopover";
 import { TableEventFilterPopover } from "@/components/pitch/TableEventFilterPopover";
 import { SectionHeader } from "@/components/ui/section-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PageShell } from "@/components/ui/page-shell";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -128,6 +140,7 @@ export default function MatchDetailPage() {
   const [isTableFilterOpen, setIsTableFilterOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [pitchViewMode, setPitchViewMode] = useState<PitchViewMode>("events");
+  const [tacticalPreset, setTacticalPreset] = useState<TacticalPreset>("all");
   const [shotTeamFilter, setShotTeamFilter] = useState<ShotTeamFilter>("all");
   const [passTeamFilter, setPassTeamFilter] = useState<PassTeamFilter>("home");
   const [selectedPossessionChain, setSelectedPossessionChain] =
@@ -326,9 +339,14 @@ export default function MatchDetailPage() {
         ? shotMapEvents
         : allPitchEvents.filter((event) => {
             if (!event.event_type) return false;
-            return visibleEventTypes.some((type) =>
-              event.event_type!.toLowerCase().includes(type.toLowerCase()),
-            );
+            if (
+              !visibleEventTypes.some((type) =>
+                event.event_type!.toLowerCase().includes(type.toLowerCase()),
+              )
+            ) {
+              return false;
+            }
+            return matchesTacticalPreset(event, tacticalPreset);
           });
 
     if (!selectedPossessionChain) {
@@ -474,6 +492,13 @@ export default function MatchDetailPage() {
               current3DView={current3DView}
             />
           )}
+          <Button asChild variant="outline" size="sm">
+            <Link
+              href={`/analytics/compare?mode=matches&match_a=${matchId}`}
+            >
+              Compare match
+            </Link>
+          </Button>
           {savedAnalysis && (
             <span className="text-caption text-primary">
               Loaded: {savedAnalysis.title}
@@ -534,9 +559,11 @@ export default function MatchDetailPage() {
                 ? `${passNetwork.completed_passes} completed · ${passNetwork.progressive_passes} progressive · ${passNetwork.nodes.length} players`
                 : pitchViewMode === "passes" && passNetworkLoading
                   ? "Loading pass network…"
-                  : use3DView
-                    ? "Click events to inspect • Shift+drag to box-select"
-                    : "Click events on the pitch to inspect"
+                  : tacticalPreset !== "all"
+                    ? `${TACTICAL_PRESET_OPTIONS.find((option) => option.value === tacticalPreset)?.label ?? "Filtered"} · click events to inspect`
+                    : use3DView
+                      ? "Click events to inspect • Shift+drag to box-select"
+                      : "Click events on the pitch to inspect"
           }
           action={
           <div className="flex flex-wrap items-center justify-end gap-2">
@@ -642,6 +669,24 @@ export default function MatchDetailPage() {
                   {autoOrbit3D ? "Stop orbit" : "Auto orbit"}
                 </Button>
               </>
+            )}
+
+            {pitchViewMode === "events" && (
+              <Select
+                value={tacticalPreset}
+                onValueChange={(value) => setTacticalPreset(value as TacticalPreset)}
+              >
+                <SelectTrigger className="h-8 w-[9.5rem] bg-card/80 text-xs">
+                  <SelectValue placeholder="Tactical filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TACTICAL_PRESET_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
 
             {pitchViewMode === "events" && (
@@ -820,6 +865,25 @@ export default function MatchDetailPage() {
                 }
               />
             )
+          ) : filteredPitchEvents.length === 0 && pitchViewMode === "events" ? (
+            <EmptyState
+              icon={MapPin}
+              title="No events in this filter"
+              description="Try a different tactical preset, show more event types, or clear the possession chain filter."
+              action={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setTacticalPreset("all");
+                    setVisibleEventTypes([...EVENT_TYPES]);
+                    setSelectedPossessionChain(null);
+                  }}
+                >
+                  Reset filters
+                </Button>
+              }
+            />
           ) : use3DView ? (
             <ThreeDPitch
               events={filteredPitchEvents}
