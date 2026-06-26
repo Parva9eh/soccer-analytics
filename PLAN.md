@@ -281,7 +281,7 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Match page possession panel — click chain to filter pitch events
 - ✅ Analytics dashboard — possession & build-up summary panel
 
-#### Phase 4.4 — Profiles & comparisons (in progress)
+#### Phase 4.4 — Profiles & comparisons (complete)
 
 - ✅ `GET /analytics/profiles/players/{id}` — player season profile (xG, shots, passes)
 - ✅ `GET /analytics/profiles/teams` — team season profile (xG for/against, build-up)
