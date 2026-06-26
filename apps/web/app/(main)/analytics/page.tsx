@@ -32,6 +32,7 @@ import {
   type ReportScope,
   type WorkspaceDashboard,
 } from "@/lib/report-types";
+import { XgFormChart } from "@/components/analytics/XgFormChart";
 import { XgLeaderboards } from "@/components/analytics/XgLeaderboards";
 import {
   formatXg,
@@ -107,8 +108,8 @@ function AnalyticsRoadmap() {
     {
       title: "Trends & form",
       icon: TrendingUp,
-      body: "Rolling form, momentum metrics, and trend analysis.",
-      live: false,
+      body: "Rolling xG for/against by team on the analytics dashboard.",
+      live: true,
     },
   ];
 
@@ -413,6 +414,15 @@ function AuthAnalyticsDashboard() {
             />
           )}
 
+          {scope === "filtered" && (
+            <XgFormChart
+              competition={competition}
+              season={season}
+              teams={teamXg}
+              teamsLoading={teamXgLoading}
+            />
+          )}
+
           {dashboard && (
             <DashboardPanels dashboard={dashboard} />
           )}
@@ -534,6 +544,13 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
         players={playerXg}
         teams={teamXg}
         loading={playerXgLoading || teamXgLoading}
+      />
+
+      <XgFormChart
+        competition={DEFAULT_COMPETITION}
+        season={DEFAULT_SEASON}
+        teams={teamXg}
+        teamsLoading={teamXgLoading}
       />
 
       <AnalyticsRoadmap />

@@ -43,6 +43,28 @@ export interface TeamXgLeaderboard {
   teams: TeamXgSummary[];
 }
 
+export interface MatchXgFormPoint {
+  match_id: number;
+  match_week: number | null;
+  match_date: string | null;
+  opponent: string;
+  is_home: boolean;
+  xg_for: number;
+  xg_against: number;
+  goals_for: number | null;
+  goals_against: number | null;
+  rolling_xg_for: number;
+  rolling_xg_against: number;
+}
+
+export interface TeamXgForm {
+  competition: string;
+  season: string;
+  team: string;
+  window: number;
+  points: MatchXgFormPoint[];
+}
+
 export function formatXg(value: number): string {
   return value.toFixed(2);
 }

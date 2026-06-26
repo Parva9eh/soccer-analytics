@@ -14,10 +14,12 @@ from analytics.xg import (
 from core.supabase_client import get_supabase_public_read
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.xg import (
+    MatchXgFormPoint,
     MatchXgResponse,
     PlayerXgLeaderboardResponse,
     PlayerXgSummary,
     SeasonXgResponse,
+    TeamXgFormResponse,
     TeamXgLeaderboardResponse,
     TeamXgSummary,
 )
@@ -138,6 +140,77 @@ def _match_ids_for_season(
     return [int(row["id"]) for row in matches.data or [] if row.get("id") is not None]
 
 
+def _rolling_means(values: list[float], window: int) -> list[float]:
+    rolling: list[float] = []
+    for index in range(len(values)):
+        start = max(0, index - window + 1)
+        chunk = values[start : index + 1]
+        rolling.append(round(sum(chunk) / len(chunk), 2) if chunk else 0.0)
+    return rolling
+
+
+def _team_xg_from_shot_rows(
+    shot_rows: list[dict[str, Any]],
+) -> dict[int, dict[str, float]]:
+    """Map match_id -> team name -> total xG from shot event rows."""
+    by_match: dict[int, dict[str, float]] = {}
+    for row in shot_rows:
+        match_id = row.get("match_id")
+        if match_id is None:
+            continue
+        details = row.get("details")
+        team_name = shot_team_name(details)
+        xg = shot_xg_from_details(details)
+        if not team_name or xg is None:
+            continue
+        match_totals = by_match.setdefault(int(match_id), {})
+        match_totals[team_name] = round(match_totals.get(team_name, 0.0) + xg, 4)
+    return by_match
+
+
+def _matches_for_season(
+    supabase: Client, competition: str, season: str
+) -> list[dict[str, Any]]:
+    comp = (
+        supabase.table("competitions")
+        .select("id")
+        .eq("name", competition)
+        .limit(1)
+        .execute()
+    )
+    if not comp.data:
+        return []
+
+    comp_id = comp.data[0]["id"]
+    season_row = (
+        supabase.table("seasons")
+        .select("id")
+        .eq("competition_id", comp_id)
+        .eq("year", season)
+        .limit(1)
+        .execute()
+    )
+    if not season_row.data:
+        return []
+
+    season_id = season_row.data[0]["id"]
+    matches = (
+        supabase.table("matches")
+        .select(
+            "id, match_date, match_week, home_score, away_score, "
+            "home_team:teams!home_team_id(name), "
+            "away_team:teams!away_team_id(name)"
+        )
+        .eq("competition_id", comp_id)
+        .eq("season_id", season_id)
+        .order("match_week")
+        .order("match_date")
+        .order("id")
+        .execute()
+    )
+    return matches.data or []
+
+
 def _shots_for_season(
     supabase: Client, competition: str, season: str
 ) -> tuple[list[int], list[dict[str, Any]]]:
@@ -147,7 +220,7 @@ def _shots_for_season(
 
     shots = (
         supabase.table("events")
-        .select("details")
+        .select("match_id, details")
         .eq("event_type", "Shot")
         .in_("match_id", match_ids)
         .execute()
@@ -360,5 +433,137 @@ def get_team_xg_leaderboard(
         raise_http_exception(
             status_code=500,
             detail="Failed to compute team expected goals leaderboard",
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get(
+    "/form",
+    response_model=TeamXgFormResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
+def get_team_xg_form(
+    competition: str = Query(..., min_length=1),
+    season: str = Query(..., min_length=1),
+    team: str = Query(..., min_length=1),
+    window: int = Query(5, ge=1, le=15),
+    supabase: Client = Depends(get_supabase_public_read),
+) -> TeamXgFormResponse:
+    """Per-match xG for/against with rolling averages for one team in a season."""
+    try:
+        match_rows = _matches_for_season(supabase, competition, season)
+        if not match_rows:
+            return TeamXgFormResponse(
+                competition=competition,
+                season=season,
+                team=team,
+                window=window,
+                points=[],
+            )
+
+        match_ids = [
+            int(row["id"]) for row in match_rows if row.get("id") is not None
+        ]
+        shots = (
+            supabase.table("events")
+            .select("match_id, details")
+            .eq("event_type", "Shot")
+            .in_("match_id", match_ids)
+            .execute()
+        )
+        xg_by_match = _team_xg_from_shot_rows(shots.data or [])
+
+        team_matches: list[dict[str, Any]] = []
+        for row in match_rows:
+            home = (row.get("home_team") or {}).get("name") or "Home"
+            away = (row.get("away_team") or {}).get("name") or "Away"
+            if team not in (home, away):
+                continue
+            team_matches.append({**row, "home_name": home, "away_name": away})
+
+        if not team_matches:
+            return TeamXgFormResponse(
+                competition=competition,
+                season=season,
+                team=team,
+                window=window,
+                points=[],
+            )
+
+        xg_for_values: list[float] = []
+        xg_against_values: list[float] = []
+        raw_points: list[MatchXgFormPoint] = []
+
+        for row in team_matches:
+            match_id = int(row["id"])
+            home = row["home_name"]
+            away = row["away_name"]
+            match_xg = xg_by_match.get(match_id, {})
+            is_home = team == home
+
+            if is_home:
+                xg_for = round(match_xg.get(home, 0.0), 2)
+                xg_against = round(match_xg.get(away, 0.0), 2)
+                opponent = away
+                goals_for = row.get("home_score")
+                goals_against = row.get("away_score")
+            else:
+                xg_for = round(match_xg.get(away, 0.0), 2)
+                xg_against = round(match_xg.get(home, 0.0), 2)
+                opponent = home
+                goals_for = row.get("away_score")
+                goals_against = row.get("home_score")
+
+            xg_for_values.append(xg_for)
+            xg_against_values.append(xg_against)
+
+            match_date = row.get("match_date")
+            raw_points.append(
+                MatchXgFormPoint(
+                    match_id=match_id,
+                    match_week=row.get("match_week"),
+                    match_date=str(match_date) if match_date is not None else None,
+                    opponent=opponent,
+                    is_home=is_home,
+                    xg_for=xg_for,
+                    xg_against=xg_against,
+                    goals_for=goals_for,
+                    goals_against=goals_against,
+                    rolling_xg_for=0.0,
+                    rolling_xg_against=0.0,
+                )
+            )
+
+        rolling_for = _rolling_means(xg_for_values, window)
+        rolling_against = _rolling_means(xg_against_values, window)
+        points = [
+            point.model_copy(
+                update={
+                    "rolling_xg_for": rolling_for[index],
+                    "rolling_xg_against": rolling_against[index],
+                }
+            )
+            for index, point in enumerate(raw_points)
+        ]
+
+        return TeamXgFormResponse(
+            competition=competition,
+            season=season,
+            team=team,
+            window=window,
+            points=points,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Failed to compute team xG form for %s in %s %s",
+            team,
+            competition,
+            season,
+        )
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to compute team expected goals form",
             code=ErrorCode.INTERNAL_SERVER_ERROR,
         )
