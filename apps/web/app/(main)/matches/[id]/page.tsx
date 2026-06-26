@@ -22,7 +22,13 @@ import { PassNetworkPitch } from "@/components/analytics/PassNetworkPitch";
 import { ShotMapPitch } from "@/components/analytics/ShotMapPitch";
 import { PossessionChainsPanel } from "@/components/analytics/PossessionChainsPanel";
 import { TacticalHeatmapPitch } from "@/components/analytics/TacticalHeatmapPitch";
+import { TeamSplitHeatmapPitch } from "@/components/analytics/TeamSplitHeatmapPitch";
 import { MatchPhaseBreakdown } from "@/components/analytics/MatchPhaseBreakdown";
+import { MatchZoneComparison } from "@/components/analytics/MatchZoneComparison";
+import {
+  eventMatchesTeamFilter,
+  type HeatmapTeamFilter,
+} from "@/lib/event-utils";
 import type { MatchPassNetwork, PassTeamFilter } from "@/lib/pass-types";
 import { chainKey } from "@/lib/possession-utils";
 import type { PossessionChainSummary } from "@/lib/possession-types";
@@ -146,6 +152,8 @@ export default function MatchDetailPage() {
   const [eventsDisplayMode, setEventsDisplayMode] =
     useState<EventsDisplayMode>("dots");
   const [tacticalPreset, setTacticalPreset] = useState<TacticalPreset>("all");
+  const [heatmapTeamFilter, setHeatmapTeamFilter] =
+    useState<HeatmapTeamFilter>("all");
   const [shotTeamFilter, setShotTeamFilter] = useState<ShotTeamFilter>("all");
   const [passTeamFilter, setPassTeamFilter] = useState<PassTeamFilter>("home");
   const [selectedPossessionChain, setSelectedPossessionChain] =
@@ -330,6 +338,9 @@ export default function MatchDetailPage() {
     [],
   );
 
+  const homeTeamName = match?.home_team ?? "";
+  const awayTeamName = match?.away_team ?? "";
+
   const phaseBreakdownEvents = allPitchEvents.filter((event) => {
     if (!event.event_type) {
       return false;
@@ -374,6 +385,13 @@ export default function MatchDetailPage() {
     const allowed = new Set(selectedPossessionChain.event_ids);
     return base.filter((event) => allowed.has(event.id));
   })();
+
+  const homeHeatmapEvents = filteredPitchEvents.filter((event) =>
+    eventMatchesTeamFilter(event.details, "home", homeTeamName, awayTeamName),
+  );
+  const awayHeatmapEvents = filteredPitchEvents.filter((event) =>
+    eventMatchesTeamFilter(event.details, "away", homeTeamName, awayTeamName),
+  );
 
   const eventTypes = pitchEventsData?.events
     ? (Array.from(
@@ -651,6 +669,23 @@ export default function MatchDetailPage() {
               />
             )}
 
+            {pitchViewMode === "events" && eventsDisplayMode === "heatmap" && (
+              <SegmentedControl
+                aria-label="Heatmap team filter"
+                size="sm"
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "home", label: "Home" },
+                  { value: "away", label: "Away" },
+                  { value: "split", label: "Split" },
+                ]}
+                value={heatmapTeamFilter}
+                onChange={(value) =>
+                  setHeatmapTeamFilter(value as HeatmapTeamFilter)
+                }
+              />
+            )}
+
             {pitchViewMode === "events" && eventsDisplayMode === "dots" && (
               <SegmentedControl
                 aria-label="Pitch view mode"
@@ -925,7 +960,37 @@ export default function MatchDetailPage() {
               }
             />
           ) : pitchViewMode === "events" && eventsDisplayMode === "heatmap" ? (
-            <TacticalHeatmapPitch events={filteredPitchEvents} />
+            heatmapTeamFilter === "split" && match ? (
+              <TeamSplitHeatmapPitch
+                homeEvents={homeHeatmapEvents}
+                awayEvents={awayHeatmapEvents}
+                homeTeam={homeTeamName || "Home"}
+                awayTeam={awayTeamName || "Away"}
+              />
+            ) : (
+              <TacticalHeatmapPitch
+                events={
+                  heatmapTeamFilter === "home"
+                    ? homeHeatmapEvents
+                    : heatmapTeamFilter === "away"
+                      ? awayHeatmapEvents
+                      : filteredPitchEvents
+                }
+                label={
+                  heatmapTeamFilter === "home"
+                    ? homeTeamName || "Home"
+                    : heatmapTeamFilter === "away"
+                      ? awayTeamName || "Away"
+                      : "Tactical heatmap"
+                }
+                fillColor={
+                  heatmapTeamFilter === "away"
+                    ? "hsl(199 89% 48%)"
+                    : "hsl(var(--primary))"
+                }
+                instanceId={heatmapTeamFilter}
+              />
+            )
           ) : use3DView ? (
             <ThreeDPitch
               events={filteredPitchEvents}
@@ -971,9 +1036,14 @@ export default function MatchDetailPage() {
         />
       )}
 
-      {pitchViewMode === "events" && phaseBreakdownEvents.length > 0 && (
-        <div className="mb-8">
+      {pitchViewMode === "events" && phaseBreakdownEvents.length > 0 && match && (
+        <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <MatchPhaseBreakdown events={phaseBreakdownEvents} />
+          <MatchZoneComparison
+            events={phaseBreakdownEvents}
+            homeTeam={homeTeamName || "Home"}
+            awayTeam={awayTeamName || "Away"}
+          />
         </div>
       )}
 

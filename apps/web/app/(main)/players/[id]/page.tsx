@@ -144,7 +144,7 @@ export default function PlayerDetailPage() {
           </CardContent>
         </Card>
 
-        <PlayerSeasonStats playerId={player.id} />
+        <PlayerSeasonStats playerId={player.id} position={player.position} />
       </div>
     </PageShell>
   );
