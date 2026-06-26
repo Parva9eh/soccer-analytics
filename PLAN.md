@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 4.2 next (June 2026)  
-**Active branch:** `phase4/xg-foundation` (4.1 merged to `main`)
+**Current Phase:** Phase 4.3 in progress (June 2026)  
+**Active branch:** `phase4/xg-foundation` (4.1–4.2 merged to `main`)
 
 ---
 
@@ -274,8 +274,14 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Match detail — **Pass network** pitch mode (home/away, volume-weighted edges)
 - ✅ Analytics dashboard — progressive passes by team panel
 
-#### Planned next (4.3+)
-- Possession chains and build-up analysis
+#### Phase 4.3 — Possession & build-up (in progress)
+
+- ✅ `GET /analytics/possession/matches/{match_id}` — possession chains ranked by pass count
+- ✅ `GET /analytics/possession/season` — team avg duration, passes/possession, shot rate
+- ✅ Match page possession panel — click chain to filter pitch events
+- ✅ Analytics dashboard — possession & build-up summary panel
+
+#### Planned next (4.4+)
 - Player and team aggregates / profiles
 - Tactical event filtering and pattern detection
 - Comparison tools (player vs player, team vs team, match vs match)
@@ -317,7 +323,7 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
-| Phase 4 | 🚧 In progress | 4.1 xG merged to `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md); 4.2+ on `phase4/xg-foundation` |
+| Phase 4 | 🚧 In progress | 4.1–4.2 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md); 4.3 on `phase4/xg-foundation` |
 | Phase 5 | Planned | Testing, CI, and deployment |
 
 Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md), [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) (4.1 slice).
@@ -358,9 +364,9 @@ git push origin main
 
 **Phase 3 (done):** `phase3/auth-foundation` merged to `main` as `503c8d2`; branch kept on `origin`.
 
-**Phase 4.1 (done):** `phase4/xg-foundation` merged to `main`; branch kept on `origin` for 4.2+.
+**Phase 4.1–4.2 (done):** `phase4/xg-foundation` merged to `main` (latest merge includes passing networks).
 
-**Current (Phase 4.2):** Continue on `phase4/xg-foundation` or branch from `main` for passing networks and related analytics.
+**Current (Phase 4.3):** Possession chains on `phase4/xg-foundation`.
 
 ### Rebasing a long-running phase branch
 

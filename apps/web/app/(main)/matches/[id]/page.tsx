@@ -5,7 +5,7 @@
 // `new THREE.Clock()` (in its events bundles), it gets our non-deprecated shim.
 import "@/lib/three-patch";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -20,7 +20,10 @@ import { MatchXgStrip } from "@/components/analytics/MatchXgStrip";
 import { ShotMapLegend } from "@/components/analytics/ShotMapLegend";
 import { PassNetworkPitch } from "@/components/analytics/PassNetworkPitch";
 import { ShotMapPitch } from "@/components/analytics/ShotMapPitch";
+import { PossessionChainsPanel } from "@/components/analytics/PossessionChainsPanel";
 import type { MatchPassNetwork, PassTeamFilter } from "@/lib/pass-types";
+import { chainKey } from "@/lib/possession-utils";
+import type { PossessionChainSummary } from "@/lib/possession-types";
 import { formatXg, type MatchXg } from "@/lib/xg-types";
 import {
   formatShotOutcome,
@@ -127,6 +130,8 @@ export default function MatchDetailPage() {
   const [pitchViewMode, setPitchViewMode] = useState<PitchViewMode>("events");
   const [shotTeamFilter, setShotTeamFilter] = useState<ShotTeamFilter>("all");
   const [passTeamFilter, setPassTeamFilter] = useState<PassTeamFilter>("home");
+  const [selectedPossessionChain, setSelectedPossessionChain] =
+    useState<PossessionChainSummary | null>(null);
   const [use3DView, setUse3DView] = useState(false);
   const [current3DView, setCurrent3DView] = useState<'top' | 'side' | 'goal' | 'iso'>('iso');
   const [autoOrbit3D, setAutoOrbit3D] = useState(false); // advanced interactivity for 3D stadium tour feel
@@ -294,16 +299,44 @@ export default function MatchDetailPage() {
     { shots: 0, goals: 0, xg: 0 },
   );
 
+  const handleSelectPossessionChain = useCallback(
+    (chain: PossessionChainSummary | null) => {
+      setSelectedPossessionChain(chain);
+      if (chain) {
+        setPitchViewMode("events");
+        setUse3DView(false);
+        setHighlightedEventId(null);
+        setSelectedEvent(null);
+      }
+    },
+    [],
+  );
+
+  const selectedChainKey = selectedPossessionChain
+    ? chainKey(
+        selectedPossessionChain.possession_id,
+        selectedPossessionChain.team,
+      )
+    : null;
+
   // Filter events shown on pitch
-  const filteredPitchEvents =
-    pitchViewMode === "shots"
-      ? shotMapEvents
-      : allPitchEvents.filter((event) => {
-          if (!event.event_type) return false;
-          return visibleEventTypes.some((type) =>
-            event.event_type!.toLowerCase().includes(type.toLowerCase()),
-          );
-        });
+  const filteredPitchEvents = (() => {
+    const base =
+      pitchViewMode === "shots"
+        ? shotMapEvents
+        : allPitchEvents.filter((event) => {
+            if (!event.event_type) return false;
+            return visibleEventTypes.some((type) =>
+              event.event_type!.toLowerCase().includes(type.toLowerCase()),
+            );
+          });
+
+    if (!selectedPossessionChain) {
+      return base;
+    }
+    const allowed = new Set(selectedPossessionChain.event_ids);
+    return base.filter((event) => allowed.has(event.id));
+  })();
 
   const eventTypes = pitchEventsData?.events
     ? (Array.from(
@@ -821,6 +854,16 @@ export default function MatchDetailPage() {
           )}
         </div>
       </div>
+
+      {match && matchId != null && (
+        <PossessionChainsPanel
+          matchId={matchId}
+          homeTeam={match.home_team ?? "Home"}
+          awayTeam={match.away_team ?? "Away"}
+          selectedChainKey={selectedChainKey}
+          onSelectChain={handleSelectPossessionChain}
+        />
+      )}
 
       {/* Events Table - Tightly integrated with Pitch */}
       <div id="events-table" className="mt-8">

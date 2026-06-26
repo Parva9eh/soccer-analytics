@@ -1,14 +1,14 @@
 # Phase 4.1: Expected Goals (xG) — Summary
 
 **Branch:** `phase4/xg-foundation`  
-**Status:** Phase 4.1 complete (merged to `main`)  
+**Status:** Phase 4.1–4.2 merged to `main`; 4.3 in progress  
 **Date:** June 2026
 
 ## Purpose
 
-Phase 4.1 delivers the first real analytics slice on top of StatsBomb event data: expected goals from shot `details`, season and match summaries, leaderboards, an interactive shot map on match pages, and rolling team xG form on the analytics dashboard. All xG reads use the same workspace / guest demo RLS scope as existing match and event routes.
+Phase 4 delivers real analytics on StatsBomb event data. **4.1 (xG)** and **4.2 (passing)** are merged to `main`. **4.3 (possession chains)** continues on `phase4/xg-foundation`.
 
-Phase 4.2+ (passing networks, possession chains, comparisons) remains on `phase4/xg-foundation` or a follow-on branch.
+All analytics reads use the same workspace / guest demo RLS scope as existing match and event routes.
 
 ---
 
@@ -89,7 +89,27 @@ Documented in `supabase/README.md`. Operator step: run on hosted Supabase if the
 
 ---
 
-## 5. Merge to `main`
+## 5. Phase 4.2 — Passing networks (merged)
+
+### API
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /analytics/passes/matches/{match_id}?team=` | Completed-pass network (nodes + edges) |
+| `GET /analytics/passes/progressive?competition=&season=` | Teams ranked by progressive passes |
+
+### Frontend
+
+| Deliverable | Detail |
+|-------------|--------|
+| **Pass network** | Match page pitch mode — home/away, volume-weighted edges |
+| **Progressive passes** | Analytics dashboard team ranking panel |
+
+Progressive pass = completed pass moving ball ≥10 units toward goal (attack direction inferred from team pass locations).
+
+---
+
+## 6. Merge to `main`
 
 ```bash
 git checkout main
@@ -102,34 +122,24 @@ Keep `phase4/xg-foundation` on the remote for Phase 4.2 work.
 
 ---
 
-## Phase 4.1 checklist
+## Phase 4 checklist
 
-- [x] StatsBomb xG extraction
-- [x] Match and season xG APIs
-- [x] Player and team leaderboards
-- [x] Match page xG strip
-- [x] Shot map on pitch
-- [x] Rolling xG form chart
-- [x] `player_match_stats` RLS migration (conditional)
+### 4.1 (merged)
+- [x] StatsBomb xG extraction, APIs, leaderboards, shot map, rolling form
 
----
+### 4.2 (merged)
+- [x] Pass network API + match UI
+- [x] Progressive pass season leaderboard + analytics panel
 
-## Explicitly not Phase 4.1
-
-| Item | Target |
-|------|--------|
-| Passing networks, progressive passes | Phase 4.2 |
-| Possession chains, build-up | Phase 4.2+ |
-| Player radar / comparisons | Phase 4.2+ |
-| xG in workspace report CSV snapshots | Optional polish |
-| Automated tests for xG parsers | Phase 5 (or incremental) |
-| Production deploy | Phase 5 |
+### 4.3 (on `phase4/xg-foundation`)
+- [x] Possession chain API (match + season)
+- [x] Match page possession panel + pitch filter
+- [x] Analytics possession summary panel
 
 ---
 
-## Suggested next (Phase 4.2)
+## Suggested next (Phase 4.3+)
 
-1. Branch from updated `main` (or continue on `phase4/xg-foundation`)
-2. Passing networks on match page (reuse pitch + pass events)
-3. Progressive passing metrics API
-4. Update `PLAN.md` and this summary when 4.2 ships
+1. Possession chains and build-up on match pages
+2. Player/team aggregate profiles
+3. Comparison tools
