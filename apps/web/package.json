@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -38,6 +39,7 @@
     "@types/react": "19.2.15",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "vitest": "^3.2.4"
   }
 }
