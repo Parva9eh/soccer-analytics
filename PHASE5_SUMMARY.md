@@ -1,7 +1,9 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
-**Branch:** `phase5/testing-ci`  
-**Status:** Phase 5.1 merged to `main`
+**Branch:** `phase5/testing-ci` → `phase5/ci-fix`  
+**Status:** Phase 5.1 merged to `main`; CI fix on `phase5/ci-fix`
+
+> **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
 ## Goal
 
@@ -27,6 +29,8 @@ Establish automated quality gates before deployment work (Docker, hosting, monit
 - **API job:** `uv sync --extra dev` → `pytest`
 - **Web job:** `pnpm install` → `tsc --noEmit` → `vitest run`
 - **Note:** ESLint has pre-existing debt; lint gate deferred to Phase 5.2
+- **Triggers:** `main` and `phase4/**` / `phase5/**` pushes (so feature branches get CI)
+- **pnpm:** version 11 (matches local lockfile; v9 caused incompatible-lockfile failures)
 
 ### Monorepo scripts
 
