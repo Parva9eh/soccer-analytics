@@ -1,12 +1,12 @@
 # Phase 4.1: Expected Goals (xG) — Summary
 
 **Branch:** `phase4/xg-foundation`  
-**Status:** Phase 4.1–4.3 merged to `main`; 4.4 in progress on branch
+**Status:** Phases 4.1–4.8 merged to `main`
 **Date:** June 2026
 
 ## Purpose
 
-Phase 4 delivers real analytics on StatsBomb event data. **4.1–4.3** are merged to `main`. **4.4 (profiles & compare)** continues on `phase4/xg-foundation`.
+Phase 4 delivers real analytics on StatsBomb event data. **4.1–4.8** are merged to `main`.
 
 All analytics reads use the same workspace / guest demo RLS scope as existing match and event routes.
 
@@ -174,8 +174,6 @@ Keep `phase4/xg-foundation` on the remote for Phase 4.2 work.
 
 ---
 
-## Suggested next (Phase 5+)
+## Phase 4 complete
 
-1. Automated testing and CI/CD
-2. Materialized views / caching for large season aggregates
-3. Multi-team heatmap overlays on compare
+All planned analytics slices (4.1–4.8) are on `main`. Next: [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md).

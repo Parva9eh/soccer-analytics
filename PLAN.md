@@ -319,19 +319,29 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 - ✅ Analytics dashboard — season zone panel and team heatmap selector
 - ✅ Compare page — printable PDF report (metrics table + optional radar image)
 
-#### Planned next (4.9+ / Phase 5)
-- Automated testing and CI/CD (Phase 5 kickoff)
-- Cached/materialized season aggregates for large datasets
+#### Phase 4 complete
+
+Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md).
 
 ---
 
-### Phase 5: Quality, Performance & Deployment (Planned)
+### Phase 5: Quality, Performance & Deployment (in progress)
 
 **Goal:** Make the system reliable, testable, and deployable.
 
-**Planned Work:**
-- Automated testing (unit, integration, API contract tests; auth/RLS smoke tests may start in Phase 3)
-- CI/CD pipeline
+**Branch:** `phase5/testing-ci`
+
+#### Phase 5.1 — Testing & CI (complete)
+
+- ✅ API unit tests (`pytest`) for tactical, zones, and health smoke
+- ✅ Web unit tests (`vitest`) for zone, heatmap, and radar utilities
+- ✅ GitHub Actions CI workflow (API + web on push/PR to `main`)
+- ✅ Root scripts: `pnpm test`, `pnpm ci`
+
+#### Planned next (5.2+)
+- API integration tests with mocked Supabase
+- E2E smoke tests (Playwright)
+- Cached/materialized season aggregates for large datasets
 - Performance optimization (caching, query optimization, materialized views)
 - Monitoring, alerting, and logging improvements
 - Containerization (Docker) and infrastructure as code
@@ -360,8 +370,8 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 | Phase 1 | ✅ Completed | Backend hardening & developer experience |
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
-| Phase 4 | 🚧 In progress | 4.1–4.3 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md); 4.4 on `phase4/xg-foundation` |
-| Phase 5 | Planned | Testing, CI, and deployment |
+| Phase 4 | ✅ Completed | 4.1–4.8 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) |
+| Phase 5 | 🚧 In progress | 5.1 testing & CI on `main` — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
 
 Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md), [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) (4.1 slice).
 
