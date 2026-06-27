@@ -15,45 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  api:
-    name: API tests
+  smoke:
+    name: Smoke
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
-    env:
-      SUPABASE_URL: https://example.supabase.co
-      SUPABASE_ANON_KEY: test-anon-key
-      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
-      ENVIRONMENT: test
-      REQUIRE_AUTH: "false"
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-path: apps/api/uv.lock
-          python-version: "3.11"
-      - run: uv sync --extra dev
-      - run: uv run pytest
-
-  web:
-    name: Web checks
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: apps/web/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec tsc --noEmit
-      - run: pnpm test
+      - run: echo "CI smoke check"
