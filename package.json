@@ -8,6 +8,10 @@
     "dev:web": "cd apps/web && pnpm dev",
     "dev:api": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
     "build:web": "cd apps/web && pnpm build",
-    "lint:web": "cd apps/web && pnpm lint"
+    "lint:web": "cd apps/web && pnpm lint",
+    "test:api": "cd apps/api && uv run --extra dev pytest",
+    "test:web": "cd apps/web && pnpm test",
+    "test": "pnpm test:api && pnpm test:web",
+    "verify": "cd apps/web && pnpm exec tsc --noEmit && pnpm test && cd ../api && uv run --extra dev pytest"
   }
 }
