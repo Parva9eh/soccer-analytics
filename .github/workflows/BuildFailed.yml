@@ -1,0 +1,20 @@
+# Reclaims the phantom CI workflow path so GitHub stops routing
+# every push to a deleted registry entry (ci failure with zero jobs).
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "phase4/**"
+      - "phase5/**"
+
+permissions:
+  contents: read
+
+jobs:
+  reclaim:
+    name: Reclaim workflow slot
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "CI workflow path reclaimed — real CI runs in ci.yml"
