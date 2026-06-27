@@ -403,7 +403,7 @@ git push origin main
 **After merge:**
 
 1. Leave `phaseN/branch-name` on the remote (for archaeology, diffs, and PR links).
-2. Start the next phase from updated `main`:  
+2. Start the next phase from updated `main` (**always create the branch before coding**):  
    `git checkout main && git pull && git checkout -b phaseN+1/...`
 3. Add or update `PHASEN_SUMMARY.md` and mark the phase complete in this plan.
 
