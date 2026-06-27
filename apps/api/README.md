@@ -19,6 +19,17 @@ FastAPI backend for the Soccer Analytics platform.
 uv run uvicorn main:app --reload --port 8000
 ```
 
+## Tests
+
+```bash
+# From the repo root
+pnpm test:api
+
+# Or from apps/api
+uv sync --extra dev
+uv run pytest
+```
+
 The API will be available at `http://localhost:8000`.
 
 ## Key Endpoints

@@ -14,3 +14,12 @@ dependencies = [
     "tqdm>=4.67.3",
     "uvicorn[standard]>=0.47.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
