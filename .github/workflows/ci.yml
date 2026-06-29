@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   api:
     name: API tests
@@ -33,7 +37,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-path: apps/api/uv.lock
+          cache-dependency-glob: "apps/api/uv.lock"
           python-version: "3.11"
       - run: uv sync --extra dev
       - run: uv run pytest

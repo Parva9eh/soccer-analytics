@@ -1,7 +1,7 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/actions-fix` (from `main`)  
-**Status:** Phase 5.1 merged to `main`; complete on main
+**Status:** Phase 5.1 on `main`; CI fixes on `phase5/actions-fix` (merged to main)
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
