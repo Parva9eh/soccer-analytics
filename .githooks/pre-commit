@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Block commits that add or modify environment files with secrets.
+set -euo pipefail
+
+blocked_patterns=(
+  '\.env$'
+  '\.env\.local$'
+  '\.env\.[^/]+\.local$'
+  '\.env\.production$'
+  '\.env\.development$'
+)
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+violations=()
+while IFS= read -r file; do
+  [ -z "$file" ] && continue
+  base=$(basename "$file")
+  # Allow documented examples only
+  if [[ "$base" == ".env.example" ]]; then
+    continue
+  fi
+  for pattern in "${blocked_patterns[@]}"; do
+    if [[ "$file" =~ $pattern ]] || [[ "$base" =~ $pattern ]]; then
+      violations+=("$file")
+      break
+    fi
+  done
+done <<< "$staged"
+
+if [ "${#violations[@]}" -gt 0 ]; then
+  echo "ERROR: Refusing to commit environment files (may contain secrets):" >&2
+  printf '  %s\n' "${violations[@]}" >&2
+  echo "Use .env.example for templates. See SECURITY.md." >&2
+  exit 1
+fi
+
+exit 0

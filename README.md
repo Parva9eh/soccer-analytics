@@ -58,6 +58,14 @@ pnpm dev:api          # FastAPI on http://localhost:8000
 
 2. Fill in your Supabase credentials and backend URL.
 
+3. Enable git hooks (blocks accidental `.env` commits):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+See [SECURITY.md](SECURITY.md) for secrets handling and reporting vulnerabilities.
+
 ### Loading Data
 
 Use the StatsBomb loader in the API:
