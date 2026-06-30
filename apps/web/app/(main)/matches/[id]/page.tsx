@@ -212,14 +212,16 @@ export default function MatchDetailPage() {
       return;
     }
     appliedSavedRef.current = savedAnalysis.id;
-    setSelectedEventType(config.selected_event_type);
-    if (config.visible_event_types.length > 0) {
-      setVisibleEventTypes(config.visible_event_types);
-    }
-    setUse3DView(config.use_3d_view);
-    setCurrent3DView(config.current_3d_view);
-    setCurrentPage(1);
-    setHighlightedEventId(null);
+    queueMicrotask(() => {
+      setSelectedEventType(config.selected_event_type);
+      if (config.visible_event_types.length > 0) {
+        setVisibleEventTypes(config.visible_event_types);
+      }
+      setUse3DView(config.use_3d_view);
+      setCurrent3DView(config.current_3d_view);
+      setCurrentPage(1);
+      setHighlightedEventId(null);
+    });
   }, [savedAnalysis]);
 
   // Fetch match details

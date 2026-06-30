@@ -106,8 +106,10 @@ export default function AnalyticsComparePage() {
     }
     const defaults = getFirstCatalogFilters(catalog);
     if (defaults && !isFilterInCatalog(catalog, competition, season)) {
-      setCompetition(defaults.competition);
-      setSeason(defaults.season);
+      queueMicrotask(() => {
+        setCompetition(defaults.competition);
+        setSeason(defaults.season);
+      });
     }
   }, [catalog, competition, season]);
 

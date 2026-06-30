@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/zone-caching`  
-**Status:** Phase 5.5 complete — season zone cache + materialized view
+**Branch:** `phase5/eslint-warnings`  
+**Status:** Phase 5.6 complete — ESLint warnings cleared
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -29,7 +29,7 @@ Establish automated quality gates before deployment work (Docker, hosting, monit
 - Workflow: `.github/workflows/ci.yml`
 - **API job:** `uv sync --extra dev` → `pytest`
 - **Web job:** `pnpm install` → `tsc --noEmit` → `vitest run`
-- **Web job:** `pnpm lint` gate (errors block CI; React hook rules tracked as warnings)
+- **Web job:** `pnpm lint` gate (zero errors and zero warnings)
 - **Triggers:** `main` and `phase4/**` / `phase5/**` pushes (so feature branches get CI)
 - **pnpm:** version 11 (matches local lockfile; v9 caused incompatible-lockfile failures)
 - **Manual:** `workflow_dispatch` for on-demand runs (`gh workflow run CI --ref <branch>`)
@@ -122,6 +122,14 @@ CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
 - Refresh: `SELECT public.refresh_season_team_zone_stats();` (service role)
 - Opt-in API reads: `USE_ZONE_MATERIALIZED_VIEW=true` (falls back to live aggregation)
 
+## Phase 5.6 — ESLint warnings cleared (complete)
+
+- Removed temporary warn-downgrade rules; all 34 warnings resolved
+- `ThreeDPitch` grass assets extracted to `grass-assets.ts` (purity-safe init)
+- Derived `activeTeam` pattern in heatmap / xG form charts (no effect sync)
+- `useSyncExternalStore` for settings hydration; `queueMicrotask` for async catalog/invite updates
+- ARIA fixes in `EventFilterTypeRow`; `Goal3D` net strands built inside `useMemo`
+
 ## Suggested next
 
-1. Gradually clear remaining ESLint warnings (mostly `react-hooks/*`)
+1. Production deployment hardening (hosting, monitoring)

@@ -34,48 +34,46 @@ function GoalAssembly({ side: _side }: { side: GoalSide }) {
     />
   );
 
-  const netOpacity = 0.72;
-  const netMat = (
-    <meshStandardMaterial
-      color={NET_COLOR}
-      roughness={0.95}
-      metalness={0.05}
-      transparent
-      opacity={netOpacity}
-      side={THREE.DoubleSide}
-    />
-  );
-
-  /** Net string as thin box between two points. */
-  const strand = (
-    key: string,
-    ax: number,
-    ay: number,
-    az: number,
-    bx: number,
-    by: number,
-    bz: number,
-    thickness = 0.012,
-  ) => {
-    const midX = (ax + bx) / 2;
-    const midY = (ay + by) / 2;
-    const midZ = (az + bz) / 2;
-    const len = Math.hypot(bx - ax, by - ay, bz - az);
-    if (len < 0.001) return null;
-    const dir = new THREE.Vector3(bx - ax, by - ay, bz - az).normalize();
-    const quat = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      dir,
-    );
-    return (
-      <mesh key={key} position={[midX, midY, midZ]} quaternion={quat}>
-        <cylinderGeometry args={[thickness, thickness, len, 4]} />
-        {netMat}
-      </mesh>
-    );
-  };
-
   const net = useMemo(() => {
+    const netMat = (
+      <meshStandardMaterial
+        color={NET_COLOR}
+        roughness={0.95}
+        metalness={0.05}
+        transparent
+        opacity={0.72}
+        side={THREE.DoubleSide}
+      />
+    );
+
+    const strand = (
+      key: string,
+      ax: number,
+      ay: number,
+      az: number,
+      bx: number,
+      by: number,
+      bz: number,
+      thickness = 0.012,
+    ) => {
+      const midX = (ax + bx) / 2;
+      const midY = (ay + by) / 2;
+      const midZ = (az + bz) / 2;
+      const len = Math.hypot(bx - ax, by - ay, bz - az);
+      if (len < 0.001) return null;
+      const dir = new THREE.Vector3(bx - ax, by - ay, bz - az).normalize();
+      const quat = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        dir,
+      );
+      return (
+        <mesh key={key} position={[midX, midY, midZ]} quaternion={quat}>
+          <cylinderGeometry args={[thickness, thickness, len, 4]} />
+          {netMat}
+        </mesh>
+      );
+    };
+
     const strands: React.ReactElement[] = [];
     const xFront = GOAL_POST_RADIUS_W;
     const xBack = -GOAL_NET_DEPTH_W;

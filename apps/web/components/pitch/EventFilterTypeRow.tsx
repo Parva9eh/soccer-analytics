@@ -82,10 +82,11 @@ export function EventFilterTypeRow(props: EventFilterTypeRowProps) {
   }
 
   return (
-    <li aria-selected={props.selected}>
+    <li role="presentation">
       <button
         type="button"
         role="option"
+        aria-selected={props.selected}
         onClick={props.onSelect}
         aria-label={ariaLabel ?? label}
         className={cn(
