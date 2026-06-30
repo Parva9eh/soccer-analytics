@@ -16,6 +16,7 @@
     "verify": "cd apps/web && pnpm exec tsc --noEmit && pnpm lint && pnpm test && cd ../api && uv run --extra dev pytest",
     "docker:up": "docker compose up --build",
     "docker:up:mock": "docker compose -f docker-compose.mock.yml up --build",
+    "docker:up:prod": "docker compose -f docker-compose.prod.yml up --build",
     "docker:down": "docker compose down"
   }
 }

@@ -63,6 +63,52 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
 
+  web-build:
+    name: Web production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      NEXT_PUBLIC_API_URL: https://example.com
+      NEXT_PUBLIC_AUTH_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  docker:
+    name: Docker image build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api
+          file: apps/api/Dockerfile
+          push: false
+          tags: soccer-analytics-api:ci
+      - name: Build web production image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/web
+          file: apps/web/Dockerfile.prod
+          push: false
+          tags: soccer-analytics-web:ci
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://example.com
+            NEXT_PUBLIC_AUTH_ENABLED=false
+
   e2e:
     name: E2E smoke (Playwright)
     runs-on: ubuntu-latest

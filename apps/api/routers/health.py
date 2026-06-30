@@ -31,6 +31,33 @@ def health_check(
     }
 
 
+@router.get("/ready")
+def readiness_check(
+    supabase: Client = Depends(get_supabase_service_client),
+    request_id: str = Depends(get_request_id),
+):
+    """Readiness probe for load balancers and container orchestrators."""
+    try:
+        response = supabase.table("matches").select("id", count="exact").limit(0).execute()
+        settings = get_settings()
+        return {
+            "status": "ready",
+            "service": "Soccer Analytics API",
+            "environment": settings.ENVIRONMENT,
+            "database": "connected",
+            "matches_count": response.count,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "request_id": request_id if request_id != "-" else None,
+        }
+    except Exception:
+        logger.exception("Readiness check failed")
+        raise_http_exception(
+            status_code=503,
+            detail="Service not ready — database unavailable",
+            code=ErrorCode.SERVICE_UNAVAILABLE,
+        )
+
+
 @router.get("/supabase")
 def test_supabase_connection(
     supabase: Client = Depends(get_supabase_service_client),

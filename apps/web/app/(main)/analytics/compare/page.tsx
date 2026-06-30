@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -60,7 +60,7 @@ interface MatchOption {
   match_week: number | null;
 }
 
-export default function AnalyticsComparePage() {
+function AnalyticsComparePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const workspaceId = useActiveWorkspaceId();
@@ -578,6 +578,20 @@ function MatchSelect({
         </SelectContent>
       </Select>
     </div>
+  );
+}
+
+export default function AnalyticsComparePage() {
+  return (
+    <Suspense
+      fallback={
+        <PageShell>
+          <div className="surface-card h-64 animate-pulse rounded-xl border" />
+        </PageShell>
+      }
+    >
+      <AnalyticsComparePageContent />
+    </Suspense>
   );
 }
 

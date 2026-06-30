@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/eslint-warnings`  
-**Status:** Phase 5.6 complete — ESLint warnings cleared
+**Branch:** `phase5/deployment-hardening`  
+**Status:** Phase 5.7 complete — production deployment hardening
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -130,6 +130,40 @@ CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
 - `useSyncExternalStore` for settings hydration; `queueMicrotask` for async catalog/invite updates
 - ARIA fixes in `EventFilterTypeRow`; `Goal3D` net strands built inside `useMemo`
 
+## Phase 5.7 — Production deployment hardening (complete)
+
+### Production web image
+
+- `apps/web/Dockerfile.prod` — multi-stage build with `next build` + standalone output
+- `docker-compose.prod.yml` — API + production web with healthchecks
+- `next.config.mjs` — `output: "standalone"`
+- `pnpm docker:up:prod` — local prod stack smoke test
+
+### Deploy configs
+
+| File | Purpose |
+|------|---------|
+| `DEPLOY.md` | Vercel + Render runbook, auth URLs, monitoring checklist |
+| `render.yaml` | Render Blueprint for API (`/health/ready`) |
+| `apps/web/vercel.json` | Vercel build/install commands |
+| `.env.production.example` | Production env checklist |
+
+### API readiness
+
+- `GET /health/ready` — readiness probe (DB connectivity, 503 on failure)
+- Render health path: `/health/ready`
+
+### CI
+
+- **Web production build** job — `pnpm build` gate
+- **Docker image build** job — API + `Dockerfile.prod`
+
+### Build fixes
+
+- `useSearchParams` pages wrapped in `Suspense` (compare, analytics auth dashboard, match detail)
+
 ## Suggested next
 
-1. Production deployment hardening (hosting, monitoring)
+1. First production deploy (Vercel + Render) using `DEPLOY.md`
+2. Apply zone materialized view migration + scheduled refresh in Supabase
+3. External uptime monitoring on `/health/ready`

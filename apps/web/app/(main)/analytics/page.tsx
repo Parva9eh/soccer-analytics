@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { Suspense, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -724,7 +724,17 @@ export default function AnalyticsPage() {
   const { session, isLoading } = useAuthSession();
 
   if (AUTH_ENABLED && !isLoading && session) {
-    return <AuthAnalyticsDashboard />;
+    return (
+      <Suspense
+        fallback={
+          <PageShell>
+            <div className="surface-card h-64 animate-pulse rounded-xl border" />
+          </PageShell>
+        }
+      >
+        <AuthAnalyticsDashboard />
+      </Suspense>
+    );
   }
 
   return <LegacyAnalyticsPage guestMode={AUTH_ENABLED && !session} />;

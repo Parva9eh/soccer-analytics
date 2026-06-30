@@ -8,6 +8,7 @@ const e2eApiProxyTarget = process.env.E2E_API_PROXY_TARGET?.replace(/\/$/, "");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   turbopack: {
     root: appRoot,
   },
