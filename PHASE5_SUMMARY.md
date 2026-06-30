@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/eslint-ci-gate`  
-**Status:** Phase 5.4 complete — ESLint CI gate
+**Branch:** `phase5/zone-caching`  
+**Status:** Phase 5.5 complete — season zone cache + materialized view
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -107,7 +107,21 @@ CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
 - `use-auth-session` — skip redundant `setIsLoading` when auth is disabled
 - CI web job runs `pnpm lint`; `pnpm verify` includes lint
 
+## Phase 5.5 — Season zone cache + materialized view (complete)
+
+### API TTL cache
+
+- `core/season_zone_cache.py` — 5-minute in-memory cache keyed by competition, season, and RLS-scoped `match_ids`
+- `GET /analytics/zones/season` and heatmap event fetches reuse cached rows
+- `SEASON_ZONE_CACHE_TTL_SECONDS` in API settings (default 300)
+
+### Materialized view
+
+- Migration: `20250605000000_season_team_zone_stats.sql`
+- View: `season_team_zone_stats` (team × pitch-third counts per competition season)
+- Refresh: `SELECT public.refresh_season_team_zone_stats();` (service role)
+- Opt-in API reads: `USE_ZONE_MATERIALIZED_VIEW=true` (falls back to live aggregation)
+
 ## Suggested next
 
-1. Materialized views / caching for season zone aggregates
-2. Gradually clear remaining ESLint warnings (mostly `react-hooks/*`)
+1. Gradually clear remaining ESLint warnings (mostly `react-hooks/*`)

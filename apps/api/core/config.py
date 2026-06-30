@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     # Environment (used in health checks and observability)
     ENVIRONMENT: str = "development"   # development | staging | production
 
+    # Season zone aggregates: TTL cache (seconds) and optional materialized view reads
+    SEASON_ZONE_CACHE_TTL_SECONDS: int = 300
+    USE_ZONE_MATERIALIZED_VIEW: bool = False
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Return CORS origins as a clean list."""
