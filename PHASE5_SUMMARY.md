@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/playwright-smoke`  
-**Status:** Phase 5.2+ complete — Playwright smoke tests for key routes
+**Branch:** `phase5/docker-compose`  
+**Status:** Phase 5.3 complete — Docker Compose for local API + web
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -79,8 +79,27 @@ Run: `pnpm test:e2e` (starts mock API + Next dev via Playwright `webServer`)
 
 CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
 
+## Phase 5.3 — Docker Compose (complete)
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `docker-compose.yml` | API + web against `apps/api/.env` (Supabase) |
+| `docker-compose.mock.yml` | Demo stack with `scripts/e2e_server.py` (no DB) |
+| `apps/api/Dockerfile` | Python 3.11 + uv, uvicorn on `:8000` |
+| `apps/web/Dockerfile` | Node 22 + pnpm, Next dev on `:3000` |
+| `.env.docker.example` | Optional root env for web auth flags |
+
+### Commands
+
+| Script | Command |
+|--------|---------|
+| `pnpm docker:up` | Real Supabase stack (`http://localhost:3000` + `:8000`) |
+| `pnpm docker:up:mock` | Mock API demo (La Liga fixture, no `.env`) |
+| `pnpm docker:down` | Stop containers |
+
 ## Suggested next
 
-1. Docker Compose for local API + web
-3. Materialized views / caching for season zone aggregates
-4. ESLint cleanup and CI lint gate
+1. Materialized views / caching for season zone aggregates
+2. ESLint cleanup and CI lint gate
