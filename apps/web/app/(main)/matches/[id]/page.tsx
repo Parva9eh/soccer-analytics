@@ -5,7 +5,7 @@
 // `new THREE.Clock()` (in its events bundles), it gets our non-deprecated shim.
 import "@/lib/three-patch";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -129,7 +129,7 @@ interface EventsResponse {
   events: Event[];
 }
 
-export default function MatchDetailPage() {
+function MatchDetailPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const savedId = searchParams.get("saved");
@@ -1364,5 +1364,19 @@ export default function MatchDetailPage() {
         </SheetContent>
       </Sheet>
     </PageShell>
+  );
+}
+
+export default function MatchDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <PageShell>
+          <div className="surface-card h-96 animate-pulse rounded-xl border" />
+        </PageShell>
+      }
+    >
+      <MatchDetailPageContent />
+    </Suspense>
   );
 }
