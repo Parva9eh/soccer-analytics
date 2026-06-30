@@ -1,7 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Status:** Phase 5.1 complete on `main`
+**Branch:** `phase5/api-integration-tests`  
+**Status:** Phase 5.2 in progress — API integration tests with mocked Supabase
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -41,9 +42,27 @@ Establish automated quality gates before deployment work (Docker, hosting, monit
 | `pnpm test` | API + web unit tests |
 | `pnpm verify` | Typecheck and all unit tests |
 
+## Phase 5.2 — API integration tests (in progress)
+
+### Mock Supabase layer
+
+- `tests/mock_supabase.py` — fluent query builder mock (eq, in\_, limit, order, range, count)
+- `demo_fixture()` — La Liga 2020/21-shaped sample data (no live DB)
+
+### Integration tests (`test_integration_api.py`)
+
+| Test | Route | Verifies |
+|------|-------|----------|
+| Matches list | `GET /matches/` | Team names, competition/season filters |
+| Competitions | `GET /competitions/` | Season grouping in catalog |
+| Health DB | `GET /health/supabase` | Connection check via mock count |
+| Season zones | `GET /analytics/zones/season` | End-to-end zone aggregation |
+
+Run: `pnpm test:api` (13 tests: 9 unit + 4 integration)
+
 ## Suggested next (Phase 5.2+)
 
-1. API integration tests with mocked Supabase
-2. Playwright smoke tests for key routes (`/analytics`, `/analytics/compare`, match detail)
-3. Docker Compose for local API + web
-4. Materialized views / caching for season zone aggregates
+1. Playwright smoke tests for key routes (`/analytics`, `/analytics/compare`, match detail)
+2. Docker Compose for local API + web
+3. Materialized views / caching for season zone aggregates
+4. ESLint cleanup and CI lint gate
