@@ -13,6 +13,9 @@
     "test:web": "cd apps/web && pnpm test",
     "test:e2e": "cd apps/web && pnpm test:e2e",
     "test": "pnpm test:api && pnpm test:web",
-    "verify": "cd apps/web && pnpm exec tsc --noEmit && pnpm test && cd ../api && uv run --extra dev pytest"
+    "verify": "cd apps/web && pnpm exec tsc --noEmit && pnpm test && cd ../api && uv run --extra dev pytest",
+    "docker:up": "docker compose up --build",
+    "docker:up:mock": "docker compose -f docker-compose.mock.yml up --build",
+    "docker:down": "docker compose down"
   }
 }

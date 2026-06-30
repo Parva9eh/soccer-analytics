@@ -1,0 +1,40 @@
+# Demo stack with mocked Supabase (no live database or apps/api/.env required).
+# Usage: docker compose -f docker-compose.mock.yml up --build
+
+services:
+  api:
+    build:
+      context: ./apps/api
+    ports:
+      - "8000:8000"
+    command: ["uv", "run", "python", "scripts/e2e_server.py"]
+    environment:
+      E2E_API_PORT: "8000"
+      E2E_API_HOST: "0.0.0.0"
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "uv",
+          "run",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  web:
+    build:
+      context: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_AUTH_ENABLED: "false"
+    depends_on:
+      api:
+        condition: service_healthy
