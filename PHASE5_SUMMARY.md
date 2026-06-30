@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/docker-compose`  
-**Status:** Phase 5.3 complete — Docker Compose for local API + web
+**Branch:** `phase5/eslint-ci-gate`  
+**Status:** Phase 5.4 complete — ESLint CI gate
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -29,7 +29,7 @@ Establish automated quality gates before deployment work (Docker, hosting, monit
 - Workflow: `.github/workflows/ci.yml`
 - **API job:** `uv sync --extra dev` → `pytest`
 - **Web job:** `pnpm install` → `tsc --noEmit` → `vitest run`
-- **Note:** ESLint has pre-existing debt; lint gate deferred to Phase 5.2
+- **Web job:** `pnpm lint` gate (errors block CI; React hook rules tracked as warnings)
 - **Triggers:** `main` and `phase4/**` / `phase5/**` pushes (so feature branches get CI)
 - **pnpm:** version 11 (matches local lockfile; v9 caused incompatible-lockfile failures)
 - **Manual:** `workflow_dispatch` for on-demand runs (`gh workflow run CI --ref <branch>`)
@@ -99,7 +99,15 @@ CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
 | `pnpm docker:up:mock` | Mock API demo (La Liga fixture, no `.env`) |
 | `pnpm docker:down` | Stop containers |
 
+## Phase 5.4 — ESLint CI gate (complete)
+
+- `eslint.config.mjs` — React 19 hook rules (`purity`, `set-state-in-effect`, `static-components`) downgraded to warnings
+- Fixed `react/no-unescaped-entities` in match detail and `ThreeDPitch`
+- Hoisted `CameraCapture` / `AnimatedTrajectoryBall` out of `ThreeDPitch` render
+- `use-auth-session` — skip redundant `setIsLoading` when auth is disabled
+- CI web job runs `pnpm lint`; `pnpm verify` includes lint
+
 ## Suggested next
 
 1. Materialized views / caching for season zone aggregates
-2. ESLint cleanup and CI lint gate
+2. Gradually clear remaining ESLint warnings (mostly `react-hooks/*`)

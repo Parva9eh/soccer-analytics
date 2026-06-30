@@ -867,7 +867,7 @@ export default function MatchDetailPage() {
             })}
           </div>
           <div className="mt-0.5 flex justify-between text-[9px] text-muted-foreground">
-            <span>0'</span><span>45'</span><span>90'+</span>
+            <span>0&apos;</span><span>45&apos;</span><span>90&apos;+</span>
           </div>
         </div>
         )}

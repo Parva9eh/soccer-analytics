@@ -11,7 +11,6 @@ export function useAuthSession() {
 
   useEffect(() => {
     if (!AUTH_ENABLED) {
-      setIsLoading(false);
       return;
     }
 
