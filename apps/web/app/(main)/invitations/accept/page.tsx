@@ -40,7 +40,7 @@ function AcceptInvitationContent() {
       return;
     }
 
-    setStatus("working");
+    queueMicrotask(() => setStatus("working"));
     apiFetchJson<AcceptResult>("/workspaces/invitations/accept", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

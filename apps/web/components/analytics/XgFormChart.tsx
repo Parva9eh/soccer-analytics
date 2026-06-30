@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/api";
 import { formatSeasonLabel } from "@/lib/competition-filter";
@@ -41,21 +41,25 @@ export function XgFormChart({
   const gradientForId = useId().replace(/:/g, "");
   const gradientAgainstId = useId().replace(/:/g, "");
 
-  const teamOptions = teams?.teams.map((item) => item.team) ?? [];
+  const teamOptions = useMemo(
+    () => teams?.teams.map((item) => item.team) ?? [],
+    [teams?.teams],
+  );
   const [selectedTeam, setSelectedTeam] = useState("");
   const [windowSize, setWindowSize] = useState<number>(5);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!selectedTeam && teamOptions[0]) {
-      setSelectedTeam(teamOptions[0]);
+  const activeTeam = useMemo(() => {
+    if (selectedTeam && teamOptions.includes(selectedTeam)) {
+      return selectedTeam;
     }
+    return teamOptions[0] ?? "";
   }, [selectedTeam, teamOptions]);
 
   const formParams = new URLSearchParams({
     competition,
     season,
-    team: selectedTeam,
+    team: activeTeam,
     window: String(windowSize),
   });
 
@@ -65,15 +69,15 @@ export function XgFormChart({
       workspaceId,
       competition,
       season,
-      selectedTeam,
+      activeTeam,
       windowSize,
     ],
     queryFn: () =>
       apiFetchJson<TeamXgForm>(`/analytics/xg/form?${formParams}`),
-    enabled: Boolean(selectedTeam),
+    enabled: Boolean(activeTeam),
   });
 
-  const points = form?.points ?? [];
+  const points = useMemo(() => form?.points ?? [], [form?.points]);
 
   const chartMetrics = useMemo(() => {
     if (!points.length) {
@@ -112,7 +116,7 @@ export function XgFormChart({
           </div>
           <div className="flex flex-wrap gap-2">
             <Select
-              value={selectedTeam || undefined}
+              value={activeTeam || undefined}
               onValueChange={setSelectedTeam}
               disabled={!teamOptions.length}
             >
@@ -159,7 +163,7 @@ export function XgFormChart({
                 viewBox="0 0 720 240"
                 className="h-auto min-w-[560px] w-full"
                 role="img"
-                aria-label={`Rolling xG form for ${selectedTeam}`}
+                aria-label={`Rolling xG form for ${activeTeam}`}
               >
                 <defs>
                   <linearGradient id={gradientForId} x1="0" y1="0" x2="0" y2="1">
@@ -193,7 +197,7 @@ export function XgFormChart({
             </div>
 
             {hoveredIndex != null && points[hoveredIndex] && (
-              <FormMatchDetail point={points[hoveredIndex]} team={selectedTeam} />
+              <FormMatchDetail point={points[hoveredIndex]} team={activeTeam} />
             )}
           </div>
         )}

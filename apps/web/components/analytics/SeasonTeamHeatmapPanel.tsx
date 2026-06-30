@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/api";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
@@ -30,14 +30,15 @@ export function SeasonTeamHeatmapPanel({
   zoneLoading,
 }: SeasonTeamHeatmapPanelProps) {
   const workspaceId = useActiveWorkspaceId();
-  const teams = zoneData?.teams ?? [];
+  const teams = useMemo(() => zoneData?.teams ?? [], [zoneData?.teams]);
   const [selectedTeam, setSelectedTeam] = useState("");
 
-  useEffect(() => {
-    if (!selectedTeam && teams.length > 0) {
-      setSelectedTeam(teams[0].team);
+  const activeTeam = useMemo(() => {
+    if (selectedTeam && teams.some((entry) => entry.team === selectedTeam)) {
+      return selectedTeam;
     }
-  }, [teams, selectedTeam]);
+    return teams[0]?.team ?? "";
+  }, [selectedTeam, teams]);
 
   const seasonParams = useMemo(
     () => new URLSearchParams({ competition, season }),
@@ -45,12 +46,12 @@ export function SeasonTeamHeatmapPanel({
   );
 
   const { data: heatmap, isLoading: heatmapLoading } = useQuery<TeamSeasonHeatmap>({
-    queryKey: ["team-season-heatmap", workspaceId, competition, season, selectedTeam],
+    queryKey: ["team-season-heatmap", workspaceId, competition, season, activeTeam],
     queryFn: () =>
       apiFetchJson<TeamSeasonHeatmap>(
-        `/analytics/zones/heatmap?${seasonParams}&team=${encodeURIComponent(selectedTeam)}`,
+        `/analytics/zones/heatmap?${seasonParams}&team=${encodeURIComponent(activeTeam)}`,
       ),
-    enabled: Boolean(selectedTeam),
+    enabled: Boolean(activeTeam),
   });
 
   if (zoneLoading) {
@@ -76,7 +77,7 @@ export function SeasonTeamHeatmapPanel({
             </p>
           </div>
           <div className="w-full sm:w-56">
-            <Select value={selectedTeam || undefined} onValueChange={setSelectedTeam}>
+            <Select value={activeTeam || undefined} onValueChange={setSelectedTeam}>
               <SelectTrigger className="h-9 bg-card/80">
                 <SelectValue placeholder="Select team" />
               </SelectTrigger>
@@ -98,7 +99,7 @@ export function SeasonTeamHeatmapPanel({
           <SeasonHeatmapPitch data={heatmap} />
         ) : (
           <p className="text-caption text-muted-foreground">
-            No positioned events for {selectedTeam} in this season scope.
+            No positioned events for {activeTeam} in this season scope.
           </p>
         )}
       </CardContent>

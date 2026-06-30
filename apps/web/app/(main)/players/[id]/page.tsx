@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -35,15 +35,7 @@ export default function PlayerDetailPage() {
     enabled: !!playerId,
   });
 
-  const [contentVisible, setContentVisible] = useState(false);
 
-  useEffect(() => {
-    if (player) {
-      const timer = setTimeout(() => setContentVisible(true), 10);
-      return () => clearTimeout(timer);
-    }
-    setContentVisible(false);
-  }, [player]);
 
   const backButton = (
     <Button variant="ghost" className="mb-6 -ml-2 gap-2 sm:-ml-4" asChild>
@@ -94,7 +86,7 @@ export default function PlayerDetailPage() {
       {backButton}
 
       <div
-        className={`transition-opacity duration-300 ${contentVisible ? "opacity-100" : "opacity-0"}`}
+        className="opacity-100"
       >
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-secondary text-xl font-medium">
