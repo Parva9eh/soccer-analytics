@@ -7,7 +7,7 @@ services:
       context: ./apps/api
     ports:
       - "8000:8000"
-    command: ["uv", "run", "python", "scripts/e2e_server.py"]
+    command: ["uv", "run", "--no-sync", "python", "scripts/e2e_server.py"]
     environment:
       E2E_API_PORT: "8000"
       E2E_API_HOST: "0.0.0.0"
