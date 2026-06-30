@@ -58,6 +58,65 @@ interface ThreeDPitchProps {
 }
 
 
+function CameraCapture({
+  camRef,
+}: {
+  camRef: React.MutableRefObject<THREE.Camera | null>;
+}) {
+  const { camera } = useThree();
+  useEffect(() => {
+    camRef.current = camera;
+  }, [camera, camRef]);
+  return null;
+}
+
+function AnimatedTrajectoryBall({
+  curve,
+  color,
+  isActive,
+}: {
+  curve: THREE.CatmullRomCurve3;
+  color: string;
+  isActive: boolean;
+}) {
+  const ballRef = useRef<THREE.Group>(null!);
+  useFrame((state) => {
+    if (!isActive || !ballRef.current || !curve) return;
+    const elapsed = state.clock.getElapsedTime();
+    const t = ((elapsed * 0.72) % 1.35) / 1.35;
+    const pos = curve.getPoint(t);
+    ballRef.current.position.copy(pos);
+    const s = 0.9 + Math.sin(elapsed * 6) * 0.08;
+    ballRef.current.scale.setScalar(s);
+    ballRef.current.rotation.y = elapsed * 9;
+    ballRef.current.rotation.x = elapsed * 4;
+  });
+  if (!isActive) return null;
+  return (
+    <group ref={ballRef}>
+      <mesh>
+        <icosahedronGeometry args={[0.11]} />
+        <meshPhysicalMaterial
+          color="#fff"
+          emissive={color}
+          emissiveIntensity={0.9}
+          metalness={0.2}
+          roughness={0.25}
+          clearcoat={0.7}
+        />
+      </mesh>
+      <mesh position={[0.02, 0.01, 0.01]}>
+        <icosahedronGeometry args={[0.065]} />
+        <meshBasicMaterial color={color} transparent opacity={0.35} />
+      </mesh>
+      <mesh position={[0.04, 0.015, 0.015]}>
+        <icosahedronGeometry args={[0.04]} />
+        <meshBasicMaterial color={color} transparent opacity={0.18} />
+      </mesh>
+    </group>
+  );
+}
+
 // Grass wind animator - defined at top level so it's stable, and MUST be rendered as child of Canvas
 function GrassWind({ grassMeshRef }: { grassMeshRef: React.MutableRefObject<THREE.Mesh> }) {
   useFrame((state) => {
@@ -552,50 +611,6 @@ export function ThreeDPitch({
     if (isSelecting) { setIsSelecting(false); setSelectionStart(null); setSelectionEnd(null); }
   };
 
-  // Camera capture bridge so outer DOM handlers can project using live camera
-  function CameraCapture({ camRef }: { camRef: React.MutableRefObject<THREE.Camera | null> }) {
-    const { camera } = useThree();
-    useEffect(() => { camRef.current = camera; }, [camera]);
-    return null;
-  }
-
-  // Animated traveling ball for highlighted pass/carry (replay feel)
-  function AnimatedTrajectoryBall({ curve, color, isActive }: { curve: THREE.CatmullRomCurve3; color: string; isActive: boolean }) {
-    const ballRef = useRef<THREE.Group>(null!);
-    useFrame((state) => {
-      if (!isActive || !ballRef.current || !curve) return;
-      // Our patched Clock (see lib/three-patch.ts) fully implements the classic Clock API
-      // that fiber expects. Use the standard method.
-      const elapsed = state.clock.getElapsedTime();
-      const t = ((elapsed * 0.72) % 1.35) / 1.35; // slow realistic flight
-      const pos = curve.getPoint(t);
-      ballRef.current.position.copy(pos);
-      // subtle spin scale pulse + spin rotation for premium live-ball animation
-      const s = 0.9 + Math.sin(elapsed * 6) * 0.08;
-      ballRef.current.scale.setScalar(s);
-      ballRef.current.rotation.y = elapsed * 9;
-      ballRef.current.rotation.x = elapsed * 4;
-    });
-    if (!isActive) return null;
-    return (
-      <group ref={ballRef}>
-        <mesh>
-          <icosahedronGeometry args={[0.11]} />
-          <meshPhysicalMaterial color="#fff" emissive={color} emissiveIntensity={0.9} metalness={0.2} roughness={0.25} clearcoat={0.7} />
-        </mesh>
-        {/* faint motion ghost + extra speed trail for ultra-real flight */}
-        <mesh position={[0.02, 0.01, 0.01]}>
-          <icosahedronGeometry args={[0.065]} />
-          <meshBasicMaterial color={color} transparent opacity={0.35} />
-        </mesh>
-        <mesh position={[0.04, 0.015, 0.015]}>
-          <icosahedronGeometry args={[0.04]} />
-          <meshBasicMaterial color={color} transparent opacity={0.18} />
-        </mesh>
-      </group>
-    );
-  }
-
   return (
     <PitchFrame mode="3d" className="w-full max-w-[960px] mx-auto select-none">
     <div
@@ -811,7 +826,7 @@ export function ThreeDPitch({
                   outlineWidth={0.01}
                   outlineColor="#000000"
                 >
-                  {event.event_type} {event.minute}'
+                  {event.event_type} {event.minute}&apos;
                 </Text>
               );
             }
@@ -882,7 +897,7 @@ export function ThreeDPitch({
             <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: getEventColor(hoveredEvent3D.event_type) }} />
             <span className="font-medium text-white">{hoveredEvent3D.event_type}</span>
             <span className="tabular-nums text-muted-foreground">
-              {hoveredEvent3D.minute}':{String(hoveredEvent3D.second || 0).padStart(2, "0")}
+              {hoveredEvent3D.minute}&apos;:{String(hoveredEvent3D.second || 0).padStart(2, "0")}
             </span>
           </div>
         </div>
