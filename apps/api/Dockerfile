@@ -8,7 +8,9 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+# pyiceberg (via supabase→storage3) has manylinux wheels; building the sdist
+# SIGSEGVs in python:3.11-slim during setuptools.
+RUN uv sync --frozen --no-dev --no-build
 
 COPY . .
 
