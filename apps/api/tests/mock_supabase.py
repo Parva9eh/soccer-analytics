@@ -30,9 +30,10 @@ class _QueryBuilder:
         self._in: dict[str, list[Any]] = {}
         self._not_null: set[str] = set()
         self._limit: int | None = None
-        self._order: str | None = None
+        self._orders: list[str] = []
         self._range: tuple[int, int] | None = None
         self._count_exact = False
+        self._single = False
 
     @property
     def not_(self) -> _NotProxy:
@@ -56,11 +57,16 @@ class _QueryBuilder:
         return self
 
     def order(self, column: str) -> "_QueryBuilder":
-        self._order = column
+        self._orders.append(column)
         return self
 
     def range(self, start: int, end: int) -> "_QueryBuilder":
         self._range = (start, end)
+        return self
+
+    def single(self) -> "_QueryBuilder":
+        self._single = True
+        self._limit = 1
         return self
 
     def execute(self) -> MockExecuteResult:
@@ -79,8 +85,14 @@ class _QueryBuilder:
                 if row.get(column) is not None
             ]
 
-        if self._order:
-            rows = sorted(rows, key=lambda row: row.get(self._order) or "")
+        for column in self._orders:
+            rows = sorted(
+                rows,
+                key=lambda row, col=column: (
+                    row.get(col) is None,
+                    row.get(col) if row.get(col) is not None else 0,
+                ),
+            )
 
         total = len(rows)
 
@@ -94,6 +106,9 @@ class _QueryBuilder:
         if self._count_exact:
             return MockExecuteResult(data=rows, count=total)
 
+        if self._single:
+            return MockExecuteResult(data=rows[0] if rows else None)
+
         return MockExecuteResult(data=rows)
 
 
@@ -103,6 +118,68 @@ class MockSupabaseClient:
 
     def table(self, name: str) -> _QueryBuilder:
         return _QueryBuilder(self._tables.get(name, []))
+
+
+def e2e_fixture() -> dict[str, list[dict[str, Any]]]:
+    """La Liga 2020/21-shaped dataset for Playwright smoke tests."""
+    data = deepcopy(demo_fixture())
+    data["players"] = [
+        {
+            "statsbomb_player_id": 1,
+            "name": "Lionel Messi",
+            "position": "FW",
+            "jersey_number": 10,
+            "nationality": "Argentina",
+        },
+        {
+            "statsbomb_player_id": 2,
+            "name": "Karim Benzema",
+            "position": "FW",
+            "jersey_number": 9,
+            "nationality": "France",
+        },
+    ]
+    data["events"] = [
+        {
+            "id": 1,
+            "match_id": 1000,
+            "minute": 12,
+            "second": 30,
+            "event_type": "Pass",
+            "x": 80.0,
+            "y": 40.0,
+            "end_x": 85.0,
+            "end_y": 42.0,
+            "details": {"team": {"name": "Barcelona"}},
+        },
+        {
+            "id": 2,
+            "match_id": 1000,
+            "minute": 45,
+            "second": 0,
+            "event_type": "Shot",
+            "x": 95.0,
+            "y": 45.0,
+            "details": {
+                "team": {"name": "Barcelona"},
+                "player": {"name": "Lionel Messi"},
+                "shot": {"statsbomb_xg": 0.35, "outcome": {"name": "Goal"}},
+            },
+        },
+        {
+            "id": 3,
+            "match_id": 1000,
+            "minute": 67,
+            "second": 15,
+            "event_type": "Pass",
+            "x": 20.0,
+            "y": 50.0,
+            "end_x": 35.0,
+            "end_y": 48.0,
+            "details": {"team": {"name": "Real Madrid"}},
+        },
+    ]
+    return data
 
 
 def demo_fixture() -> dict[str, list[dict[str, Any]]]:

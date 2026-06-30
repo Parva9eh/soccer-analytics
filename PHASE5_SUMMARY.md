@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/api-integration-tests`  
-**Status:** Phase 5.2 in progress — API integration tests with mocked Supabase
+**Branch:** `phase5/playwright-smoke`  
+**Status:** Phase 5.2+ complete — Playwright smoke tests for key routes
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -42,7 +42,7 @@ Establish automated quality gates before deployment work (Docker, hosting, monit
 | `pnpm test` | API + web unit tests |
 | `pnpm verify` | Typecheck and all unit tests |
 
-## Phase 5.2 — API integration tests (in progress)
+## Phase 5.2 — API integration tests (complete)
 
 ### Mock Supabase layer
 
@@ -60,9 +60,27 @@ Establish automated quality gates before deployment work (Docker, hosting, monit
 
 Run: `pnpm test:api` (13 tests: 9 unit + 4 integration)
 
-## Suggested next (Phase 5.2+)
+## Phase 5.2+ — Playwright smoke tests (complete)
 
-1. Playwright smoke tests for key routes (`/analytics`, `/analytics/compare`, match detail)
-2. Docker Compose for local API + web
+### Mock API for E2E
+
+- `tests/mock_supabase.py` — `e2e_fixture()` with players and event timeline fields
+- `scripts/e2e_server.py` — FastAPI on `:8000` with dependency overrides (no live DB)
+
+### Smoke tests (`apps/web/e2e/smoke.spec.ts`)
+
+| Test | Route | Verifies |
+|------|-------|----------|
+| Analytics dashboard | `/analytics` | Heading, summary KPIs from mock API |
+| Compare | `/analytics/compare` | Mode controls and selection UI |
+| Match detail | `/matches/1000` | Fixture header and event timeline |
+
+Run: `pnpm test:e2e` (starts mock API + Next dev via Playwright `webServer`)
+
+CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
+
+## Suggested next
+
+1. Docker Compose for local API + web
 3. Materialized views / caching for season zone aggregates
 4. ESLint cleanup and CI lint gate
