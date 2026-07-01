@@ -4,6 +4,8 @@ Production target: **Vercel (web)** + **Render or Railway (API)** with **Supabas
 
 ## Prerequisites
 
+- Local Docker mock stack verified (`pnpm docker:up:mock`) — optional but recommended
+- Run **`pnpm deploy:check`** — preflight for repo files, lockfiles, and env hints
 - Supabase project with migrations applied (`supabase db push` or dashboard SQL)
 - Google/GitHub OAuth configured if using social login (see [PLAN.md](./PLAN.md#before-production-deploy-auth--oauth))
 - Copy [`.env.production.example`](./.env.production.example) as a checklist
@@ -89,7 +91,7 @@ pnpm docker:up:prod
 - API: `http://localhost:8000/health/ready`
 - Web: `http://localhost:3000` (production Next build)
 
-Stop: `pnpm docker:down`
+Stop: `pnpm docker:down:prod`
 
 ## 6. Monitoring checklist
 

@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/deployment-hardening`  
-**Status:** Phase 5.7 complete — production deployment hardening
+**Branch:** `phase5/deploy-preflight`  
+**Status:** Phase 5.8 complete — Docker local validation + deploy preflight
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -162,8 +162,28 @@ CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
 
 - `useSearchParams` pages wrapped in `Suspense` (compare, analytics auth dashboard, match detail)
 
+## Phase 5.8 — Docker local validation + deploy preflight (complete)
+
+### Docker fixes (local + CI)
+
+| Issue | Fix |
+|-------|-----|
+| `uv.lock` missing in image | Committed `apps/api/uv.lock` |
+| `pyiceberg` SIGSEGV | `uv sync --no-build` in API Dockerfile |
+| pnpm `ERR_PNPM_IGNORED_BUILDS` | Copy `pnpm-workspace.yaml`; `ENV CI=true` in web Dockerfiles |
+| Python 3.14 wipes `.venv` | `.python-version` in `.dockerignore`; `UV_PYTHON=3.11`; `.venv/bin/python` at runtime |
+
+Mock stack verified locally on macOS + Docker Desktop.
+
+### Deploy preflight
+
+- `scripts/deploy-check.sh` — checks repo deploy files, lockfiles, Docker daemon, env hints
+- `pnpm deploy:check` — run before first Vercel + Render deploy
+- `pnpm docker:down:mock` / `pnpm docker:down:prod` — stop compose stacks by profile
+
 ## Suggested next
 
-1. First production deploy (Vercel + Render) using `DEPLOY.md`
-2. Apply zone materialized view migration + scheduled refresh in Supabase
-3. External uptime monitoring on `/health/ready`
+1. **`pnpm docker:up:prod`** — local production-image smoke test
+2. **`pnpm deploy:check`** then first deploy per `DEPLOY.md` (Vercel + Render)
+3. Apply zone materialized view migration + scheduled refresh in Supabase
+4. External uptime monitoring on `/health/ready`
