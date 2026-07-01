@@ -1,8 +1,8 @@
 # Phase 5 Summary — Testing & CI (kickoff)
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
-**Branch:** `phase5/deploy-preflight`  
-**Status:** Phase 5.8 complete — Docker local validation + deploy preflight
+**Branch:** `phase5/vercel-only-deploy`  
+**Status:** Phase 5.9 complete — Vercel-only deployment (web + API)
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -181,9 +181,30 @@ Mock stack verified locally on macOS + Docker Desktop.
 - `pnpm deploy:check` — run before first Vercel + Render deploy
 - `pnpm docker:down:mock` / `pnpm docker:down:prod` — stop compose stacks by profile
 
+## Phase 5.9 — Vercel-only deployment (complete)
+
+### Two Vercel projects (Hobby-compatible)
+
+| Project | Root | Runtime |
+|---------|------|---------|
+| `soccer-analytics-api` | `apps/api` | FastAPI via `[tool.vercel] entrypoint = "main:app"` |
+| `soccer-analytics-web` | `apps/web` | Next.js |
+
+### Config added
+
+| File | Purpose |
+|------|---------|
+| `apps/api/vercel.json` | `maxDuration`, exclude tests from Python bundle |
+| `apps/api/pyproject.toml` | `[tool.vercel]` entrypoint |
+| `DEPLOY.md` | Vercel-only runbook (same-origin proxy + cross-origin options) |
+| `.env.production.example` | Per-project env checklist |
+| `apps/web/next.config.mjs` | `API_PROXY_TARGET` for production `/backend` rewrites |
+
+`render.yaml` retained as optional alternative (not required).
+
 ## Suggested next
 
-1. **`pnpm docker:up:prod`** — local production-image smoke test
-2. **`pnpm deploy:check`** then first deploy per `DEPLOY.md` (Vercel + Render)
-3. Apply zone materialized view migration + scheduled refresh in Supabase
-4. External uptime monitoring on `/health/ready`
+1. **`pnpm deploy:check`** then deploy per `DEPLOY.md` (two Vercel projects)
+2. Configure Supabase auth URLs to production web domain
+3. Apply zone materialized view migration + scheduled refresh
+4. Uptime monitor on `https://<api>.vercel.app/health/ready`

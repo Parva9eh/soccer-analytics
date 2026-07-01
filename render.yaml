@@ -1,7 +1,8 @@
-# Render Blueprint — Soccer Analytics API
-# Docs: https://render.com/docs/blueprint-spec
+# OPTIONAL — Render Blueprint for API (Docker container hosting).
+# Primary deploy path is Vercel-only (two projects: apps/api + apps/web).
+# See DEPLOY.md. Use this file only if you prefer Render over Vercel for the API.
 #
-# Deploy the web app separately on Vercel (see DEPLOY.md).
+# Docs: https://render.com/docs/blueprint-spec
 
 services:
   - type: web
