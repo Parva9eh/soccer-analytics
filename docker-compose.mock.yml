@@ -7,7 +7,7 @@ services:
       context: ./apps/api
     ports:
       - "8000:8000"
-    command: ["uv", "run", "--no-sync", "python", "scripts/e2e_server.py"]
+    command: [".venv/bin/python", "scripts/e2e_server.py"]
     environment:
       E2E_API_PORT: "8000"
       E2E_API_HOST: "0.0.0.0"
@@ -16,9 +16,7 @@ services:
       test:
         [
           "CMD",
-          "uv",
-          "run",
-          "python",
+          ".venv/bin/python",
           "-c",
           "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/')",
         ]
