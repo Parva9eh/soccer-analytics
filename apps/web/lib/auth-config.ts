@@ -7,6 +7,8 @@ export const PUBLIC_PATH_PREFIXES = [
   "/signup",
   "/auth",
   "/invitations",
+  /** Same-origin FastAPI proxy (next.config rewrites); not a UI route. */
+  "/backend",
 ] as const;
 
 /** Read-only app routes available without signing in when auth is enabled. */

@@ -11,6 +11,8 @@ const apiProxyTarget =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Must match turbopack.root (Next.js warns when they differ).
+  outputFileTracingRoot: appRoot,
   turbopack: {
     root: appRoot,
   },
