@@ -17,6 +17,9 @@
     "docker:up": "docker compose up --build",
     "docker:up:mock": "docker compose -f docker-compose.mock.yml up --build",
     "docker:up:prod": "docker compose -f docker-compose.prod.yml up --build",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "docker:down:mock": "docker compose -f docker-compose.mock.yml down",
+    "docker:down:prod": "docker compose -f docker-compose.prod.yml down",
+    "deploy:check": "bash scripts/deploy-check.sh"
   }
 }
