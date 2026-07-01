@@ -66,6 +66,8 @@ git config core.hooksPath .githooks
 
 See [SECURITY.md](SECURITY.md) for secrets handling and reporting vulnerabilities.
 
+**Production (Vercel):** see [DEPLOY.md](DEPLOY.md) · [apps/web/README.md](apps/web/README.md) · [apps/api/README.md](apps/api/README.md)
+
 ### Loading Data
 
 Use the StatsBomb loader in the API:

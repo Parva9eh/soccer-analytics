@@ -2,7 +2,7 @@
 
 **Branch:** `phase5/testing-ci` → merged to `main`  
 **Branch:** `phase5/vercel-only-deploy`  
-**Status:** Phase 5.9 complete — Vercel-only deployment (web + API)
+**Status:** Phase 5 complete (5.1–5.10) — production live on Vercel (web + API)
 
 > **Branch rule:** Start each phase slice on its own branch from `main` (e.g. `phase5/testing-ci`), merge with `--no-ff`, then keep the branch on the remote.
 
@@ -136,7 +136,7 @@ CI: `.github/workflows/ci.yml` — `e2e` job (Chromium + Playwright browsers)
 
 - `apps/web/Dockerfile.prod` — multi-stage build with `next build` + standalone output
 - `docker-compose.prod.yml` — API + production web with healthchecks
-- `next.config.mjs` — `output: "standalone"`
+- `next.config.mjs` — `output: "standalone"` (Docker only; skipped on Vercel — see 5.10)
 - `pnpm docker:up:prod` — local prod stack smoke test
 
 ### Deploy configs
@@ -202,9 +202,61 @@ Mock stack verified locally on macOS + Docker Desktop.
 
 `render.yaml` retained as optional alternative (not required).
 
-## Suggested next
+## Phase 5.10 — Production deploy & ops (complete)
 
-1. **`pnpm deploy:check`** then deploy per `DEPLOY.md` (two Vercel projects)
-2. Configure Supabase auth URLs to production web domain
-3. Apply zone materialized view migration + scheduled refresh
-4. Uptime monitor on `https://<api>.vercel.app/health/ready`
+### Live (Vercel Hobby)
+
+| Project | URL | Root |
+|---------|-----|------|
+| Web | `https://<your-web-project>.vercel.app` | `apps/web` |
+| API | `https://<your-api-project>.vercel.app` | `apps/api` |
+
+### Same-origin API proxy (recommended)
+
+- Web env: `API_PROXY_TARGET=https://<your-api-project>.vercel.app`
+- Web env: `NEXT_PUBLIC_API_URL=https://<your-web-project>.vercel.app/backend`
+- Next.js rewrites `/backend/*` → API (baked in at build time — set `API_PROXY_TARGET` before deploy)
+- Cross-origin fallback: `NEXT_PUBLIC_API_URL` pointing directly at the API URL + `CORS_ORIGINS` on API
+
+### Auth + proxy fix
+
+When `NEXT_PUBLIC_AUTH_ENABLED=true`, session middleware must **not** gate `/backend/*` (API transport, not a UI route). FastAPI enforces JWT / RLS on data access.
+
+- `apps/web/lib/supabase/update-session.ts` — early return for `/backend` paths
+- `apps/web/lib/auth-config.ts` — `/backend` in public path prefixes
+- `apps/web/proxy.ts` — matcher excludes `/backend`
+
+### Vercel build fixes
+
+| Issue | Fix |
+|-------|-----|
+| `routes-manifest-deterministic.json` ENOENT | `output: "standalone"` only when **not** on Vercel (`VERCEL=1`); Docker keeps standalone |
+| `outputFileTracingRoot` / `turbopack.root` mismatch | `turbopack.root` dev-only; no `outputFileTracingRoot` override on Vercel |
+
+### Selective deploys (monorepo)
+
+Both projects import the same repo; `ignoreCommand` in each `vercel.json` skips deploys when the other app’s directory did not change:
+
+| Script | Project |
+|--------|---------|
+| `scripts/vercel-should-build-web.sh` | Web — builds only when `apps/web/` changed |
+| `scripts/vercel-should-build-api.sh` | API — builds only when `apps/api/` changed |
+
+Exit 0 = skip, exit 1 = build. First deploy (no `HEAD^`) always builds.
+
+### Production verification
+
+```bash
+curl https://<your-api-project>.vercel.app/health/ready
+curl https://<your-web-project>.vercel.app/backend/health/ready
+curl 'https://<your-web-project>.vercel.app/backend/matches?limit=1'
+```
+
+All should return JSON. Browser: `/analytics`, `/matches`, `/players` (guest browsing with auth on).
+
+## Suggested next (post–Phase 5)
+
+1. Uptime monitor on API `GET /health/ready`
+2. Zone materialized view refresh + `USE_ZONE_MATERIALIZED_VIEW=true` on API
+3. OAuth production origins (Google/GitHub) if not already set
+4. Stretch goals in [PLAN.md](./PLAN.md#future--stretch-goals) — Realtime, more data sources, etc.

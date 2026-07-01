@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 4.4 in progress (June 2026)  
-**Active branch:** `phase4/xg-foundation` (4.1–4.3 on `main`)
+**Current Phase:** Phase 5 complete — production live on Vercel (June 2026)  
+**Active branch:** `main` (next work: stretch goals or a new phase branch)
 
 ---
 
@@ -20,7 +20,7 @@ The platform should provide high-quality visualizations, meaningful metrics, and
 - **Supabase as the Platform**: Use Supabase (Postgres + Auth + Realtime + Storage) as the primary backend platform.
 - **Production Auth Model**: Row Level Security enforced in Supabase; service role limited to ETL and admin operations. Phases 0–2 use open API access with the service-role client for development velocity. Phase 3 adds authenticated workspace scoping; when auth is enabled, guests may read a limited public demo dataset via the Supabase `anon` role (see Phase 3).
 - **Multi-Competition Support**: Design schema, queries, UI, and data models to support multiple competitions from day one.
-- **Free-Tier Friendly Initially**: Target Vercel (frontend) + Render/Railway (backend) for early hosting, with awareness of limitations.
+- **Free-Tier Friendly**: Production on **two Vercel Hobby projects** (web + API) + Supabase free tier. Docker Compose for local validation; `render.yaml` retained as an optional alternative.
 - **Incremental & Reviewable**: All work is done in small, reviewable increments on dedicated branches with explicit approval gates.
 - **Phase branches merge with merge commits**: When a phase is complete, integrate via a **merge commit** into `main` (not squash). Phase branches are **retained** on the remote after merge for history and reference.
 - **Real-time as a Future Differentiator**: Supabase Realtime is viewed as a high-value future capability rather than a Phase 1 priority.
@@ -249,11 +249,11 @@ Setup detail: [supabase/README.md](./supabase/README.md).
 
 ---
 
-### Phase 4: Core Analytics Capabilities (In Progress)
+### Phase 4: Core Analytics Capabilities (Completed)
 
 **Goal:** Deliver meaningful analytical value beyond raw event data.
 
-**Branch:** `phase4/xg-foundation` (Phase 4.1 merged to `main`)
+**Branch:** `phase4/xg-foundation` (merged to `main`)
 
 **Summary:** [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md)
 
@@ -325,29 +325,33 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 
 ---
 
-### Phase 5: Quality, Performance & Deployment (in progress)
+### Phase 5: Quality, Performance & Deployment (Completed)
 
 **Goal:** Make the system reliable, testable, and deployable.
 
-**Branch:** `phase5/testing-ci`
+**Branches:** `phase5/testing-ci`, `phase5/vercel-only-deploy` (merged to `main`)
 
-#### Phase 5.1 — Testing & CI (complete)
+**Summary:** [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md)
 
-- ✅ API unit tests (`pytest`) for tactical, zones, and health smoke
-- ✅ Web unit tests (`vitest`) for zone, heatmap, and radar utilities
-- ✅ GitHub Actions CI workflow (API + web on push/PR to `main`)
-- ✅ Root scripts: `pnpm test`, `pnpm ci`
+#### Completed (5.1–5.10)
 
-#### Planned next (5.2+)
-- API integration tests with mocked Supabase
-- E2E smoke tests (Playwright)
-- Cached/materialized season aggregates for large datasets
-- Performance optimization (caching, query optimization, materialized views)
-- Monitoring, alerting, and logging improvements
-- Containerization (Docker) and infrastructure as code
-- Deployment to chosen hosting platforms (after Phase 3 auth/RLS)
-- Production auth: Supabase URLs, OAuth app origins, JWT secret / keys — see [Before production deploy (auth / OAuth)](#before-production-deploy-auth--oauth)
-- Cost and performance monitoring
+- ✅ Testing & CI — pytest, vitest, Playwright smoke, GitHub Actions
+- ✅ API integration tests with mocked Supabase
+- ✅ Docker Compose (dev, mock, prod) + deploy preflight (`pnpm deploy:check`)
+- ✅ Season zone TTL cache + materialized view migration (opt-in API flag)
+- ✅ ESLint CI gate (zero warnings)
+- ✅ Production hardening — `GET /health/ready`, `Dockerfile.prod`, `DEPLOY.md`
+- ✅ **Vercel-only production** — two Hobby projects (web + API)
+- ✅ Same-origin `/backend` API proxy + auth middleware bypass for proxy paths
+- ✅ Selective deploys — `ignoreCommand` scripts skip unchanged app on push
+
+**Production:** two Vercel projects (web + API) — see [DEPLOY.md](./DEPLOY.md).
+
+#### Optional ops (not blocking phase close)
+
+- Uptime monitor on API `/health/ready`
+- Scheduled refresh of `season_team_zone_stats` + `USE_ZONE_MATERIALIZED_VIEW=true`
+- Production OAuth origins — [Before production deploy (auth / OAuth)](#before-production-deploy-auth--oauth)
 
 ---
 
@@ -371,9 +375,9 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 | Phase 2 | ✅ Completed | Frontend UX — [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md) |
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
 | Phase 4 | ✅ Completed | 4.1–4.8 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) |
-| Phase 5 | 🚧 In progress | 5.1 testing & CI on `main` — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
+| Phase 5 | ✅ Completed | 5.1–5.10 on `main`, prod on Vercel — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
 
-Detailed summaries for completed phases: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md), [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) (4.1 slice).
+Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md), [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md), [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md).
 
 ---
 
@@ -411,9 +415,11 @@ git push origin main
 
 **Phase 3 (done):** `phase3/auth-foundation` merged to `main` as `503c8d2`; branch kept on `origin`.
 
-**Phase 4.1–4.2 (done):** `phase4/xg-foundation` merged to `main` (latest merge includes passing networks).
+**Phase 4 (done):** `phase4/xg-foundation` merged to `main` (4.1–4.8).
 
-**Current (Phase 4.3):** Possession chains on `phase4/xg-foundation`.
+**Phase 5 (done):** `phase5/testing-ci` / Vercel deploy work merged to `main` (5.1–5.10).
+
+**Current:** `main` — pick next slice from [Future / Stretch Goals](#future--stretch-goals) or open `phase6/...`.
 
 ### Rebasing a long-running phase branch
 

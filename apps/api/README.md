@@ -1,8 +1,10 @@
-# Soccer Analytics API
+# Soccer Analytics — API
 
-FastAPI backend for the Soccer Analytics platform.
+FastAPI backend for the Soccer Analytics platform: matches, events, analytics, auth, and workspaces.
 
-## Environment Setup
+**Production:** `https://<your-api-project>.vercel.app` (your Vercel API project URL)
+
+## Environment setup
 
 1. Copy the example environment file:
 
@@ -12,12 +14,16 @@ FastAPI backend for the Soccer Analytics platform.
 
 2. Fill in the required Supabase and database credentials in `.env`.
 
-## Running Locally
+## Running locally
 
 ```bash
-# From the apps/api directory
+# From apps/api
 uv run uvicorn main:app --reload --port 8000
 ```
+
+From repo root: `pnpm dev:api`
+
+API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Tests
 
@@ -32,13 +38,23 @@ uv run pytest
 
 The API will be available at `http://localhost:8000`.
 
-## Key Endpoints
+## Health endpoints
 
-- `GET /health` — Basic health + observability info (version, environment, timestamp, request_id)
-- `GET /health/supabase` — Supabase connectivity check
-- `GET /matches` — List matches (supports `competition`, `season`, and `limit`)
-- `GET /events` — Paginated events for a match (`match_id` required, supports `event_type`, `page`, `page_size`)
+| Path | Use |
+|------|-----|
+| `GET /health/` | Liveness |
+| `GET /health/ready` | Readiness (DB connected) — **uptime monitors** |
+| `GET /health/supabase` | DB diagnostic |
+
+```bash
+curl https://<your-api-project>.vercel.app/health/ready
+```
+
+## Key endpoints
+
 - `GET /summary` — High-level data counts
+- `GET /matches/` — List matches (`competition`, `season`, `limit`)
+- `GET /events/` — Paginated events (`match_id`, `event_type`, `page`, `page_size`)
 - `GET /analytics/xg/matches/{id}` — Match expected goals (StatsBomb shot xG)
 - `GET /analytics/xg/season?competition=&season=` — Season xG aggregates
 - `GET /analytics/xg/players?competition=&season=&limit=` — Player xG leaderboard
@@ -84,9 +100,35 @@ The API uses reusable Pydantic models for common query parameters:
 
 These can be used via `Depends()` for consistency and validation.
 
-## Production Notes
+## Vercel deployment
 
-- Set `ENVIRONMENT=production`
-- Use a proper connection-pooled `DATABASE_URL`
-- Consider `LOG_FORMAT=json` for structured logging in production
-- Configure `CORS_ORIGINS` appropriately for your frontend domain(s)
+1. Vercel project **Root Directory:** `apps/api`
+2. Entrypoint: `[tool.vercel] entrypoint = "main:app"` in `pyproject.toml`
+3. Config: `vercel.json` (`maxDuration`, test exclusions, `ignoreCommand`)
+4. Selective deploy: skips when only `apps/web/` changed on the latest commit
+
+```bash
+cd apps/api && vercel --prod
+```
+
+Required production env vars: see `.env.example` and [DEPLOY.md](../../DEPLOY.md). Use Supabase **pooler** URL (port **6543**) for `DATABASE_URL`.
+
+## Production notes
+
+- `ENVIRONMENT=production`, `LOG_FORMAT=json`, `LOG_LEVEL=INFO`
+- `REQUIRE_AUTH=true` when auth is enabled on the web app
+- `CORS_ORIGINS` — required for cross-origin web URL; less critical with same-origin `/backend` proxy
+- `SEASON_ZONE_CACHE_TTL_SECONDS` (default 300)
+- `USE_ZONE_MATERIALIZED_VIEW=false` until `refresh_season_team_zone_stats()` has run
+- **Never** expose `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_JWT_SECRET` to the web project
+
+## Docker (optional)
+
+`Dockerfile` + `docker-compose.yml` for local long-running API. Vercel production uses serverless Python, not the container image.
+
+## Related docs
+
+- [apps/web/README.md](../web/README.md) — frontend and `/backend` proxy
+- [DEPLOY.md](../../DEPLOY.md) — full deployment guide
+- [supabase/README.md](../../supabase/README.md) — migrations and RLS
+- [PHASE5_SUMMARY.md](../../PHASE5_SUMMARY.md) — CI and production ops

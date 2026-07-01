@@ -52,3 +52,6 @@ Thumbs.db
 
 # Misc
 *.log
+
+# Local notes (not committed)
+DOCKER_COMPOSE_LOCAL.md

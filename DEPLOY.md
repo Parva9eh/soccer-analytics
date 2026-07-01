@@ -20,6 +20,19 @@ soccer-analytics-api.vercel.app     ← Vercel project 2 (apps/api, FastAPI)
 Supabase (Postgres + Auth + RLS)
 ```
 
+**Production:** `https://<your-web-project>.vercel.app` · `https://<your-api-project>.vercel.app` (replace with your Vercel project URLs)
+
+## Selective deploys (monorepo)
+
+Both Vercel projects watch the same GitHub repo. Each `vercel.json` sets `ignoreCommand` so only the project whose app directory changed will build:
+
+| Project | Script | Skips when |
+|---------|--------|------------|
+| Web | `scripts/vercel-should-build-web.sh` | No changes under `apps/web/` |
+| API | `scripts/vercel-should-build-api.sh` | No changes under `apps/api/` |
+
+No dashboard setup required — config is in repo. Env-var-only changes still need a manual **Redeploy** on that project.
+
 ## Prerequisites
 
 - `pnpm deploy:check` — preflight for repo files and env hints
@@ -120,6 +133,19 @@ https://soccer-analytics-web.vercel.app,https://your-custom-domain.com
 ```
 
 5. **Deploy** → open `https://soccer-analytics-web.vercel.app/analytics`
+
+### Auth + same-origin proxy
+
+When `NEXT_PUBLIC_AUTH_ENABLED=true`, `/backend/*` must bypass Next.js session middleware (it is an API proxy, not a page). The repo handles this in `proxy.ts`, `update-session.ts`, and `auth-config.ts`. After deploy, verify:
+
+```bash
+curl https://<web>/backend/health/ready   # JSON, not HTML or /login redirect
+```
+
+### Vercel vs Docker build output
+
+- **Vercel:** default Next.js output (`standalone` is disabled when `VERCEL=1`)
+- **Docker:** `Dockerfile.prod` uses `output: "standalone"` — do not conflate the two
 
 ---
 
