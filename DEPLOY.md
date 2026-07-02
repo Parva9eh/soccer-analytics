@@ -160,7 +160,21 @@ Add the same origin to Google/GitHub OAuth apps.
 
 ---
 
-## Step 4 — Zone materialized view (optional)
+## Step 4 — Load expansion season (optional, Phase 6.5)
+
+After La Liga 2020/21 is loaded, add a second season for multi-competition workspaces:
+
+```bash
+./scripts/load-statsbomb-season.sh expansion   # Premier League 2003/04
+```
+
+Requires `SUPABASE_SERVICE_ROLE_KEY` in `apps/api/.env`. Full event ingest can take **30–60+ minutes**. Workspace admins link the new season under **Settings → Workspace → Data access**. Guests still browse La Liga only (anon RLS unchanged).
+
+Details: [apps/api/README.md](./apps/api/README.md#statsbomb-etl-data-loading).
+
+---
+
+## Step 5 — Zone materialized view (optional)
 
 After loading full-season data:
 

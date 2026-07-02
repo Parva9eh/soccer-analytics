@@ -70,14 +70,14 @@ See [SECURITY.md](SECURITY.md) for secrets handling and reporting vulnerabilitie
 
 ### Loading Data
 
-Use the StatsBomb loader in the API:
+StatsBomb open data via the API ETL (requires Supabase service role in `apps/api/.env`):
 
 ```bash
-cd apps/api
-uv run python etl/statsbomb_loader.py --help
+./scripts/load-statsbomb-season.sh demo        # La Liga 2020/21 (guest demo)
+./scripts/load-statsbomb-season.sh expansion   # Premier League 2003/04
 ```
 
-Start with a small dataset (recommended for testing).
+See [apps/api/README.md](./apps/api/README.md#statsbomb-etl-data-loading) for step-by-step and presets.
 
 ## Git workflow (phases)
 
