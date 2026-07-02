@@ -875,7 +875,7 @@ function MatchDetailPageContent() {
         )}
 
         <div
-          className={`relative transition-all ${use3DView && pitchViewMode === "events" ? "min-h-[min(420px,58vh)] sm:min-h-[560px] md:min-h-[720px] lg:min-h-[800px]" : "h-auto"}`}
+          className={`relative transition-all ${use3DView && pitchViewMode === "events" ? "min-h-[min(320px,52vh)] sm:min-h-[480px] md:min-h-[640px] lg:min-h-[760px]" : "h-auto max-h-[min(72vh,720px)] overflow-hidden sm:max-h-none sm:overflow-visible"}`}
           tabIndex={pitchViewMode === "events" ? 0 : undefined}
           onKeyDown={(e) => {
             if (pitchViewMode !== "events" || !filteredPitchEvents.length) return;

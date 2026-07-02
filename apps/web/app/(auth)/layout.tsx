@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LogoMark } from "@/components/brand/LogoMark";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -16,15 +17,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           Continue browsing
         </Link>
       </p>
-      <div className="mb-8 text-center">
-        <div
-          className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-sm font-bold text-primary"
-          aria-hidden
-        >
-          SA
-        </div>
+      <div className="mb-8 flex flex-col items-center gap-2 text-center">
+        <LogoMark size={48} />
         <p className="text-sm font-semibold tracking-tight text-foreground">
           Soccer Analytics
+        </p>
+        <p className="text-[10px] text-muted-foreground">
+          Event-level intelligence
         </p>
       </div>
       {children}

@@ -56,7 +56,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { StatCard } from "@/components/ui/stat-card";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import { EmptyState } from "@/components/ui/empty-state";
+import { WorkspaceDatasetsEmpty } from "@/components/workspace/WorkspaceDatasetsEmpty";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -392,16 +392,7 @@ function AuthAnalyticsDashboard() {
       />
 
       {showNoLinkedData ? (
-        <EmptyState
-          icon={BarChart3}
-          title="No data linked to this workspace"
-          description="Link competition seasons under Settings → Manage → Data access to build dashboards and reports."
-          action={
-            <Button asChild variant="outline" size="sm">
-              <Link href="/settings">Open workspaces</Link>
-            </Button>
-          }
-        />
+        <WorkspaceDatasetsEmpty workspaceId={workspaceId} />
       ) : (
         <>
           <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">

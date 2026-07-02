@@ -11,9 +11,11 @@ import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-
 import { downloadReportCsv } from "@/lib/report-export";
 import { reportScopeLabel, type WorkspaceReport } from "@/lib/report-types";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
+import { useWorkspaceCatalog } from "@/lib/use-workspace-catalog";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { WorkspaceDatasetsEmpty } from "@/components/workspace/WorkspaceDatasetsEmpty";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +25,7 @@ export default function ReportsPage() {
   const workspaceId = useActiveWorkspaceId();
   const queriesEnabled = useCollaborationQueriesEnabled();
   const authMe = useAuthMeQuery();
+  const { catalogReady, hasLinkedData } = useWorkspaceCatalog();
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<
     WorkspaceReport[]
@@ -113,7 +116,9 @@ export default function ReportsPage() {
         }
       />
 
-      {isLoading ? (
+      {catalogReady && !hasLinkedData ? (
+        <WorkspaceDatasetsEmpty workspaceId={workspaceId} />
+      ) : isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <div

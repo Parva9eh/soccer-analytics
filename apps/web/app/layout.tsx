@@ -17,8 +17,15 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Soccer Analytics",
-  description: "Professional soccer data analysis platform",
+  title: {
+    default: "Soccer Analytics",
+    template: "%s · Soccer Analytics",
+  },
+  description:
+    "Event-level soccer intelligence — matches, xG, pass networks, workspaces, and reports.",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

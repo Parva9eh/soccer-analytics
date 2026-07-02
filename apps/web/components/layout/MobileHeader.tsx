@@ -10,8 +10,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { BrandLockup } from "@/components/brand/BrandLockup";
 import { NavLinks } from "./NavLinks";
 import { SidebarUser } from "./SidebarUser";
+import { SidebarWorkspace } from "./SidebarWorkspace";
+import { AUTH_ENABLED } from "@/lib/auth-config";
 
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/players/")) return "Player Detail";
@@ -63,9 +66,9 @@ export function MobileHeader() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[260px] border-border bg-card p-0">
-          <SheetHeader className="border-b border-border px-6 py-5">
-            <SheetTitle className="text-left text-lg font-semibold tracking-tight">
-              Soccer Analytics
+          <SheetHeader className="border-b border-border px-5 py-4">
+            <SheetTitle className="text-left">
+              <BrandLockup subtitle="La Liga 2020/21 demo" />
             </SheetTitle>
           </SheetHeader>
 
@@ -74,6 +77,7 @@ export function MobileHeader() {
           </div>
 
           <div className="mt-auto space-y-3 border-t border-border p-4">
+            {AUTH_ENABLED && <SidebarWorkspace />}
             <SidebarUser />
             <p className="text-caption">v0.3.0 • Event-level data</p>
           </div>
