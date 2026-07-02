@@ -44,3 +44,71 @@ export function getFirstCatalogFilters(
   }
   return { competition: first.name, season };
 }
+
+export interface LinkedDataset {
+  competition: string;
+  season: string;
+}
+
+/** Flatten workspace catalog into linked competition/season pairs. */
+export function flattenCatalogDatasets(
+  catalog: CompetitionCatalogItem[] | undefined,
+): LinkedDataset[] {
+  return (catalog ?? []).flatMap((item) =>
+    item.seasons.map((season) => ({
+      competition: item.name,
+      season,
+    })),
+  );
+}
+
+/** Count linked seasons (not competitions). */
+export function countLinkedSeasons(
+  catalog: CompetitionCatalogItem[] | undefined,
+): number {
+  return flattenCatalogDatasets(catalog).length;
+}
+
+/** Human-readable summary for hero copy and labels. */
+export function formatCatalogSummary(
+  catalog: CompetitionCatalogItem[] | undefined,
+): string {
+  const datasets = flattenCatalogDatasets(catalog);
+  if (datasets.length === 0) {
+    return "";
+  }
+  return datasets
+    .map(
+      (item) => `${item.competition} ${formatSeasonLabel(item.season)}`,
+    )
+    .join(" · ");
+}
+
+export function buildMatchesListPath(
+  competition: string,
+  season: string,
+): string {
+  const params = new URLSearchParams({ competition, season });
+  return `/matches?${params.toString()}`;
+}
+
+export function buildMatchDetailPath(
+  matchId: number,
+  competition?: string | null,
+  season?: string | null,
+): string {
+  const base = `/matches/${matchId}`;
+  if (!competition || !season) {
+    return base;
+  }
+  const params = new URLSearchParams({ competition, season });
+  return `${base}?${params.toString()}`;
+}
+
+export function readCompetitionSeasonFromSearchParams(
+  searchParams: URLSearchParams,
+): { competition: string | null; season: string | null } {
+  const competition = searchParams.get("competition")?.trim() || null;
+  const season = searchParams.get("season")?.trim() || null;
+  return { competition, season };
+}

@@ -4,18 +4,30 @@ import Link from "next/link";
 import { ArrowRight, BarChart3, Radar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { LinkedDatasetChips } from "@/components/workspace/LinkedDatasetChips";
+import type { LinkedDataset } from "@/lib/competition-filter";
 
 interface DashboardHeroProps {
   isGuest: boolean;
   totalMatches?: number;
   totalEvents?: number;
+  linkedDatasets?: LinkedDataset[];
+  catalogSummary?: string;
 }
 
 export function DashboardHero({
   isGuest,
   totalMatches = 0,
   totalEvents = 0,
+  linkedDatasets = [],
+  catalogSummary = "",
 }: DashboardHeroProps) {
+  const workspaceCopy =
+    linkedDatasets.length > 1
+      ? `Workspace totals across ${catalogSummary}. Use the dataset chips below or filters on Matches and Analytics to drill into one season.`
+      : linkedDatasets.length === 1
+        ? `Workspace scoped to ${catalogSummary}. Jump into matches, analytics, or saved reports.`
+        : "Track matches, events, and players scoped to your linked datasets. Jump into analytics or save snapshots for your team.";
   return (
     <section className="relative mb-8 overflow-hidden rounded-2xl border border-border bg-card">
       <div
@@ -69,8 +81,11 @@ export function DashboardHero({
             <p className="text-sm leading-relaxed text-muted-foreground">
               {isGuest
                 ? "Browse La Liga 2020/21 demo data — matches, xG, pass networks, and player profiles. Sign in to save reports and collaborate in workspaces."
-                : "Track matches, events, and players scoped to your linked datasets. Jump into analytics or save snapshots for your team."}
+                : workspaceCopy}
             </p>
+            {!isGuest && linkedDatasets.length > 0 ? (
+              <LinkedDatasetChips datasets={linkedDatasets} />
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild size="sm">
