@@ -33,6 +33,32 @@ test.describe("smoke", () => {
     ).toBeVisible();
   });
 
+  test("players list loads via same-origin /backend proxy", async ({ page }) => {
+    await page.goto("/players");
+
+    await expect(
+      page.getByRole("heading", { name: "Players", exact: true }),
+    ).toBeVisible();
+
+    await expect(page.getByText("Unable to load data")).toHaveCount(0);
+    await expect(page.locator("table tbody tr").first()).toBeVisible({
+      timeout: 30_000,
+    });
+  });
+
+  test("matches list loads competition filter via /backend proxy", async ({
+    page,
+  }) => {
+    await page.goto("/matches");
+
+    await expect(
+      page.getByRole("heading", { name: "Matches", exact: true }),
+    ).toBeVisible();
+
+    await expect(page.getByText("Unable to load data")).toHaveCount(0);
+    await expect(page.getByText("Barcelona")).toBeVisible({ timeout: 30_000 });
+  });
+
   test("match detail renders fixture header and events", async ({ page }) => {
     await page.goto("/matches/1000");
 

@@ -361,11 +361,12 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 
 **Plan:** [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md)
 
-#### 6.1 — Signed-in collaboration (in progress on `main`)
+#### 6.1 — Signed-in collaboration + `/backend` proxy ✅ (July 2026)
 
 - OAuth bootstrap workspace (`POST /auth/bootstrap`, `BootstrapOnSignIn`)
-- Session-gated collaboration API queries
-- Empty lists for reports/analyses when no workspace
+- Session-gated collaboration API queries + stale-401 cache fix
+- Same-origin `/backend` route handler (auth injection, compression fix)
+- Guest and signed-in browsing verified in production
 
 #### 6.2–6.7 — Planned slices
 
@@ -393,7 +394,7 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
 | Phase 4 | ✅ Completed | 4.1–4.8 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) |
 | Phase 5 | ✅ Completed | 5.1–5.10 on `main`, prod on Vercel — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
-| Phase 6 | 📋 Planned | 6.1 collaboration fixes; see [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
+| Phase 6 | 🔄 In progress | 6.1 ✅; next: 6.2 ops + 6.3 polish — [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
 
 Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md), [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md).
 

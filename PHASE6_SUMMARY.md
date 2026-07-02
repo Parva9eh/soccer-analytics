@@ -1,8 +1,8 @@
 # Phase 6 Plan — Ops, Polish & Growth
 
-**Status:** Planned (June 2026)  
-**Branch:** `phase6/ops-polish` (create from `main` when starting)  
-**Prerequisite:** Phase 5 production live; Google OAuth + guest browsing verified
+**Status:** In progress (July 2026) — 6.1 ✅ complete on `main`  
+**Branch:** `phase6/ops-polish` for 6.3+ slices  
+**Prerequisite:** Phase 5 production live; Google OAuth + guest browsing verified ✅
 
 ## Goal
 
@@ -10,25 +10,29 @@ Harden production operations, close deferred UX gaps, and add high-value product
 
 ---
 
-## 6.1 — Signed-in collaboration fixes (first slice)
+## 6.1 — Signed-in collaboration + `/backend` proxy ✅ (July 2026)
 
-**Problem:** OAuth users could browse as guests but `/settings`, `/reports`, and `/analyses` failed without a workspace or before the session token was ready.
+**Problem:** OAuth users could browse as guests but `/settings`, `/reports`, and `/analyses` failed; same-origin `/backend` proxy had auth and compression bugs.
 
-**Delivered on `main` (pre–Phase 6 branch):**
+**Delivered on `main`:**
 
-- `POST /auth/bootstrap` — creates default workspace + seeds demo dataset when none exists
-- `BootstrapOnSignIn` — runs after sign-in; invalidates workspace queries
-- Collaboration queries gated on `session.access_token` (`useCollaborationQueriesEnabled`)
-- `/reports/` and `/analyses/` return `[]` when no workspace (not 400)
+| Area | Change |
+|------|--------|
+| API bootstrap | `POST /auth/bootstrap`, `BootstrapOnSignIn`, workspace empty lists |
+| Query gating | `useCollaborationQueriesEnabled`, `useAuthMeQuery`, `CollaborationQuerySync` |
+| `/backend` proxy | Route handler injects Bearer from cookies; **no** `next.config` rewrites (they bypassed auth) |
+| Paths | Browser uses relative `/backend`; trailing slashes normalized |
+| Compression | Strip `Content-Encoding` / request `identity` — fixes `ERR_CONTENT_DECODING_FAILED` |
+| Middleware | Session refresh + auth injection on `/backend/*` |
 
-**Verify after deploy:**
+**Verified in production:**
 
-1. Sign in with Google (incognito)
-2. Sidebar shows workspace name (not only “Create a workspace”)
+1. Guest browsing (`/matches`, `/players`, `/analytics`) loads via `/backend/*`
+2. Google sign-in → sidebar workspace name
 3. `/settings`, `/reports`, `/analyses` load (empty lists OK)
-4. Create a second workspace manually — switcher works
+4. `/backend/auth/me` returns profile JSON when signed in
 
-**If `/settings` still shows “Setup required” (503):** apply all `supabase/migrations/` on hosted Supabase, especially `20250604170000_fix_workspace_rls_recursion.sql` and `20250604200000_workspace_create_rpc.sql`.
+**If `/settings` shows “Setup required” (503):** apply all `supabase/migrations/` on hosted Supabase, especially `20250604170000_fix_workspace_rls_recursion.sql` and `20250604200000_workspace_create_rpc.sql`.
 
 ---
 
@@ -87,13 +91,20 @@ Harden production operations, close deferred UX gaps, and add high-value product
 ## Suggested implementation order
 
 ```
-6.1 (auth collaboration) → deploy & verify
-6.2 (ops checklist)      → parallel, low code
-6.3 (polish)             → small UI PRs
-6.5 (data)               → if you want more than La Liga demo
-6.4 (realtime)           → largest architectural slice
-6.6 (sharing)            → after stable signed-in UX
+6.1 (auth + /backend proxy) → ✅ done
+6.2 (ops checklist)         → you: uptime, migrations audit, OAuth URLs
+6.7 (e2e proxy smoke)       → in progress on main
+6.3 (polish)                → small UI PRs
+6.5 (data)                  → if you want more than La Liga demo
+6.4 (realtime)              → largest architectural slice
+6.6 (sharing)               → after stable signed-in UX
 ```
+
+### Next up for you (6.2 — no code)
+
+1. Add uptime monitor on `https://<api-project>.vercel.app/health/ready`
+2. Confirm Supabase tables + migrations applied
+3. Double-check OAuth redirect URLs match your live web hostname
 
 ---
 
