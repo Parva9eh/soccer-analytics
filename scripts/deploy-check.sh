@@ -109,9 +109,10 @@ fi
 
 echo "Ready for Vercel-only deploy (see DEPLOY.md):"
 echo "  1. Vercel project: apps/api  → deploy API → smoke /health/ready"
-echo "  2. Vercel project: apps/web  → set API_PROXY_TARGET + NEXT_PUBLIC_*"
-echo "  3. Supabase auth URLs → web domain"
-echo "  4. Uptime monitor → https://<api-project>.vercel.app/health/ready"
+echo "  2. Vercel project: apps/web  → API_PROXY_TARGET + NEXT_PUBLIC_API_URL=.../backend"
+echo "  3. Smoke /backend proxy: curl https://<web>/backend/health/ready (JSON, not 307 to API)"
+echo "  4. Supabase auth URLs → web domain"
+echo "  5. Uptime monitor → https://<api-project>.vercel.app/health/ready"
 echo
 echo "Hobby plan: personal/non-commercial use; two Vercel projects OK."
 exit 0

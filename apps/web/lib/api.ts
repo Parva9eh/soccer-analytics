@@ -1,7 +1,37 @@
+import { getCachedAccessToken } from "@/lib/access-token-store";
 import { getAccessToken } from "@/lib/supabase/session";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+function getConfiguredApiBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(
+    /\/$/,
+    "",
+  );
+}
+
+/** True when the web app proxies API calls through same-origin /backend. */
+export function usesSameOriginApiProxy(): boolean {
+  const configured = getConfiguredApiBaseUrl();
+  if (configured === "/backend" || configured.endsWith("/backend")) {
+    return true;
+  }
+
+  try {
+    const url = new URL(
+      configured.startsWith("http") ? configured : `http://local${configured}`,
+    );
+    return url.pathname === "/backend";
+  } catch {
+    return false;
+  }
+}
+
+function resolveApiBaseUrl(): string {
+  const configured = getConfiguredApiBaseUrl();
+  if (typeof window !== "undefined" && usesSameOriginApiProxy()) {
+    return "/backend";
+  }
+  return configured;
+}
 
 export interface ApiErrorBody {
   detail: string;
@@ -68,22 +98,37 @@ export class ApiError extends Error {
   }
 }
 
+function normalizeApiPath(path: string, base: string): string {
+  let cleanPath = path.startsWith("/") ? path : `/${path}`;
+  // Same-origin /backend: avoid Next.js 308 (trailing slash) before the route handler.
+  if (base === "/backend" && cleanPath.length > 1 && cleanPath.endsWith("/")) {
+    cleanPath = cleanPath.slice(0, -1);
+  }
+  return cleanPath;
+}
+
 export function getApiUrl(path: string): string {
-  const base = API_BASE_URL.replace(/\/$/, "");
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const base = resolveApiBaseUrl();
+  const cleanPath = normalizeApiPath(path, base);
   return `${base}${cleanPath}`;
 }
 
 export async function apiFetch(path: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
-  const token = await getAccessToken();
+  const token = getCachedAccessToken() ?? (await getAccessToken());
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  return fetch(getApiUrl(path), {
+  const url = getApiUrl(path);
+  const useCookies =
+    typeof window !== "undefined" &&
+    (url.startsWith("/") || url.startsWith(window.location.origin));
+
+  return fetch(url, {
     ...init,
     headers,
+    credentials: useCookies ? "include" : init?.credentials,
   });
 }
 
@@ -110,6 +155,27 @@ export function parseQueryError(
       return {
         title: "Setup required",
         message: error.message,
+        code: error.code,
+        requestId: error.requestId,
+      };
+    }
+
+    if (
+      error.status === 400 &&
+      error.message.toLowerCase().includes("workspace")
+    ) {
+      return {
+        title: "Workspace required",
+        message: error.message,
+        code: error.code,
+        requestId: error.requestId,
+      };
+    }
+
+    if (error.status === 401) {
+      return {
+        title: "Sign-in required",
+        message: error.message || "Your session may have expired. Sign in again.",
         code: error.code,
         requestId: error.requestId,
       };

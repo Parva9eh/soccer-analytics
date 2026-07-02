@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 5 complete — production live on Vercel (June 2026)  
-**Active branch:** `main` (next work: stretch goals or a new phase branch)
+**Current Phase:** Phase 6 planned — ops, polish & growth (June 2026)  
+**Active branch:** `main` (6.1 collaboration fixes landing; branch `phase6/ops-polish` for next slices)
 
 ---
 
@@ -355,14 +355,32 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 
 ---
 
-### Future / Stretch Goals
+### Phase 6: Ops, Polish & Growth (Planned)
 
-- Real-time features using Supabase Realtime (live match updates, collaborative analysis)
-- Dedicated native mobile app (responsive web layout is largely covered in Phase 2)
-- Export capabilities beyond workspace report CSV (PDF, images)
-- Advanced sharing and embedding features
-- Integration with additional data sources
-- Community / public analysis sharing features
+**Goal:** Harden signed-in collaboration, production ops, and selective product extensions.
+
+**Plan:** [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md)
+
+#### 6.1 — Signed-in collaboration + `/backend` proxy ✅ (July 2026)
+
+- OAuth bootstrap workspace (`POST /auth/bootstrap`, `BootstrapOnSignIn`)
+- Session-gated collaboration API queries + stale-401 cache fix
+- Same-origin `/backend` route handler (auth injection, compression fix)
+- Guest and signed-in browsing verified in production
+
+#### 6.2–6.7 — Planned slices
+
+- Production ops (uptime, migrations audit, zone MV)
+- Pitch overlay responsive polish
+- Realtime, data expansion, sharing/embeds, performance tests
+
+---
+
+### Future / Stretch Goals (beyond Phase 6)
+
+- Dedicated native mobile app
+- Community / public analysis feeds
+- Additional commercial hosting tiers if outgrowing Hobby
 
 ---
 
@@ -376,8 +394,9 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
 | Phase 4 | ✅ Completed | 4.1–4.8 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) |
 | Phase 5 | ✅ Completed | 5.1–5.10 on `main`, prod on Vercel — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
+| Phase 6 | 🔄 In progress | 6.1 ✅; next: 6.2 ops + 6.3 polish — [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
 
-Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md), [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md), [PHASE2_SUMMARY.md](./PHASE2_SUMMARY.md), [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md), [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md), [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md).
+Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md), [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md).
 
 ---
 

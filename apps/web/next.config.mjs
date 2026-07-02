@@ -6,10 +6,6 @@ const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const isVercel = process.env.VERCEL === "1";
 
-const apiProxyTarget =
-  process.env.API_PROXY_TARGET?.replace(/\/$/, "") ||
-  process.env.E2E_API_PROXY_TARGET?.replace(/\/$/, "");
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Standalone is for Docker (Dockerfile.prod). Vercel uses its own output layout.
@@ -19,18 +15,9 @@ const nextConfig = {
     ? { turbopack: { root: appRoot } }
     : {}),
   allowedDevOrigins: ["127.0.0.1", "localhost"],
-  async rewrites() {
-    if (!apiProxyTarget) {
-      return [];
-    }
-
-    return [
-      {
-        source: "/backend/:path*",
-        destination: `${apiProxyTarget}/:path*`,
-      },
-    ];
-  },
+  // /backend/* is proxied by app/backend/[...path]/route.ts (injects auth).
+  // Do not add next.config rewrites here — they bypass the route handler and
+  // redirect cross-origin, which strips Authorization on trailing-slash paths.
 };
 
 export default nextConfig;

@@ -1,13 +1,14 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from postgrest.exceptions import APIError
 from supabase import Client
 
 from core.auth import AuthUser
 from core.deps import get_current_user_required, get_user_supabase
 from core.supabase_errors import raise_for_supabase_error
+from routers.workspaces import _list_user_workspaces
 from schemas.auth import AuthMeResponse, AuthMeUpdate
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, ErrorResponse, raise_http_exception
 
@@ -107,6 +108,70 @@ def _build_auth_me_response(
         active_workspace_id=active_workspace_id,
         active_workspace_name=active_workspace_name,
     )
+
+
+def _default_workspace_name(user: AuthUser) -> str:
+    if user.email and "@" in user.email:
+        local = user.email.split("@", 1)[0].strip()
+        if local:
+            return f"{local}'s workspace"
+    return "My workspace"
+
+
+@router.post(
+    "/bootstrap",
+    response_model=AuthMeResponse,
+    responses={
+        401: {"model": ErrorResponse},
+        **COMMON_ERROR_RESPONSES,
+    },
+)
+def bootstrap_user(
+    user: AuthUser = Depends(get_current_user_required),
+    supabase: Client = Depends(get_user_supabase),
+) -> AuthMeResponse:
+    """
+    OAuth onboarding: ensure the user has a profile and at least one workspace.
+
+    Safe to call after every sign-in; no-op when workspaces already exist.
+    """
+    try:
+        existing = _list_user_workspaces(supabase, user.id)
+        if not existing:
+            result = supabase.rpc(
+                "create_workspace_for_user",
+                {"p_name": _default_workspace_name(user)},
+            ).execute()
+            if not (result.data or []):
+                raise_http_exception(
+                    status_code=500,
+                    detail="Failed to create default workspace",
+                    code=ErrorCode.INTERNAL_SERVER_ERROR,
+                )
+            ws_id = (
+                result.data[0]["id"]
+                if isinstance(result.data, list)
+                else result.data["id"]
+            )
+            supabase.table("profiles").update(
+                {"active_workspace_id": str(ws_id)},
+            ).eq("id", user.id).execute()
+    except HTTPException:
+        raise
+    except APIError as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to bootstrap workspace",
+            log_context="bootstrap_user",
+        )
+    except Exception as exc:
+        raise_for_supabase_error(
+            exc,
+            fallback_detail="Failed to bootstrap workspace",
+            log_context="bootstrap_user",
+        )
+
+    return _build_auth_me_response(user, supabase)
 
 
 @router.get(

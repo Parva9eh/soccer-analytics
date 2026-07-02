@@ -1,17 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { apiFetchJson } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useAuthMeQuery } from "@/lib/use-auth-me-query";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { SignOutButton } from "@/components/auth/SignOutButton";
-
-interface AuthMe {
-  id: string;
-  email: string | null;
-  display_name: string | null;
-}
 
 function sessionDisplayName(session: {
   user: {
@@ -31,13 +24,7 @@ function sessionDisplayName(session: {
 export function SidebarUser() {
   const { session, isLoading: sessionLoading } = useAuthSession();
 
-  const { data } = useQuery<AuthMe>({
-    queryKey: ["auth-me", session?.access_token],
-    queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: AUTH_ENABLED && Boolean(session?.access_token),
-    retry: false,
-    staleTime: 60_000,
-  });
+  const { data } = useAuthMeQuery();
 
   if (!AUTH_ENABLED) {
     return (

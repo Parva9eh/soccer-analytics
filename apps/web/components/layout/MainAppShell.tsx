@@ -3,6 +3,8 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { AuthGate } from "@/components/auth/AuthGate";
+import { BootstrapOnSignIn } from "@/components/auth/BootstrapOnSignIn";
+import { CollaborationQuerySync } from "@/components/auth/CollaborationQuerySync";
 import { GuestBrowsingBanner } from "@/components/auth/GuestBrowsingBanner";
 import type { ReactNode } from "react";
 
@@ -15,6 +17,8 @@ export function MainAppShell({ children }: { children: ReactNode }) {
         <MobileHeader />
         <main className="flex-1 overflow-auto pt-14 md:pt-0">
           <AuthGate>
+            <CollaborationQuerySync />
+            <BootstrapOnSignIn />
             <GuestBrowsingBanner />
             {children}
           </AuthGate>

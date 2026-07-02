@@ -5,6 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, Trash2 } from "lucide-react";
 import { apiFetch, apiFetchJson, ApiError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { COLLABORATION_QUERY_OPTIONS } from "@/lib/collaboration-queries";
+import { useAuthMeQuery } from "@/lib/use-auth-me-query";
+import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -25,11 +28,16 @@ interface SavedAnalysis {
 export default function SavedAnalysesPage() {
   const queryClient = useQueryClient();
   const workspaceId = useActiveWorkspaceId();
+  const queriesEnabled = useCollaborationQueriesEnabled();
+  const authMe = useAuthMeQuery();
 
-  const { data, isLoading, error, refetch } = useQuery<SavedAnalysis[]>({
+  const { data, isLoading, error, refetch, isFetching } = useQuery<
+    SavedAnalysis[]
+  >({
     queryKey: ["saved-analyses", workspaceId],
     queryFn: () => apiFetchJson<SavedAnalysis[]>("/analyses/"),
-    enabled: AUTH_ENABLED,
+    enabled: queriesEnabled && authMe.isSuccess,
+    ...COLLABORATION_QUERY_OPTIONS,
   });
 
   const deleteMutation = useMutation({
@@ -51,11 +59,34 @@ export default function SavedAnalysesPage() {
     );
   }
 
-  if (error) {
+  const blockingError = authMe.error ?? error;
+  if (blockingError && !isFetching && !authMe.isLoading) {
     return (
       <PageShell>
         <PageHeader title="Match views" />
-        <QueryErrorState error={error} onRetry={() => refetch()} />
+        <QueryErrorState
+          error={blockingError}
+          onRetry={() => {
+            void authMe.refetch();
+            void refetch();
+          }}
+        />
+      </PageShell>
+    );
+  }
+
+  if (authMe.isLoading || (queriesEnabled && !authMe.isSuccess)) {
+    return (
+      <PageShell>
+        <PageHeader title="Match views" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="surface-card h-20 animate-pulse rounded-xl border"
+            />
+          ))}
+        </div>
       </PageShell>
     );
   }

@@ -5,6 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, Trash2 } from "lucide-react";
 import { apiFetch, apiFetchJson, ApiError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { COLLABORATION_QUERY_OPTIONS } from "@/lib/collaboration-queries";
+import { useAuthMeQuery } from "@/lib/use-auth-me-query";
+import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { downloadReportCsv } from "@/lib/report-export";
 import { reportScopeLabel, type WorkspaceReport } from "@/lib/report-types";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
@@ -18,11 +21,16 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function ReportsPage() {
   const queryClient = useQueryClient();
   const workspaceId = useActiveWorkspaceId();
+  const queriesEnabled = useCollaborationQueriesEnabled();
+  const authMe = useAuthMeQuery();
 
-  const { data, isLoading, error, refetch } = useQuery<WorkspaceReport[]>({
+  const { data, isLoading, error, refetch, isFetching } = useQuery<
+    WorkspaceReport[]
+  >({
     queryKey: ["workspace-reports", workspaceId],
     queryFn: () => apiFetchJson<WorkspaceReport[]>("/reports/"),
-    enabled: AUTH_ENABLED,
+    enabled: queriesEnabled && authMe.isSuccess,
+    ...COLLABORATION_QUERY_OPTIONS,
   });
 
   const deleteMutation = useMutation({
@@ -49,11 +57,34 @@ export default function ReportsPage() {
     );
   }
 
-  if (error) {
+  const blockingError = authMe.error ?? error;
+  if (blockingError && !isFetching && !authMe.isLoading) {
     return (
       <PageShell>
         <PageHeader title="Reports" />
-        <QueryErrorState error={error} onRetry={() => refetch()} />
+        <QueryErrorState
+          error={blockingError}
+          onRetry={() => {
+            void authMe.refetch();
+            void refetch();
+          }}
+        />
+      </PageShell>
+    );
+  }
+
+  if (authMe.isLoading || (queriesEnabled && !authMe.isSuccess)) {
+    return (
+      <PageShell>
+        <PageHeader title="Reports" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="surface-card h-24 animate-pulse rounded-xl border"
+            />
+          ))}
+        </div>
       </PageShell>
     );
   }
