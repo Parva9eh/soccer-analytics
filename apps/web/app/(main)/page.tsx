@@ -18,6 +18,11 @@ import { AUTH_ENABLED } from "@/lib/auth-config";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { useWorkspaceCatalog } from "@/lib/use-workspace-catalog";
+import {
+  countLinkedSeasons,
+  flattenCatalogDatasets,
+  formatCatalogSummary,
+} from "@/lib/competition-filter";
 import { DashboardHero } from "@/components/brand/DashboardHero";
 import { WorkspaceDatasetsEmpty } from "@/components/workspace/WorkspaceDatasetsEmpty";
 import { PageHeader } from "@/components/ui/page-header";
@@ -95,15 +100,21 @@ export default function Dashboard() {
     queryFn: () => apiFetchJson<SummaryData>("/summary/"),
   });
 
+  const linkedDatasets = useMemo(
+    () => (catalogReady ? flattenCatalogDatasets(catalog) : []),
+    [catalogReady, catalog],
+  );
+
   const derivedMetrics = useMemo(() => {
     const matches = data?.total_matches ?? 0;
     const events = data?.total_events ?? 0;
-    const players = data?.total_players ?? 0;
 
     return {
       eventsPerMatch:
         matches > 0 ? Math.round(events / matches).toLocaleString() : "—",
-      seasonCount: catalogReady ? (catalog?.length ?? 0) : null,
+      seasonCount: catalogReady ? countLinkedSeasons(catalog) : null,
+      competitionCount: catalogReady ? (catalog?.length ?? 0) : null,
+      catalogSummary: catalogReady ? formatCatalogSummary(catalog) : "",
     };
   }, [data, catalogReady, catalog]);
 
@@ -133,6 +144,8 @@ export default function Dashboard() {
         isGuest={isGuest}
         totalMatches={data?.total_matches ?? 0}
         totalEvents={data?.total_events ?? 0}
+        linkedDatasets={linkedDatasets}
+        catalogSummary={derivedMetrics.catalogSummary}
       />
 
       <PageHeader
@@ -173,7 +186,9 @@ export default function Dashboard() {
               ? "Competition seasons in the public demo catalog"
               : catalogReady && !hasLinkedData
                 ? "No competition seasons linked yet"
-                : "Competition seasons in your workspace"
+                : derivedMetrics.competitionCount && derivedMetrics.competitionCount > 1
+                  ? `${derivedMetrics.competitionCount} competitions · ${derivedMetrics.catalogSummary}`
+                  : derivedMetrics.catalogSummary || "Competition seasons in your workspace"
           }
           icon={BarChart3}
           loading={!catalogReady}

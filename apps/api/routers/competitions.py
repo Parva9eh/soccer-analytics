@@ -35,7 +35,20 @@ def list_competitions_catalog(
         )
 
 
-def _build_catalog_from_supabase(supabase: Client) -> list[CompetitionCatalogItem]:
+def _loaded_season_ids(supabase: Client) -> set[int]:
+    match_result = supabase.table("matches").select("season_id").execute()
+    return {
+        row["season_id"]
+        for row in match_result.data or []
+        if row.get("season_id") is not None
+    }
+
+
+def _build_catalog_from_supabase(
+    supabase: Client,
+    *,
+    match_loaded_only: bool = False,
+) -> list[CompetitionCatalogItem]:
     comp_result = (
         supabase.table("competitions")
         .select("id, name")
@@ -46,15 +59,19 @@ def _build_catalog_from_supabase(supabase: Client) -> list[CompetitionCatalogIte
 
     season_result = (
         supabase.table("seasons")
-        .select("competition_id, year")
+        .select("id, competition_id, year")
         .order("year")
         .execute()
     )
+    loaded_season_ids = _loaded_season_ids(supabase) if match_loaded_only else None
     seasons_by_comp: dict[int, list[str]] = {}
     for row in season_result.data or []:
+        season_id = row.get("id")
         comp_id = row.get("competition_id")
         year = row.get("year")
-        if comp_id is None or not year:
+        if comp_id is None or not year or season_id is None:
+            continue
+        if loaded_season_ids is not None and season_id not in loaded_season_ids:
             continue
         seasons_by_comp.setdefault(comp_id, []).append(year)
 
@@ -83,7 +100,7 @@ def list_competitions_inventory(
     """All competition seasons loaded in the database (for workspace dataset linking)."""
     try:
         supabase = get_supabase_service_client()
-        return _build_catalog_from_supabase(supabase)
+        return _build_catalog_from_supabase(supabase, match_loaded_only=True)
     except Exception:
         logger.exception("Error in list_competitions_inventory")
         raise_http_exception(

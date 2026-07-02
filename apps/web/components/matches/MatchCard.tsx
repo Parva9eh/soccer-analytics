@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Calendar, Trophy, ArrowRight } from "lucide-react";
+import { buildMatchDetailPath } from "@/lib/competition-filter";
 
 interface MatchCardProps {
   match: {
@@ -15,9 +16,16 @@ interface MatchCardProps {
     match_week: number | null;
   };
   hasEvents?: boolean;
+  competition?: string;
+  season?: string;
 }
 
-export function MatchCard({ match, hasEvents = false }: MatchCardProps) {
+export function MatchCard({
+  match,
+  hasEvents = false,
+  competition,
+  season,
+}: MatchCardProps) {
   const formattedDate = new Date(match.match_date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -25,7 +33,10 @@ export function MatchCard({ match, hasEvents = false }: MatchCardProps) {
   });
 
   return (
-    <Link href={`/matches/${match.id}`} className="group block h-full">
+    <Link
+      href={buildMatchDetailPath(match.id, competition, season)}
+      className="group block h-full"
+    >
       <Card className="card-interactive surface-card h-full">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between text-sm">

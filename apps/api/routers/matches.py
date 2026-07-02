@@ -33,6 +33,7 @@ def get_matches(
 
         comp_name = None
         season_name = None
+        comp_id = None
 
         if filters.competition:
             comp_result = supabase.table("competitions").select("id").eq("name", filters.competition).execute()
@@ -42,7 +43,10 @@ def get_matches(
                 query = query.eq("competition_id", comp_id)
 
         if filters.season:
-            season_result = supabase.table("seasons").select("id").eq("year", filters.season).execute()
+            season_query = supabase.table("seasons").select("id").eq("year", filters.season)
+            if comp_id is not None:
+                season_query = season_query.eq("competition_id", comp_id)
+            season_result = season_query.execute()
             if season_result.data:
                 season_id = season_result.data[0]["id"]
                 season_name = filters.season
@@ -95,7 +99,9 @@ def get_match(
             .select(
                 "id, match_date, home_score, away_score, match_week, home_team_id, away_team_id, "
                 "home_team:teams!home_team_id(name), "
-                "away_team:teams!away_team_id(name)"
+                "away_team:teams!away_team_id(name), "
+                "competition:competitions!competition_id(name), "
+                "season:seasons!season_id(year)"
             )
             .eq("id", match_id)
             .single()
@@ -112,6 +118,8 @@ def get_match(
         m = response.data
         home_team = m.get("home_team") or {}
         away_team = m.get("away_team") or {}
+        competition = m.get("competition") or {}
+        season = m.get("season") or {}
 
         return MatchResponse(
             id=m["id"],
@@ -121,8 +129,8 @@ def get_match(
             match_week=m.get("match_week"),
             home_team=home_team.get("name"),
             away_team=away_team.get("name"),
-            competition=None,
-            season=None,
+            competition=competition.get("name"),
+            season=season.get("year"),
         )
 
     except Exception:
