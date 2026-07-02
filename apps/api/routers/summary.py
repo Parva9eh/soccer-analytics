@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends
+from postgrest.exceptions import APIError as PostgrestAPIError
 from supabase import Client
 
 from core.supabase_client import get_supabase_public_read
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/summary", tags=["Summary"])
 
-_MAX_MATCHES = 2000
+_MISSING_RPC_CODE = "PGRST202"
 
 
 def _normalize_rpc_row(data: Any) -> dict[str, Any]:
@@ -26,12 +27,12 @@ def _normalize_rpc_row(data: Any) -> dict[str, Any]:
     return row if isinstance(row, dict) else {}
 
 
-def _summary_from_data_snapshot(supabase: Client) -> dict[str, Any] | None:
-    """Single join-based SQL count (migration 20250702190000); RLS-scoped for anon + signed-in."""
+def _summary_from_data_snapshot(supabase: Client) -> dict[str, Any]:
+    """Scoped SQL counts via data_summary_snapshot (migration 20250702200000)."""
     result = supabase.rpc("data_summary_snapshot").execute()
     row = _normalize_rpc_row(result.data)
     if not row:
-        return None
+        raise RuntimeError("data_summary_snapshot returned no data")
     return {
         "total_matches": int(row.get("total_matches") or 0),
         "total_events": int(row.get("total_events") or 0),
@@ -40,62 +41,11 @@ def _summary_from_data_snapshot(supabase: Client) -> dict[str, Any] | None:
     }
 
 
-def _accessible_match_ids(supabase: Client) -> list[int]:
-    rows = (
-        supabase.table("matches")
-        .select("id")
-        .limit(_MAX_MATCHES)
-        .execute()
-    ).data or []
-    return [row["id"] for row in rows if row.get("id") is not None]
-
-
-def _count_events_for_matches(supabase: Client, match_ids: list[int]) -> int:
-    if not match_ids:
-        return 0
-
-    response = (
-        supabase.table("events")
-        .select("id", count="exact")
-        .in_("match_id", match_ids)
-        .execute()
-    )
-    return response.count or 0
-
-
-def _summary_from_match_chunks(supabase: Client) -> dict[str, Any]:
-    """Last resort when data_summary_snapshot migration is not applied yet."""
-    match_ids = _accessible_match_ids(supabase)
-    players_count = 0
-    try:
-        players_count = (
-            supabase.table("players")
-            .select("id", count="exact")
-            .limit(0)
-            .execute()
-            .count
-            or 0
-        )
-    except Exception:
-        logger.debug("players summary count skipped", exc_info=True)
-
-    return {
-        "total_matches": len(match_ids),
-        "total_events": _count_events_for_matches(supabase, match_ids),
-        "total_players": players_count,
-        "status": "healthy",
-    }
-
-
-def _build_summary(supabase: Client) -> dict[str, Any]:
-    try:
-        data_summary = _summary_from_data_snapshot(supabase)
-        if data_summary is not None:
-            return data_summary
-    except Exception:
-        logger.debug("data_summary_snapshot unavailable", exc_info=True)
-
-    return _summary_from_match_chunks(supabase)
+def _is_missing_rpc_error(exc: BaseException) -> bool:
+    if isinstance(exc, PostgrestAPIError) and getattr(exc, "code", None) == _MISSING_RPC_CODE:
+        return True
+    message = str(exc)
+    return "data_summary_snapshot" in message and "does not exist" in message
 
 
 @router.get(
@@ -107,8 +57,19 @@ def get_summary(
 ):
     """Get high-level summary of loaded data visible to the caller (RLS-scoped)."""
     try:
-        return _build_summary(supabase)
-    except Exception:
+        return _summary_from_data_snapshot(supabase)
+    except Exception as exc:
+        if _is_missing_rpc_error(exc):
+            logger.error("data_summary_snapshot RPC is not installed in Supabase")
+            raise_http_exception(
+                status_code=503,
+                detail=(
+                    "Summary service is not configured. "
+                    "Apply supabase/migrations/20250702200000_data_summary_snapshot_scoped.sql "
+                    "in the Supabase SQL Editor."
+                ),
+                code=ErrorCode.SERVICE_UNAVAILABLE,
+            )
         logger.exception("Failed to generate summary")
         raise_http_exception(
             status_code=500,
