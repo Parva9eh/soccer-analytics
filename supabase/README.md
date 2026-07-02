@@ -149,6 +149,8 @@ supabase db push
 
 Copy the migration file into Supabase → SQL → New query → Run.
 
+> **Note:** SQL Editor runs do **not** create `supabase_migrations.schema_migrations`. That is normal. To verify production schema, run [`scripts/audit-production.sql`](./scripts/audit-production.sql) instead of querying `schema_migrations`.
+
 ### Verify RLS
 
 1. Enable auth flags (see above) and sign in on the web app.
