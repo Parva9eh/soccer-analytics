@@ -135,11 +135,18 @@ Loads [StatsBomb open data](https://github.com/statsbomb/open-data) into Supabas
 | Guest demo | La Liga | 2020/2021 | Public anon browse (RLS) |
 | Expansion | Premier League | 2003/2004 | Workspace linking |
 
+**Before event ingest** — apply `supabase/migrations/20250606000000_events_statsbomb_event_id.sql` (and the constraint fix in `20250606001000_…` if you used an older partial-index version). Event loads upsert on `statsbomb_event_id`; PostgREST requires a **UNIQUE CONSTRAINT**, not a partial unique index.
+
+```bash
+cd apps/api
+uv run python -m etl.cli --verify-etl   # probe upsert; exits 1 if migration missing
+```
+
 **Full season (recommended):**
 
 ```bash
 cd apps/api
-# Curated presets
+# Curated presets (--load-season runs preflight automatically unless --dry-run / --skip-events)
 uv run python -m etl.cli --load-season --preset demo
 uv run python -m etl.cli --load-season --preset expansion
 

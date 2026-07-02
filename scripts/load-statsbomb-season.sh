@@ -18,6 +18,9 @@ else
   EXTRA_ARGS=(--competition "$COMPETITION" --season "$SEASON")
 fi
 
+echo "→ Verifying ETL preflight (events upsert)"
+uv run python -m etl.cli --verify-etl
+
 echo "→ Loading StatsBomb season (${EXTRA_ARGS[*]})"
 uv run python -m etl.cli --load-season "${EXTRA_ARGS[@]}"
 echo "→ Done. Link the season under Settings → Workspace → Data access."
