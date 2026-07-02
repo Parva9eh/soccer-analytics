@@ -60,6 +60,8 @@ export default function PlayersPage() {
     placeholderData: (previousData) => previousData,
   });
 
+  const playersLoading = isLoading || (isFetching && players === undefined);
+
   const sortedPlayers = useMemo(() => {
     if (!players) return [];
     return [...players].sort((a, b) => {
@@ -90,9 +92,11 @@ export default function PlayersPage() {
       <PageHeader
         title="Players"
         description={
-          AUTH_ENABLED
-            ? `${sortedPlayers.length} players loaded globally — workspace filtering for squads is not enabled yet.`
-            : `${sortedPlayers.length} players in the database`
+          playersLoading
+            ? "Loading players…"
+            : AUTH_ENABLED
+              ? `${sortedPlayers.length} players loaded globally — workspace filtering for squads is not enabled yet.`
+              : `${sortedPlayers.length} players in the database`
         }
       />
 
@@ -121,7 +125,7 @@ export default function PlayersPage() {
         )}
       </div>
 
-      {isLoading ? (
+      {playersLoading ? (
         <div className="surface-card overflow-hidden rounded-xl border">
           <TableContainer>
             <Table>

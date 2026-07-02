@@ -37,10 +37,6 @@ export function XgLeaderboards({
     );
   }
 
-  if (!players?.players.length && !teams?.teams.length) {
-    return null;
-  }
-
   return (
     <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card className="surface-card border">

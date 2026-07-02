@@ -30,7 +30,19 @@ export function ProgressivePassLeaderboardPanel({
   }
 
   if (!teams.length) {
-    return null;
+    return (
+      <Card className="surface-card mb-8 border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Progressive passes by team</CardTitle>
+          <p className="text-caption text-muted-foreground">{scopeLabel}</p>
+        </CardHeader>
+        <CardContent>
+          <p className="text-caption text-muted-foreground">
+            No progressive pass data for this season.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

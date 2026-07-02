@@ -16,11 +16,26 @@ interface DashboardHeroProps {
   loading?: boolean;
 }
 
-function formatMetric(value: number | undefined, loading: boolean): string {
-  if (loading || value === undefined) {
-    return "—";
+function MetricValue({
+  value,
+  loading,
+}: {
+  value: number | undefined;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div
+        className="mt-1 h-8 w-16 animate-pulse rounded-md bg-muted/50"
+        aria-hidden
+      />
+    );
   }
-  return value.toLocaleString();
+  return (
+    <p className="metric-value mt-1 text-2xl text-foreground">
+      {value === undefined ? "—" : value.toLocaleString()}
+    </p>
+  );
 }
 
 export function DashboardHero({
@@ -122,21 +137,13 @@ export function DashboardHero({
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Matches
             </p>
-            <p
-              className={`metric-value mt-1 text-2xl text-foreground${loading ? " animate-pulse" : ""}`}
-            >
-              {formatMetric(totalMatches, loading)}
-            </p>
+            <MetricValue value={totalMatches} loading={loading} />
           </div>
           <div className="rounded-xl border border-border/80 bg-background/60 px-4 py-3 backdrop-blur-sm">
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Events
             </p>
-            <p
-              className={`metric-value mt-1 text-2xl text-foreground${loading ? " animate-pulse" : ""}`}
-            >
-              {formatMetric(totalEvents, loading)}
-            </p>
+            <MetricValue value={totalEvents} loading={loading} />
           </div>
           <div className="col-span-2 flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-4 py-2.5 text-xs text-primary">
             <Radar className="h-3.5 w-3.5 shrink-0" />

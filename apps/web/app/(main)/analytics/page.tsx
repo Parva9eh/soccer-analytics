@@ -47,7 +47,8 @@ import {
   type SeasonXg,
   type TeamXgLeaderboard,
 } from "@/lib/xg-types";
-import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
+import { queryAwaitingData } from "@/lib/query-loading";
+import { useDataScope } from "@/lib/use-data-scope";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { DashboardPanels } from "@/components/reports/DashboardPanels";
 import { SaveReportDialog } from "@/components/reports/SaveReportDialog";
@@ -56,6 +57,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { StatCard } from "@/components/ui/stat-card";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { PanelSkeleton, StatGridSkeleton } from "@/components/ui/loading-skeleton";
 import { WorkspaceDatasetsEmpty } from "@/components/workspace/WorkspaceDatasetsEmpty";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,7 +150,7 @@ function AnalyticsRoadmap() {
 function AuthAnalyticsDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const workspaceId = useActiveWorkspaceId();
+  const { scopeReady, workspaceId } = useDataScope();
 
   const scope = readScope(searchParams);
   const competition = readFilter(searchParams, "competition", DEFAULT_COMPETITION);
@@ -171,15 +173,16 @@ function AuthAnalyticsDashboard() {
     [router, searchParams, scope, competition, season],
   );
 
-  const { data: catalog, isLoading: catalogLoading } = useQuery<
-    CompetitionCatalogItem[]
-  >({
+  const catalogQuery = useQuery<CompetitionCatalogItem[]>({
     queryKey: ["competitions-catalog", workspaceId],
     queryFn: () => apiFetchJson<CompetitionCatalogItem[]>("/competitions/"),
+    enabled: scopeReady,
     staleTime: 5 * 60 * 1000,
   });
+  const catalog = catalogQuery.data;
+  const catalogLoading = queryAwaitingData(scopeReady, catalogQuery);
 
-  const catalogReady = !catalogLoading && catalog !== undefined;
+  const catalogReady = scopeReady && !catalogLoading && catalog !== undefined;
   const hasLinkedData = (catalog?.length ?? 0) > 0;
   const firstCatalog = getFirstCatalogFilters(catalog);
   const filterInCatalog =
@@ -211,17 +214,12 @@ function AuthAnalyticsDashboard() {
     scope === "filtered" ? season : undefined,
   );
 
-  const {
-    data: dashboard,
-    isLoading,
-    error,
-    refetch,
-    isFetching,
-  } = useQuery<WorkspaceDashboard>({
+  const dashboardQuery = useQuery<WorkspaceDashboard>({
     queryKey: ["reports-dashboard", workspaceId, scope, competition, season],
     queryFn: () => apiFetchJson<WorkspaceDashboard>(dashboardPath),
     enabled: catalogReady && (scope === "all" || filterInCatalog),
   });
+  const { data: dashboard, error, refetch } = dashboardQuery;
 
   const seasonXgParams = new URLSearchParams({
     competition,
@@ -316,7 +314,8 @@ function AuthAnalyticsDashboard() {
   }
 
   const showNoLinkedData = catalogReady && !hasLinkedData;
-  const loading = isLoading || isFetching;
+  const loading = queryAwaitingData(catalogReady, dashboardQuery);
+  const bootstrapping = !scopeReady || catalogLoading;
 
   return (
     <PageShell>
@@ -391,7 +390,9 @@ function AuthAnalyticsDashboard() {
         }
       />
 
-      {showNoLinkedData ? (
+      {bootstrapping ? (
+        <StatGridSkeleton className="mb-8" />
+      ) : showNoLinkedData ? (
         <WorkspaceDatasetsEmpty workspaceId={workspaceId} />
       ) : (
         <>
@@ -503,16 +504,15 @@ function AuthAnalyticsDashboard() {
 }
 
 function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
-  const workspaceId = useActiveWorkspaceId();
-  const {
-    data: summary,
-    isLoading: summaryLoading,
-    error,
-    refetch,
-  } = useQuery<SummaryData>({
+  const { scopeReady, workspaceId } = useDataScope();
+  const summaryQuery = useQuery<SummaryData>({
     queryKey: ["summary", workspaceId],
     queryFn: () => apiFetchJson<SummaryData>("/summary/"),
+    enabled: scopeReady,
+    staleTime: 60_000,
   });
+  const { data: summary, error, refetch } = summaryQuery;
+  const summaryLoading = queryAwaitingData(scopeReady, summaryQuery);
 
   const legacyXgParams = new URLSearchParams({
     competition: DEFAULT_COMPETITION,
@@ -598,6 +598,19 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
           fallbackMessage="Could not load analytics summary."
           onRetry={() => refetch()}
         />
+      </PageShell>
+    );
+  }
+
+  if (!scopeReady || summaryLoading) {
+    return (
+      <PageShell>
+        <PageHeader eyebrow="Tactical analysis" title="Analytics" />
+        <StatGridSkeleton className="mb-8" />
+        <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <PanelSkeleton className="mb-0" />
+          <PanelSkeleton className="mb-0" />
+        </div>
       </PageShell>
     );
   }

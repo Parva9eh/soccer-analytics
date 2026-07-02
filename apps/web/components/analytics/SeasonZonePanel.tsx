@@ -30,7 +30,19 @@ export function SeasonZonePanel({
   }
 
   if (!teams.length) {
-    return null;
+    return (
+      <Card className="surface-card mb-8 border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Season zone distribution</CardTitle>
+          <p className="text-caption text-muted-foreground">{scopeLabel}</p>
+        </CardHeader>
+        <CardContent>
+          <p className="text-caption text-muted-foreground">
+            No zone aggregates for this season yet.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
