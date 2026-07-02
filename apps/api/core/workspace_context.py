@@ -1,6 +1,17 @@
+from typing import Optional
+
+from fastapi import HTTPException
 from supabase import Client
 
 from schemas.error import ErrorCode, raise_http_exception
+
+
+def try_resolve_active_workspace_id(supabase: Client, user_id: str) -> Optional[str]:
+    """Active workspace id, or None when the user has no workspace yet."""
+    try:
+        return resolve_active_workspace_id(supabase, user_id)
+    except HTTPException:
+        return None
 
 
 def resolve_active_workspace_id(supabase: Client, user_id: str) -> str:

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, Trash2 } from "lucide-react";
 import { apiFetch, apiFetchJson, ApiError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -25,11 +26,12 @@ interface SavedAnalysis {
 export default function SavedAnalysesPage() {
   const queryClient = useQueryClient();
   const workspaceId = useActiveWorkspaceId();
+  const queriesEnabled = useCollaborationQueriesEnabled();
 
   const { data, isLoading, error, refetch } = useQuery<SavedAnalysis[]>({
     queryKey: ["saved-analyses", workspaceId],
     queryFn: () => apiFetchJson<SavedAnalysis[]>("/analyses/"),
-    enabled: AUTH_ENABLED,
+    enabled: queriesEnabled,
   });
 
   const deleteMutation = useMutation({

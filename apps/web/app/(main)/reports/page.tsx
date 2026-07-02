@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, Trash2 } from "lucide-react";
 import { apiFetch, apiFetchJson, ApiError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { downloadReportCsv } from "@/lib/report-export";
 import { reportScopeLabel, type WorkspaceReport } from "@/lib/report-types";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
@@ -18,11 +19,12 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function ReportsPage() {
   const queryClient = useQueryClient();
   const workspaceId = useActiveWorkspaceId();
+  const queriesEnabled = useCollaborationQueriesEnabled();
 
   const { data, isLoading, error, refetch } = useQuery<WorkspaceReport[]>({
     queryKey: ["workspace-reports", workspaceId],
     queryFn: () => apiFetchJson<WorkspaceReport[]>("/reports/"),
-    enabled: AUTH_ENABLED,
+    enabled: queriesEnabled,
   });
 
   const deleteMutation = useMutation({

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { WORKSPACE_SCOPED_QUERY_PREFIXES } from "@/lib/workspace-data-queries";
 import {
   Select,
@@ -26,6 +27,7 @@ interface AuthMe {
 
 export function SidebarWorkspace() {
   const queryClient = useQueryClient();
+  const queriesEnabled = useCollaborationQueriesEnabled();
 
   const {
     data: workspaces,
@@ -34,14 +36,14 @@ export function SidebarWorkspace() {
   } = useQuery<Workspace[]>({
     queryKey: ["workspaces"],
     queryFn: () => apiFetchJson<Workspace[]>("/workspaces/"),
-    enabled: AUTH_ENABLED,
+    enabled: queriesEnabled,
     retry: false,
   });
 
   const { data: me, isLoading: meLoading } = useQuery<AuthMe>({
     queryKey: ["auth-me"],
     queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: AUTH_ENABLED,
+    enabled: queriesEnabled,
   });
 
   const setActive = useMutation({

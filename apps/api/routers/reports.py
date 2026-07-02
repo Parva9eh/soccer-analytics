@@ -10,7 +10,10 @@ from uuid import UUID
 from core.auth import AuthUser
 from core.deps import get_current_user_required, get_user_supabase
 from core.supabase_errors import raise_for_supabase_error
-from core.workspace_context import resolve_active_workspace_id
+from core.workspace_context import (
+    resolve_active_workspace_id,
+    try_resolve_active_workspace_id,
+)
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.report import (
     WorkspaceDashboardResponse,
@@ -102,7 +105,9 @@ def list_workspace_reports(
 ) -> List[WorkspaceReportResponse]:
     """List saved reports for the current user in the active workspace."""
     try:
-        workspace_id = resolve_active_workspace_id(supabase, user.id)
+        workspace_id = try_resolve_active_workspace_id(supabase, user.id)
+        if workspace_id is None:
+            return []
         result = (
             supabase.table("workspace_reports")
             .select(

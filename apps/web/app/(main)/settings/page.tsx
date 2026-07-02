@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { apiFetchJson, ApiError, parseQueryError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { QueryErrorState } from "@/components/ui/query-error-state";
@@ -30,6 +31,7 @@ interface AuthMe {
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const queriesEnabled = useCollaborationQueriesEnabled();
   const [name, setName] = useState("");
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -46,14 +48,14 @@ export default function SettingsPage() {
   } = useQuery<Workspace[]>({
     queryKey: ["workspaces"],
     queryFn: () => apiFetchJson<Workspace[]>("/workspaces/"),
-    enabled: mounted && AUTH_ENABLED,
+    enabled: mounted && queriesEnabled,
     retry: 1,
   });
 
   const { data: me } = useQuery<AuthMe>({
     queryKey: ["auth-me"],
     queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: mounted && AUTH_ENABLED,
+    enabled: mounted && queriesEnabled,
     retry: false,
   });
 

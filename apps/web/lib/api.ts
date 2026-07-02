@@ -115,6 +115,27 @@ export function parseQueryError(
       };
     }
 
+    if (
+      error.status === 400 &&
+      error.message.toLowerCase().includes("workspace")
+    ) {
+      return {
+        title: "Workspace required",
+        message: error.message,
+        code: error.code,
+        requestId: error.requestId,
+      };
+    }
+
+    if (error.status === 401) {
+      return {
+        title: "Sign-in required",
+        message: error.message || "Your session may have expired. Sign in again.",
+        code: error.code,
+        requestId: error.requestId,
+      };
+    }
+
     return {
       title: error.status === 404 ? "Not found" : "Unable to load data",
       message: error.message,
