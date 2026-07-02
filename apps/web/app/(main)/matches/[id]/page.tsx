@@ -308,7 +308,7 @@ function MatchDetailPageContent() {
     });
 
   // Fetch events for Pitch
-  const { data: pitchEventsData } = useQuery<EventsResponse>({
+  const { data: pitchEventsData, isPending: pitchEventsPending, isFetching: pitchEventsFetching } = useQuery<EventsResponse>({
     queryKey: ["pitch-events", workspaceId, matchId],
     queryFn: async () => {
       try {
@@ -322,6 +322,8 @@ function MatchDetailPageContent() {
     enabled: !!matchId,
   });
 
+  const pitchEventsLoading =
+    pitchEventsPending || (pitchEventsFetching && pitchEventsData === undefined);
   const allPitchEvents = pitchEventsData?.events ?? [];
 
   const shotMapEvents = allPitchEvents.filter((event) => {
@@ -970,6 +972,12 @@ function MatchDetailPageContent() {
                 }
               />
             )
+          ) : pitchEventsLoading && pitchViewMode === "events" ? (
+            <div
+              className="surface-card min-h-[min(280px,52vh)] animate-pulse rounded-xl border sm:min-h-[400px]"
+              role="status"
+              aria-label="Loading pitch events"
+            />
           ) : filteredPitchEvents.length === 0 && pitchViewMode === "events" ? (
             <EmptyState
               icon={MapPin}

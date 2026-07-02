@@ -33,7 +33,19 @@ export function PossessionSummaryPanel({
   }
 
   if (!teams.length) {
-    return null;
+    return (
+      <Card className="surface-card mb-8 border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Possession build-up</CardTitle>
+          <p className="text-caption text-muted-foreground">{scopeLabel}</p>
+        </CardHeader>
+        <CardContent>
+          <p className="text-caption text-muted-foreground">
+            No possession summaries for this season.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

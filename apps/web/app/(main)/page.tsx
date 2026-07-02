@@ -14,9 +14,8 @@ import {
   Users,
 } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
-import { AUTH_ENABLED } from "@/lib/auth-config";
-import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
-import { useAuthSession } from "@/lib/supabase/use-auth-session";
+import { queryAwaitingData } from "@/lib/query-loading";
+import { useDataScope } from "@/lib/use-data-scope";
 import { useWorkspaceCatalog } from "@/lib/use-workspace-catalog";
 import {
   countLinkedSeasons,
@@ -91,14 +90,16 @@ const SIGNED_IN_LINKS = [
 ] as const;
 
 export default function Dashboard() {
-  const workspaceId = useActiveWorkspaceId();
-  const { session } = useAuthSession();
-  const isGuest = AUTH_ENABLED && !session;
+  const { scopeReady, isGuest, workspaceId } = useDataScope();
   const { catalogReady, hasLinkedData, catalog } = useWorkspaceCatalog();
-  const { data, isLoading, error, refetch, isFetching } = useQuery<SummaryData>({
+  const summaryQuery = useQuery<SummaryData>({
     queryKey: ["summary", workspaceId],
     queryFn: () => apiFetchJson<SummaryData>("/summary/"),
+    enabled: scopeReady,
+    staleTime: 60_000,
   });
+  const { data, error, refetch } = summaryQuery;
+  const summaryLoading = queryAwaitingData(scopeReady, summaryQuery);
 
   const linkedDatasets = useMemo(
     () => (catalogReady ? flattenCatalogDatasets(catalog) : []),
@@ -132,7 +133,7 @@ export default function Dashboard() {
   }
 
   const showNoData =
-    !isGuest && !isLoading && !isFetching && data && data.total_matches === 0;
+    !isGuest && !summaryLoading && data && data.total_matches === 0;
 
   const exploreLinks = isGuest
     ? [...EXPLORE_LINKS, ...GUEST_LINKS]
@@ -146,7 +147,7 @@ export default function Dashboard() {
         totalEvents={data?.total_events}
         linkedDatasets={linkedDatasets}
         catalogSummary={derivedMetrics.catalogSummary}
-        loading={isLoading || isFetching}
+        loading={summaryLoading}
       />
 
       <PageHeader
@@ -170,14 +171,14 @@ export default function Dashboard() {
           value={data?.total_players ?? "—"}
           hint="Profiles available across loaded competitions"
           icon={Users}
-          loading={isLoading || isFetching}
+          loading={summaryLoading}
         />
         <StatCard
           label="Events per match"
           value={derivedMetrics.eventsPerMatch}
           hint="Average event volume per fixture"
           icon={Activity}
-          loading={isLoading || isFetching}
+          loading={summaryLoading}
         />
         <StatCard
           label={isGuest ? "Seasons available" : "Linked seasons"}

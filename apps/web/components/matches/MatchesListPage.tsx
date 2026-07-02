@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
-import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
+import { queryAwaitingData } from "@/lib/query-loading";
+import { useDataScope } from "@/lib/use-data-scope";
 import {
   buildMatchesQuery,
   DEFAULT_COMPETITION,
@@ -17,7 +18,6 @@ import {
   type CompetitionCatalogItem,
 } from "@/lib/competition-filter";
 import { AUTH_ENABLED } from "@/lib/auth-config";
-import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { PageHeader } from "@/components/ui/page-header";
@@ -85,10 +85,8 @@ export function MatchesListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const workspaceId = useActiveWorkspaceId();
-  const { session } = useAuthSession();
-  const isSignedIn = AUTH_ENABLED && Boolean(session?.access_token);
-  const isGuest = !isSignedIn;
+  const { scopeReady, isGuest, signedIn: isSignedIn, workspaceId } =
+    useDataScope();
   const competition = readFilter(searchParams, "competition", DEFAULT_COMPETITION);
   const season = readFilter(searchParams, "season", DEFAULT_SEASON);
 
@@ -102,33 +100,30 @@ export function MatchesListPage() {
     [router, searchParams],
   );
 
-  const { data: catalog, isLoading: catalogLoading } = useQuery<
-    CompetitionCatalogItem[]
-  >({
+  const catalogQuery = useQuery<CompetitionCatalogItem[]>({
     queryKey: ["competitions-catalog", workspaceId],
     queryFn: () => apiFetchJson<CompetitionCatalogItem[]>("/competitions/"),
+    enabled: scopeReady,
     staleTime: 5 * 60 * 1000,
   });
+  const catalog = catalogQuery.data;
+  const catalogLoading = queryAwaitingData(scopeReady, catalogQuery);
 
-  const catalogReady = !catalogLoading && catalog !== undefined;
+  const catalogReady = scopeReady && !catalogLoading && catalog !== undefined;
   const hasLinkedData = (catalog?.length ?? 0) > 0;
   const filterInCatalog = isFilterInCatalog(catalog, competition, season);
   const firstCatalog = getFirstCatalogFilters(catalog);
 
   const matchesQueryKey = ["matches", workspaceId, competition, season] as const;
 
-  const {
-    data: matches,
-    isLoading,
-    error,
-    refetch,
-    isFetching,
-  } = useQuery<Match[]>({
+  const matchesQuery = useQuery<Match[]>({
     queryKey: matchesQueryKey,
     queryFn: () => apiFetchJson<Match[]>(buildMatchesQuery(competition, season)),
     enabled:
       catalogReady && (!hasLinkedData || filterInCatalog || isGuest),
   });
+  const { data: matches, error, refetch } = matchesQuery;
+  const showGridLoading = queryAwaitingData(catalogReady, matchesQuery);
 
   const handleCompetitionChange = (name: string) => {
     const comp = catalog?.find((c) => c.name === name);
@@ -156,12 +151,27 @@ export function MatchesListPage() {
   ]);
 
   const description = useMemo(() => {
+    if (!scopeReady || catalogLoading) {
+      return "Loading competition catalog…";
+    }
     if (catalogReady && !hasLinkedData) {
       return "No competition data linked to this workspace";
     }
+    if (showGridLoading) {
+      return `${competition} • ${formatSeasonLabel(season)} • Loading fixtures…`;
+    }
     const count = matches?.length ?? 0;
     return `${competition} • ${formatSeasonLabel(season)} • ${count} fixture${count === 1 ? "" : "s"}`;
-  }, [catalogReady, hasLinkedData, competition, season, matches?.length]);
+  }, [
+    scopeReady,
+    catalogLoading,
+    catalogReady,
+    hasLinkedData,
+    showGridLoading,
+    competition,
+    season,
+    matches?.length,
+  ]);
 
   if (error) {
     return (
@@ -176,8 +186,7 @@ export function MatchesListPage() {
     );
   }
 
-  const isEmpty = !isLoading && matches && matches.length === 0;
-  const showGridLoading = isLoading || (isFetching && !matches);
+  const isEmpty = !showGridLoading && matches && matches.length === 0;
   const showNoLinkedData = catalogReady && !hasLinkedData;
 
   return (
