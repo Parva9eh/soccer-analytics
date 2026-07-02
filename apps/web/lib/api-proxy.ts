@@ -14,6 +14,19 @@ const HOP_BY_HOP_HEADERS = new Set([
   "host",
 ]);
 
+/** Dropped on upstream requests — avoid compressed responses Node will decompress. */
+const REQUEST_STRIP_HEADERS = new Set([...HOP_BY_HOP_HEADERS, "accept-encoding"]);
+
+/**
+ * Dropped on proxied responses — Node fetch decompresses the body but can leave
+ * Content-Encoding/Content-Length mismatched, causing ERR_CONTENT_DECODING_FAILED.
+ */
+const RESPONSE_STRIP_HEADERS = new Set([
+  ...HOP_BY_HOP_HEADERS,
+  "content-encoding",
+  "content-length",
+]);
+
 export function getApiProxyTarget(): string | null {
   const raw =
     process.env.API_PROXY_TARGET?.trim() ||
@@ -24,12 +37,22 @@ export function getApiProxyTarget(): string | null {
   return raw.replace(/\/$/, "");
 }
 
-function copyForwardableHeaders(source: Headers, target: Headers): void {
+function copyForwardableHeaders(
+  source: Headers,
+  target: Headers,
+  strip: ReadonlySet<string>,
+): void {
   source.forEach((value, key) => {
-    if (!HOP_BY_HOP_HEADERS.has(key.toLowerCase())) {
+    if (!strip.has(key.toLowerCase())) {
       target.set(key, value);
     }
   });
+}
+
+export function filterProxyResponseHeaders(source: Headers): Headers {
+  const filtered = new Headers();
+  copyForwardableHeaders(source, filtered, RESPONSE_STRIP_HEADERS);
+  return filtered;
 }
 
 function mergeCookieResponse(
@@ -97,7 +120,8 @@ export async function proxyApiRequest(request: NextRequest): Promise<NextRespons
   const accessToken = await resolveProxyAccessToken(request, cookieResponse);
 
   const headers = new Headers();
-  copyForwardableHeaders(request.headers, headers);
+  copyForwardableHeaders(request.headers, headers, REQUEST_STRIP_HEADERS);
+  headers.set("Accept-Encoding", "identity");
 
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -123,13 +147,11 @@ export async function proxyApiRequest(request: NextRequest): Promise<NextRespons
     );
   }
 
-  const responseHeaders = new Headers();
-  copyForwardableHeaders(upstream.headers, responseHeaders);
-
-  const proxied = new NextResponse(upstream.body, {
+  const body = await upstream.arrayBuffer();
+  const proxied = new NextResponse(body, {
     status: upstream.status,
     statusText: upstream.statusText,
-    headers: responseHeaders,
+    headers: filterProxyResponseHeaders(upstream.headers),
   });
 
   return mergeCookieResponse(proxied, cookieResponse);
