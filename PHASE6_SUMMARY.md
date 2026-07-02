@@ -43,7 +43,7 @@ Harden production operations, close deferred UX gaps, and add high-value product
 | Uptime monitor | You | ✅ `GET /health/ready` → `status: ready`, `database: connected`, `matches_count: 35` |
 | Supabase migration audit | You | Use [`supabase/scripts/audit-production.sql`](./supabase/scripts/audit-production.sql) — **not** `supabase_migrations.schema_migrations` (see below) |
 | OAuth production URLs | You | Supabase Site URL + redirect URLs; Google/GitHub app origins |
-| Zone materialized view | Optional | Run `refresh_season_team_zone_stats()`; set `USE_ZONE_MATERIALIZED_VIEW=true` on API |
+| Zone materialized view | ✅ Done | `SELECT public.refresh_season_team_zone_stats();` in Supabase; API `USE_ZONE_MATERIALIZED_VIEW=true` + redeploy |
 | Log review | Optional | `403` on `/auth/v1/user` is usually benign (see below) |
 
 ### Migration audit: `schema_migrations` does not exist
@@ -98,6 +98,8 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 **You run in production:** `./scripts/load-statsbomb-season.sh expansion` (30–60+ min for events), then link Premier League in workspace settings.
 
+**Post-load (July 2026 — done):** Premier League 2003/04 loaded (38 StatsBomb open-data matches, all with events). Zone MV refreshed; API redeployed with materialized-view reads enabled.
+
 ---
 
 ## 6.6 — Sharing & embeds
@@ -130,9 +132,10 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 ### Next up for you (6.2 — no code)
 
-1. Add uptime monitor on `https://<api-project>.vercel.app/health/ready`
+1. Add uptime monitor on `https://soccer-a9alytics-api.vercel.app/health/ready`
 2. Confirm Supabase tables + migrations applied
 3. Double-check OAuth redirect URLs match your live web hostname
+4. After future data loads: `SELECT public.refresh_season_team_zone_stats();` then redeploy API if zone env changed
 
 ---
 
