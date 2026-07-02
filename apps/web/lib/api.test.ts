@@ -38,4 +38,14 @@ describe("getApiUrl", () => {
     vi.stubGlobal("window", { location: { origin: "https://real-host.example.com" } });
     expect(getApiUrl("/auth/me")).toBe("/backend/auth/me");
   });
+
+  it("strips trailing slashes on same-origin /backend paths", () => {
+    vi.stubEnv(
+      "NEXT_PUBLIC_API_URL",
+      "https://web.example.com/backend",
+    );
+    vi.stubGlobal("window", { location: { origin: "https://web.example.com" } });
+    expect(getApiUrl("/workspaces/")).toBe("/backend/workspaces");
+    expect(getApiUrl("/reports/")).toBe("/backend/reports");
+  });
 });

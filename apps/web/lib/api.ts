@@ -98,9 +98,18 @@ export class ApiError extends Error {
   }
 }
 
+function normalizeApiPath(path: string, base: string): string {
+  let cleanPath = path.startsWith("/") ? path : `/${path}`;
+  // Same-origin /backend: avoid Next.js 308 (trailing slash) before the route handler.
+  if (base === "/backend" && cleanPath.length > 1 && cleanPath.endsWith("/")) {
+    cleanPath = cleanPath.slice(0, -1);
+  }
+  return cleanPath;
+}
+
 export function getApiUrl(path: string): string {
   const base = resolveApiBaseUrl();
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const cleanPath = normalizeApiPath(path, base);
   return `${base}${cleanPath}`;
 }
 

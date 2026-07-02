@@ -89,7 +89,8 @@ export async function proxyApiRequest(request: NextRequest): Promise<NextRespons
 
   const incoming = new URL(request.url);
   const suffix = incoming.pathname.replace(/^\/backend/, "") || "/";
-  const upstreamUrl = new URL(`${target}${suffix}`);
+  const upstreamUrl = new URL(target);
+  upstreamUrl.pathname = suffix.startsWith("/") ? suffix : `/${suffix}`;
   upstreamUrl.search = incoming.search;
 
   const cookieResponse = new NextResponse();
