@@ -102,7 +102,8 @@ Apply migrations **in filename order**:
 | `20250604290000_player_match_stats_rls.sql` | Enable RLS on `player_match_stats` if present (fixes Supabase advisor warning) |
 | `20250606000000_events_statsbomb_event_id.sql` | **Required for event ETL** — `statsbomb_event_id` column + UNIQUE constraint for PostgREST upsert |
 | `20250606001000_events_statsbomb_event_id_constraint_fix.sql` | Fix 42P10 if first migration only added a partial unique index |
-| `20250702190000_data_summary_snapshot.sql` | Fast `/summary` counts (join-based; fixes dashboard timeouts) |
+| `20250702190000_data_summary_snapshot.sql` | Fast `/summary` counts (join-based; superseded by scoped RPC below) |
+| `20250702200000_data_summary_snapshot_scoped.sql` | SECURITY DEFINER `/summary` counts (anon demo + workspace scope) |
 
 **Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql`, then `20250604210000_fix_create_workspace_ambiguous_id.sql` if you see an ambiguous `id` error. Restart the API after running migrations.
 

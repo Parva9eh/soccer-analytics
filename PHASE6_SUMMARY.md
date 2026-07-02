@@ -150,7 +150,7 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 ### Next up for you (6.2 — no code)
 
-1. Add uptime monitor on `https://soccer-a9alytics-api.vercel.app/health/ready`
+1. Add uptime monitor on `https://<your-api-project>.vercel.app/health/ready`
 2. Confirm Supabase tables + migrations applied
 3. Double-check OAuth redirect URLs match your live web hostname
 4. After future data loads: `SELECT public.refresh_season_team_zone_stats();` then redeploy API if zone env changed
