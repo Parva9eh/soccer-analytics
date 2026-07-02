@@ -13,14 +13,23 @@ interface DashboardHeroProps {
   totalEvents?: number;
   linkedDatasets?: LinkedDataset[];
   catalogSummary?: string;
+  loading?: boolean;
+}
+
+function formatMetric(value: number | undefined, loading: boolean): string {
+  if (loading || value === undefined) {
+    return "—";
+  }
+  return value.toLocaleString();
 }
 
 export function DashboardHero({
   isGuest,
-  totalMatches = 0,
-  totalEvents = 0,
+  totalMatches,
+  totalEvents,
   linkedDatasets = [],
   catalogSummary = "",
+  loading = false,
 }: DashboardHeroProps) {
   const workspaceCopy =
     linkedDatasets.length > 1
@@ -113,16 +122,20 @@ export function DashboardHero({
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Matches
             </p>
-            <p className="metric-value mt-1 text-2xl text-foreground">
-              {totalMatches.toLocaleString()}
+            <p
+              className={`metric-value mt-1 text-2xl text-foreground${loading ? " animate-pulse" : ""}`}
+            >
+              {formatMetric(totalMatches, loading)}
             </p>
           </div>
           <div className="rounded-xl border border-border/80 bg-background/60 px-4 py-3 backdrop-blur-sm">
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Events
             </p>
-            <p className="metric-value mt-1 text-2xl text-foreground">
-              {totalEvents.toLocaleString()}
+            <p
+              className={`metric-value mt-1 text-2xl text-foreground${loading ? " animate-pulse" : ""}`}
+            >
+              {formatMetric(totalEvents, loading)}
             </p>
           </div>
           <div className="col-span-2 flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-4 py-2.5 text-xs text-primary">
