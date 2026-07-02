@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { AUTH_ENABLED } from "@/lib/auth-config";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
 
@@ -43,15 +42,32 @@ function mergeCookieResponse(
   return upstream;
 }
 
+function readBearerToken(authorization: string | null): string | null {
+  if (!authorization) {
+    return null;
+  }
+  const [scheme, token] = authorization.split(" ", 2);
+  if (scheme?.toLowerCase() !== "bearer" || !token?.trim()) {
+    return null;
+  }
+  return token.trim();
+}
+
 async function resolveProxyAccessToken(
   request: NextRequest,
   cookieResponse: NextResponse,
 ): Promise<string | null> {
-  if (!AUTH_ENABLED || !hasSupabaseEnv()) {
+  const fromMiddleware = readBearerToken(request.headers.get("authorization"));
+  if (fromMiddleware) {
+    return fromMiddleware;
+  }
+
+  if (!hasSupabaseEnv()) {
     return null;
   }
 
   const supabase = createRouteHandlerClient(request, cookieResponse);
+  await supabase.auth.getUser();
   const {
     data: { session },
   } = await supabase.auth.getSession();

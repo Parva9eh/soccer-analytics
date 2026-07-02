@@ -1,7 +1,36 @@
 import { getAccessToken } from "@/lib/supabase/session";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+function getConfiguredApiBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(
+    /\/$/,
+    "",
+  );
+}
+
+/** True when the web app proxies API calls through same-origin /backend. */
+export function usesSameOriginApiProxy(): boolean {
+  const configured = getConfiguredApiBaseUrl();
+  if (configured === "/backend" || configured.endsWith("/backend")) {
+    return true;
+  }
+
+  try {
+    const url = new URL(
+      configured.startsWith("http") ? configured : `http://local${configured}`,
+    );
+    return url.pathname === "/backend";
+  } catch {
+    return false;
+  }
+}
+
+function resolveApiBaseUrl(): string {
+  const configured = getConfiguredApiBaseUrl();
+  if (typeof window !== "undefined" && usesSameOriginApiProxy()) {
+    return "/backend";
+  }
+  return configured;
+}
 
 export interface ApiErrorBody {
   detail: string;
@@ -69,7 +98,7 @@ export class ApiError extends Error {
 }
 
 export function getApiUrl(path: string): string {
-  const base = API_BASE_URL.replace(/\/$/, "");
+  const base = resolveApiBaseUrl();
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   return `${base}${cleanPath}`;
 }

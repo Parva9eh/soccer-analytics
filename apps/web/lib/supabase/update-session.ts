@@ -1,15 +1,25 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_ENABLED, isAuthRequiredPath } from "@/lib/auth-config";
 import { hasSupabaseEnv } from "./env";
+import { refreshSupabaseSession } from "./refresh-session";
+
+function isBackendProxyPath(pathname: string): boolean {
+  return pathname === "/backend" || pathname.startsWith("/backend/");
+}
 
 /** Refresh Supabase session cookies and enforce auth redirects in Next.js proxy. */
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // API proxy rewrites must reach FastAPI; never redirect fetches to /login.
-  if (pathname === "/backend" || pathname.startsWith("/backend/")) {
-    return NextResponse.next({ request });
+  if (isBackendProxyPath(pathname)) {
+    if (!hasSupabaseEnv()) {
+      return NextResponse.next({ request });
+    }
+
+    const { response } = await refreshSupabaseSession(request, {
+      injectAuthorization: true,
+    });
+    return response;
   }
 
   if (!AUTH_ENABLED) {
@@ -23,31 +33,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(url, anonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value),
-        );
-        supabaseResponse = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options),
-        );
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { response, user } = await refreshSupabaseSession(request);
 
   if (!user && isAuthRequiredPath(pathname)) {
     const loginUrl = request.nextUrl.clone();
@@ -63,5 +49,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL(next, request.url));
   }
 
-  return supabaseResponse;
+  return response;
 }

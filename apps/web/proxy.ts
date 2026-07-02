@@ -7,7 +7,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Exclude /backend — same-origin API proxy; auth is enforced by FastAPI, not page middleware.
-    "/((?!_next/static|_next/image|favicon.ico|backend(?:/|$)|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
