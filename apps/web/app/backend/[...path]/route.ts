@@ -1,6 +1,9 @@
 import { type NextRequest } from "next/server";
 import { proxyApiRequest } from "@/lib/api-proxy";
 
+/** Hobby default is 10s; signed-in summary can exceed that without the fast RPC path. */
+export const maxDuration = 30;
+
 type RouteContext = {
   params: Promise<{ path: string[] }>;
 };

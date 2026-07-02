@@ -7,7 +7,7 @@ def test_normalize_rpc_row_list():
     }
 
 
-def test_build_summary_prefers_workspace_rpc(monkeypatch):
+def test_build_summary_prefers_data_snapshot_rpc():
     calls: list[str] = []
 
     class FakeClient:
@@ -16,7 +16,7 @@ def test_build_summary_prefers_workspace_rpc(monkeypatch):
 
             class R:
                 def execute(self):
-                    if name == "workspace_report_snapshot":
+                    if name == "data_summary_snapshot":
                         return type(
                             "E",
                             (),
@@ -24,45 +24,90 @@ def test_build_summary_prefers_workspace_rpc(monkeypatch):
                                 "data": {
                                     "total_matches": 73,
                                     "total_events": 134492,
+                                    "total_players": 915,
+                                    "status": "healthy",
                                 },
                             },
                         )()
-                    raise RuntimeError("should not reach data_summary")
+                    raise RuntimeError(f"unexpected rpc: {name}")
 
             return R()
 
-    out = summary_module._build_summary(FakeClient(), has_user_token=True)
+    out = summary_module._build_summary(FakeClient())
 
-    assert calls == ["workspace_report_snapshot"]
+    assert calls == ["data_summary_snapshot"]
     assert out["total_matches"] == 73
     assert out["total_events"] == 134492
+    assert out["total_players"] == 915
 
 
-def test_count_events_for_matches_chunks(monkeypatch):
-    calls: list[list[int]] = []
+def test_build_summary_falls_back_to_match_chunks(monkeypatch):
+    calls: list[str] = []
 
-    class FakeQuery:
-        def __init__(self):
-            self.values: list[int] = []
-
-        def select(self, *_args, **_kwargs):
-            return self
-
-        def in_(self, _column, values):
-            self.values = list(values)
-            calls.append(self.values)
-            return self
-
+    class FakeRpc:
         def execute(self):
-            return type("R", (), {"count": len(self.values) * 10})()
+            raise RuntimeError("rpc missing")
 
     class FakeClient:
+        def rpc(self, name, _params=None):
+            calls.append(name)
+            return FakeRpc()
+
         def table(self, name):
-            assert name == "events"
-            return FakeQuery()
+            if name == "matches":
+                return self._matches_query()
+            if name == "events":
+                return self._events_query()
+            if name == "players":
+                return self._players_query()
+            raise AssertionError(name)
 
-    monkeypatch.setattr(summary_module, "_EVENT_COUNT_CHUNK", 2)
-    total = summary_module._count_events_for_matches(FakeClient(), [1, 2, 3, 4, 5])
+        def _matches_query(self):
+            class Q:
+                def select(self, *_args, **_kwargs):
+                    return self
 
-    assert total == 50
-    assert calls == [[1, 2], [3, 4], [5]]
+                def limit(self, _n):
+                    return self
+
+                def execute(self):
+                    return type("R", (), {"data": [{"id": 1}, {"id": 2}]})()
+
+            return Q()
+
+        def _events_query(self):
+            class Q:
+                def select(self, *_args, **_kwargs):
+                    return self
+
+                def in_(self, _column, values):
+                    self.values = list(values)
+                    return self
+
+                def execute(self):
+                    return type("R", (), {"count": len(self.values) * 10})()
+
+            return Q()
+
+        def _players_query(self):
+            class Q:
+                def select(self, *_args, **_kwargs):
+                    return self
+
+                def limit(self, _n):
+                    return self
+
+                def execute(self):
+                    return type("R", (), {"count": 5})()
+
+            return Q()
+
+    out = summary_module._build_summary(FakeClient())
+
+    assert calls == ["data_summary_snapshot"]
+    assert out == {
+        "total_matches": 2,
+        "total_events": 20,
+        "total_players": 5,
+        "status": "healthy",
+    }
