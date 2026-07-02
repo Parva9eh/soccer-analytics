@@ -38,13 +38,28 @@ Harden production operations, close deferred UX gaps, and add high-value product
 
 ## 6.2 — Production ops (Hobby-friendly)
 
-| Task | Owner | Notes |
-|------|-------|-------|
-| Uptime monitor | You | API `GET /health/ready` every 5 min (Better Stack, UptimeRobot, etc.) |
-| Supabase migration audit | You | Dashboard → confirm tables: `profiles`, `workspaces`, `workspace_reports`, `saved_analyses` |
+| Task | Owner | Status / notes |
+|------|-------|----------------|
+| Uptime monitor | You | ✅ `GET /health/ready` → `status: ready`, `database: connected`, `matches_count: 35` |
+| Supabase migration audit | You | Use [`supabase/scripts/audit-production.sql`](./supabase/scripts/audit-production.sql) — **not** `supabase_migrations.schema_migrations` (see below) |
 | OAuth production URLs | You | Supabase Site URL + redirect URLs; Google/GitHub app origins |
 | Zone materialized view | Optional | Run `refresh_season_team_zone_stats()`; set `USE_ZONE_MATERIALIZED_VIEW=true` on API |
-| Log review | Optional | API `LOG_FORMAT=json`; spot-check Vercel function logs after auth errors |
+| Log review | Optional | `403` on `/auth/v1/user` is usually benign (see below) |
+
+### Migration audit: `schema_migrations` does not exist
+
+**Not a production bug.** That table is created only when you apply migrations with the Supabase CLI (`supabase db push`). If you ran SQL files in the **SQL Editor** (as documented), tracking lives in your migration history manually — the app does not need `schema_migrations`.
+
+**Do this instead:** Supabase → SQL → run [`supabase/scripts/audit-production.sql`](./supabase/scripts/audit-production.sql). Expect 7 tables, 3 RPCs, RLS `enabled`, and row counts ≥ 0.
+
+### Auth logs: `GET | 403 | …/auth/v1/user`
+
+Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser()`). Common when:
+
+- Expired or stale session cookies are refreshed (middleware on each request)
+- API tries Supabase Auth API first, then falls back to JWKS / `SUPABASE_JWT_SECRET` (request still succeeds)
+
+**Ignore if** sign-in, `/backend/auth/me`, and collaboration pages work. **Investigate if** users get random sign-outs: confirm API `SUPABASE_ANON_KEY` and `SUPABASE_JWT_SECRET` match the **same** Supabase project as the web app’s `NEXT_PUBLIC_*` keys.
 
 ---
 
