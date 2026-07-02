@@ -100,6 +100,23 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 **Post-load (July 2026 — done):** Premier League 2003/04 loaded (38 StatsBomb open-data matches, all with events). Zone MV refreshed; API redeployed with materialized-view reads enabled.
 
+### 6.5 follow-up — ETL preflight ✅ (`phase6/etl-preflight`)
+
+| Area | Change |
+|------|--------|
+| ETL | `--verify-etl` probe; auto-preflight before event loads (42P10 guard) |
+| Script | `load-statsbomb-season.sh` runs verify before season ingest |
+| Docs | ETL migration notes in `apps/api/README.md`, `supabase/README.md` |
+
+### 6.5 follow-up — Multi-competition UX ✅ (`phase6/multi-competition-ux`)
+
+| Area | Change |
+|------|--------|
+| Dashboard | Linked dataset chips; correct season count with multiple competitions |
+| Matches | Preserve competition/season filters on match detail back navigation |
+| API | Match detail returns competition/season; inventory lists match-loaded seasons only |
+| Nav | Sidebar `/settings` label → **Settings** |
+
 ---
 
 ## 6.6 — Sharing & embeds
@@ -126,6 +143,7 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 6.7 (e2e proxy smoke)       → in progress on main
 6.3 (polish)                → ✅ done
 6.5 (data)                  → ✅ done (`phase6/data-expansion`)
+6.5 follow-ups              → ✅ ETL preflight + multi-competition UX
 6.4 (realtime)              → largest architectural slice
 6.6 (sharing)               → after stable signed-in UX
 ```
@@ -146,6 +164,8 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 | 6.1 collaboration + `/backend` proxy | `phase6/collaboration-proxy` | `58398e9` |
 | 6.3 polish | `phase6/ops-polish` | `c0fbdca` |
 | 6.5 data expansion | `phase6/data-expansion` | `88a786b` |
+| 6.5 ETL preflight | `phase6/etl-preflight` | `3e9a79d` |
+| 6.5 multi-competition UX | `phase6/multi-competition-ux` | `8a5478a` |
 
 ```bash
 git checkout main && git pull
@@ -154,6 +174,8 @@ git checkout -b phase6/<slice-name>
 git checkout main && git merge --no-ff phase6/<slice-name>
 git push origin main phase6/<slice-name>  # keep branch on remote
 ```
+
+**Workflow rule:** always branch from `main` before new work — do not commit features or fixes directly on `main`.
 
 Update this file and [PLAN.md](./PLAN.md) when Phase 6 closes.
 
