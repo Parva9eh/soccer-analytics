@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -74,10 +74,12 @@ export default function WorkspaceManagePage() {
   const queryClient = useQueryClient();
   const { session } = useAuthSession();
   const [email, setEmail] = useState("");
-  const [datasetCompetition, setDatasetCompetition] = useState(
-    DEFAULT_COMPETITION,
-  );
-  const [datasetSeason, setDatasetSeason] = useState(DEFAULT_SEASON);
+  const [datasetCompetitionOverride, setDatasetCompetitionOverride] = useState<
+    string | null
+  >(null);
+  const [datasetSeasonOverride, setDatasetSeasonOverride] = useState<
+    string | null
+  >(null);
   const [role, setRole] = useState<(typeof INVITE_ROLES)[number]["value"]>(
     "viewer",
   );
@@ -111,15 +113,13 @@ export default function WorkspaceManagePage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const datasetDefaultsSet = useRef(false);
-  useEffect(() => {
-    if (datasetDefaultsSet.current || !inventory?.length) return;
-    const first = getFirstCatalogFilters(inventory);
-    if (!first) return;
-    setDatasetCompetition(first.competition);
-    setDatasetSeason(first.season);
-    datasetDefaultsSet.current = true;
-  }, [inventory]);
+  const catalogDefault = getFirstCatalogFilters(inventory);
+  const datasetCompetition =
+    datasetCompetitionOverride ??
+    catalogDefault?.competition ??
+    DEFAULT_COMPETITION;
+  const datasetSeason =
+    datasetSeasonOverride ?? catalogDefault?.season ?? DEFAULT_SEASON;
 
   const {
     data: datasets,
@@ -359,8 +359,8 @@ export default function WorkspaceManagePage() {
                     catalog={inventory}
                     competition={datasetCompetition}
                     season={datasetSeason}
-                    onCompetitionChange={setDatasetCompetition}
-                    onSeasonChange={setDatasetSeason}
+                    onCompetitionChange={setDatasetCompetitionOverride}
+                    onSeasonChange={setDatasetSeasonOverride}
                     isLoading={inventoryLoading}
                     className="flex flex-wrap gap-3"
                   />
