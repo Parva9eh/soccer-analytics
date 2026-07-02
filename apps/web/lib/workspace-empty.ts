@@ -8,5 +8,5 @@ export function workspaceManageHref(workspaceId?: string): string {
 export const NO_LINKED_DATASETS_TITLE = "No data linked to this workspace";
 
 export function noLinkedDatasetsDescription(): string {
-  return "Link a competition season under Settings → Manage → Data access to unlock matches, analytics, reports, and saved views. New workspaces usually start with La Liga 2020/21 when that data is loaded.";
+  return "Link a competition season under Settings → Manage → Data access to unlock matches, analytics, reports, and saved views. Loaded seasons include La Liga 2020/21 (guest demo) and Premier League 2003/04 when expanded.";
 }

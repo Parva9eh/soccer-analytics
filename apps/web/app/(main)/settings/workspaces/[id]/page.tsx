@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,10 @@ import { formatWorkspaceRole } from "@/lib/workspace-ui";
 import {
   DEFAULT_COMPETITION,
   DEFAULT_SEASON,
+  getFirstCatalogFilters,
+  type CompetitionCatalogItem,
 } from "@/lib/competition-filter";
+import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { WORKSPACE_SCOPED_QUERY_PREFIXES } from "@/lib/workspace-data-queries";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
 import { PageHeader } from "@/components/ui/page-header";
@@ -97,6 +100,26 @@ export default function WorkspaceManagePage() {
   );
 
   const isAdmin = workspace?.role === "admin";
+
+  const { data: inventory, isLoading: inventoryLoading } = useQuery<
+    CompetitionCatalogItem[]
+  >({
+    queryKey: ["competitions-inventory"],
+    queryFn: () =>
+      apiFetchJson<CompetitionCatalogItem[]>("/competitions/inventory"),
+    enabled: AUTH_ENABLED && Boolean(workspaceId) && isAdmin,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const datasetDefaultsSet = useRef(false);
+  useEffect(() => {
+    if (datasetDefaultsSet.current || !inventory?.length) return;
+    const first = getFirstCatalogFilters(inventory);
+    if (!first) return;
+    setDatasetCompetition(first.competition);
+    setDatasetSeason(first.season);
+    datasetDefaultsSet.current = true;
+  }, [inventory]);
 
   const {
     data: datasets,
@@ -276,8 +299,9 @@ export default function WorkspaceManagePage() {
             <CardContent className="space-y-4">
               <p className="text-caption text-muted-foreground">
                 Members see matches and events for the competition seasons linked
-                here. New workspaces start with La Liga 2020/21 when that data
-                is loaded.
+                here. New workspaces start with La Liga 2020/21 when loaded; add
+                Premier League 2003/04 or other ingested seasons from the list
+                below.
               </p>
               {datasetsError ? (
                 <QueryErrorState
@@ -292,8 +316,9 @@ export default function WorkspaceManagePage() {
                     No datasets linked yet
                   </p>
                   <p className="text-caption mx-auto mt-1 max-w-md text-muted-foreground">
-                    Add La Liga 2020/21 (or another loaded season) below. Until
-                    then, matches and analytics stay empty for this workspace.
+                    Pick a loaded season below (e.g. La Liga 2020/21 or Premier
+                    League 2003/04). Until then, matches and analytics stay empty
+                    for this workspace.
                   </p>
                 </div>
               ) : (
@@ -321,7 +346,7 @@ export default function WorkspaceManagePage() {
                 </ul>
               )}
               <form
-                className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+                className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (datasetCompetition.trim() && datasetSeason.trim()) {
@@ -329,42 +354,30 @@ export default function WorkspaceManagePage() {
                   }
                 }}
               >
-                <div>
-                  <label
-                    htmlFor="dataset-competition"
-                    className="text-label mb-1.5 block"
-                  >
-                    Competition
-                  </label>
-                  <Input
-                    id="dataset-competition"
-                    value={datasetCompetition}
-                    onChange={(e) => setDatasetCompetition(e.target.value)}
-                    placeholder="La Liga"
-                    required
+                {inventory?.length ? (
+                  <CompetitionSeasonFilter
+                    catalog={inventory}
+                    competition={datasetCompetition}
+                    season={datasetSeason}
+                    onCompetitionChange={setDatasetCompetition}
+                    onSeasonChange={setDatasetSeason}
+                    isLoading={inventoryLoading}
+                    className="flex flex-wrap gap-3"
                   />
-                </div>
-                <div>
-                  <label
-                    htmlFor="dataset-season"
-                    className="text-label mb-1.5 block"
-                  >
-                    Season
-                  </label>
-                  <Input
-                    id="dataset-season"
-                    value={datasetSeason}
-                    onChange={(e) => setDatasetSeason(e.target.value)}
-                    placeholder="2020/2021"
-                    required
-                  />
-                </div>
+                ) : (
+                  <p className="text-caption text-muted-foreground">
+                    {inventoryLoading
+                      ? "Loading available seasons…"
+                      : "No seasons loaded in the database yet. Run the StatsBomb ETL first."}
+                  </p>
+                )}
                 <Button
                   type="submit"
                   disabled={
                     datasetMutation.isPending ||
                     !datasetCompetition.trim() ||
-                    !datasetSeason.trim()
+                    !datasetSeason.trim() ||
+                    !inventory?.length
                   }
                 >
                   {datasetMutation.isPending ? "Adding…" : "Add dataset"}
