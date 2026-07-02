@@ -1,7 +1,7 @@
 # Phase 6 Plan — Ops, Polish & Growth
 
 **Status:** In progress (July 2026) — 6.1 ✅ complete on `main`  
-**Branch:** `phase6/ops-polish` for 6.3+ slices  
+**Branches:** `phase6/collaboration-proxy` (6.1) · `phase6/ops-polish` (6.3) — both merged to `main` with `--no-ff`  
 **Prerequisite:** Phase 5 production live; Google OAuth + guest browsing verified ✅
 
 ## Goal
@@ -132,11 +132,17 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 ## Branch & merge
 
+| Slice | Branch | Merge commit on `main` |
+|-------|--------|------------------------|
+| 6.1 collaboration + `/backend` proxy | `phase6/collaboration-proxy` | `58398e9` |
+| 6.3 polish | `phase6/ops-polish` | `c0fbdca` |
+
 ```bash
 git checkout main && git pull
-git checkout -b phase6/ops-polish
-# … implement 6.3+ slices …
-git merge --no-ff phase6/ops-polish  # when a slice is done
+git checkout -b phase6/<slice-name>
+# … implement slice …
+git checkout main && git merge --no-ff phase6/<slice-name>
+git push origin main phase6/<slice-name>  # keep branch on remote
 ```
 
 Update this file and [PLAN.md](./PLAN.md) when Phase 6 closes.

@@ -2,7 +2,7 @@
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
 **Current Phase:** Phase 6 planned — ops, polish & growth (June 2026)  
-**Active branch:** `main` (6.1 collaboration fixes landing; branch `phase6/ops-polish` for next slices)
+**Active branch:** `main` — 6.1 (`phase6/collaboration-proxy`) and 6.3 (`phase6/ops-polish`) merged with `--no-ff`; next slice on a new `phase6/...` branch
 
 ---
 
