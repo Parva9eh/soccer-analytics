@@ -142,10 +142,11 @@ export default function Dashboard() {
     <PageShell>
       <DashboardHero
         isGuest={isGuest}
-        totalMatches={data?.total_matches ?? 0}
-        totalEvents={data?.total_events ?? 0}
+        totalMatches={data?.total_matches}
+        totalEvents={data?.total_events}
         linkedDatasets={linkedDatasets}
         catalogSummary={derivedMetrics.catalogSummary}
+        loading={isLoading || isFetching}
       />
 
       <PageHeader
@@ -166,7 +167,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5">
         <StatCard
           label="Players tracked"
-          value={data?.total_players ?? 0}
+          value={data?.total_players ?? "—"}
           hint="Profiles available across loaded competitions"
           icon={Users}
           loading={isLoading || isFetching}
