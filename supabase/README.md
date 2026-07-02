@@ -100,6 +100,8 @@ Apply migrations **in filename order**:
 | `20250604270000_workspace_reports.sql` | Workspace report snapshots + `workspace_report_snapshot` dashboard RPC |
 | `20250604280000_anon_public_read.sql` | Guest read-only access to La Liga 2020/21 demo data (`anon` role) |
 | `20250604290000_player_match_stats_rls.sql` | Enable RLS on `player_match_stats` if present (fixes Supabase advisor warning) |
+| `20250606000000_events_statsbomb_event_id.sql` | **Required for event ETL** — `statsbomb_event_id` column + UNIQUE constraint for PostgREST upsert |
+| `20250606001000_events_statsbomb_event_id_constraint_fix.sql` | Fix 42P10 if first migration only added a partial unique index |
 
 **Workspace create failing?** Run `20250604200000_workspace_create_rpc.sql`, then `20250604210000_fix_create_workspace_ambiguous_id.sql` if you see an ambiguous `id` error. Restart the API after running migrations.
 
@@ -116,6 +118,10 @@ ETL and admin scripts continue to use the **service role** (bypasses RLS).
 ### Loading a second season (Phase 6.5)
 
 Default guest demo is **La Liga 2020/21**. To add **Premier League 2003/04** (or another StatsBomb open season):
+
+1. Apply `20250606000000_events_statsbomb_event_id.sql` (and `20250606001000_…` if needed).
+2. Run `uv run python -m etl.cli --verify-etl` from `apps/api` — must print OK before a long event load.
+3. Load the season:
 
 ```bash
 cd apps/api

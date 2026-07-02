@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
-# Load a full StatsBomb open-data season into Supabase (service role required in apps/api/.env).
+# Load a full StatsBomb open-data season into Supabase.
+# Requires apps/api/.env with SUPABASE_SERVICE_ROLE_KEY.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/apps/api"
 
 PRESET="${1:-expansion}"
-EXTRA_ARGS=()
 
-if [[ "$PRESET" == "expansion" ]]; then
-  EXTRA_ARGS=(--preset expansion)
-elif [[ "$PRESET" == "demo" ]]; then
-  EXTRA_ARGS=(--preset demo)
-else
-  COMPETITION="${1:?Competition name required when not using demo|expansion preset}"
-  SEASON="${2:?Season required when not using demo|expansion preset}"
-  EXTRA_ARGS=(--competition "$COMPETITION" --season "$SEASON")
-fi
+case "$PRESET" in
+  expansion)
+    LOAD_ARGS=(--preset expansion)
+    ;;
+  demo)
+    LOAD_ARGS=(--preset demo)
+    ;;
+  *)
+    if [[ $# -lt 2 ]]; then
+      echo "Usage: $0 [demo|expansion|\"Competition Name\" \"Season\"]" >&2
+      exit 1
+    fi
+    LOAD_ARGS=(--competition "$1" --season "$2")
+    ;;
+esac
 
-echo "→ Loading StatsBomb season (${EXTRA_ARGS[*]})"
-uv run python -m etl.cli --load-season "${EXTRA_ARGS[@]}"
-echo "→ Done. Link the season under Settings → Workspace → Data access."
+echo "-> Verifying ETL preflight"
+uv run python -m etl.cli --verify-etl
+
+echo "-> Loading StatsBomb season: ${LOAD_ARGS[*]}"
+uv run python -m etl.cli --load-season "${LOAD_ARGS[@]}"
+echo "-> Done. Link the season under Settings -> Workspace -> Data access."

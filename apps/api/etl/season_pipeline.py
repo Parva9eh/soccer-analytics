@@ -1,5 +1,6 @@
 from etl.competitions import load_competitions, load_seasons_for_competition
 from etl.events import load_events_for_match
+from etl.preflight import require_events_upsert_ready
 from etl.matches import load_matches_for_season
 from etl.players import load_players_for_statsbomb_match_ids
 from etl.resolve import list_db_statsbomb_match_ids_for_season
@@ -39,6 +40,7 @@ def load_full_season(
         return
 
     if not skip_events:
+        require_events_upsert_ready()
         match_ids = list_db_statsbomb_match_ids_for_season(
             competition_name,
             season_name,
