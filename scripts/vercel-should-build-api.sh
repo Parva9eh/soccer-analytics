@@ -10,7 +10,7 @@ if ! git -C "$ROOT" rev-parse HEAD^ >/dev/null 2>&1; then
 fi
 
 # diff-tree includes merge-commit changes (diff HEAD^ HEAD can miss merge-only diffs).
-if git -C "$ROOT" diff-tree --no-commit-id --name-only -r HEAD | grep -q '^apps/api/'; then
+if git -C "$ROOT" diff-tree --no-commit-id --name-only -r -m HEAD | grep -q '^apps/api/'; then
   echo "apps/api changed — building API"
   exit 1
 fi

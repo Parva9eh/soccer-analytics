@@ -1,3 +1,5 @@
+"""RLS-scoped dataset totals for dashboard and analytics headers."""
+
 import logging
 
 from fastapi import APIRouter, Depends
