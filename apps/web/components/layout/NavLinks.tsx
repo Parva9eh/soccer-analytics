@@ -7,7 +7,7 @@ import {
   Calendar,
   Users,
   BarChart3,
-  Building2,
+  Settings,
   Bookmark,
   FileText,
   type LucideIcon,
@@ -34,16 +34,16 @@ const libraryItems: NavItem[] = [
   { href: "/analyses", label: "Match views", icon: Bookmark },
 ];
 
-const workspaceItem: NavItem = {
+const settingsItem: NavItem = {
   href: "/settings",
-  label: "Workspaces",
-  icon: Building2,
+  label: "Settings",
+  icon: Settings,
 };
 
 export const navItems: NavItem[] = [
   ...exploreItems,
   ...libraryItems,
-  workspaceItem,
+  settingsItem,
 ];
 
 interface NavLinksProps {
@@ -155,8 +155,8 @@ export function NavLinks({ onLinkClick, className = "" }: NavLinksProps) {
 
           <div className="mt-2 border-t border-border pt-2">
             <NavLink
-              item={workspaceItem}
-              isActive={isActive(workspaceItem.href)}
+              item={settingsItem}
+              isActive={isActive(settingsItem.href)}
               onLinkClick={onLinkClick}
             />
           </div>
