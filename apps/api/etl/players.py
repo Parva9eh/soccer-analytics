@@ -43,18 +43,16 @@ def load_players(dry_run: bool = False) -> None:
         print(f"✅ Players loaded/updated: {inserted}")
 
 
-def load_players_for_loaded_matches(dry_run: bool = False):
-    """Load players from lineups of matches that already exist in the database."""
-    print("\n📥 Loading players from lineups of existing matches...")
-
-    # 1. Get all matches we already have
-    matches_result = supabase.table("matches").select("statsbomb_match_id").execute()
-    if not matches_result.data:
-        print("❌ No matches found in database. Load matches first.")
+def load_players_for_statsbomb_match_ids(
+    match_ids: list[int],
+    dry_run: bool = False,
+) -> None:
+    """Load players from lineups for the given StatsBomb match ids."""
+    if not match_ids:
+        print("⚠️  No match ids provided for player load.")
         return
 
-    match_ids = [m["statsbomb_match_id"] for m in matches_result.data]
-    print(f"Found {len(match_ids)} matches in database. Fetching lineups...")
+    print(f"\n📥 Loading players from {len(match_ids)} match lineups...")
 
     all_players = {}  # Deduplicate by statsbomb_player_id
 
@@ -103,3 +101,16 @@ def load_players_for_loaded_matches(dry_run: bool = False):
     ).execute()
 
     print(f"✅ Players loaded/updated: {len(data_to_insert)}")
+
+
+def load_players_for_loaded_matches(dry_run: bool = False):
+    """Load players from lineups of matches that already exist in the database."""
+    print("\n📥 Loading players from lineups of existing matches...")
+
+    matches_result = supabase.table("matches").select("statsbomb_match_id").execute()
+    if not matches_result.data:
+        print("❌ No matches found in database. Load matches first.")
+        return
+
+    match_ids = [m["statsbomb_match_id"] for m in matches_result.data]
+    load_players_for_statsbomb_match_ids(match_ids, dry_run=dry_run)

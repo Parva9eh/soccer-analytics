@@ -2,6 +2,7 @@ from tqdm import tqdm
 
 from etl.utils import fetch_json, STATSBOMB_BASE, COMPETITIONS_URL
 from etl.competitions import get_available_seasons
+from etl.resolve import normalize_season_name
 from core.supabase_client import get_supabase_service_client
 
 supabase = get_supabase_service_client()
@@ -11,10 +12,7 @@ def load_matches_for_season(competition_name: str, season_name: str, gender: str
     print(f"\n📥 Loading matches for {competition_name} - {season_name}...")
 
     available_seasons = get_available_seasons(competition_name, gender)
-    matched_season = next(
-        (s for s in available_seasons if s.strip().lower() == season_name.strip().lower()),
-        None
-    )
+    matched_season = normalize_season_name(season_name, available_seasons)
 
     if not matched_season:
         print(f"❌ Season '{season_name}' not found.")
@@ -38,7 +36,19 @@ def load_matches_for_season(competition_name: str, season_name: str, gender: str
     matches = fetch_json(matches_url)
 
     comp_db_id = supabase.table("competitions").select("id").eq("name", competition_name).execute().data[0]["id"]
-    season_db_id = supabase.table("seasons").select("id").eq("year", matched_season).execute().data[0]["id"]
+    season_rows = (
+        supabase.table("seasons")
+        .select("id")
+        .eq("competition_id", comp_db_id)
+        .eq("year", matched_season)
+        .execute()
+        .data
+    )
+    if not season_rows:
+        print(f"❌ Season '{matched_season}' not found in DB for {competition_name}.")
+        print("   Run --load-seasons for this competition first.")
+        return
+    season_db_id = season_rows[0]["id"]
 
     for match in tqdm(matches, desc="Matches", unit="match"):
         home_data = match.get("home_team", {})
