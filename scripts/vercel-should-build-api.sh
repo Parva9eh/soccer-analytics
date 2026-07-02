@@ -9,10 +9,11 @@ if ! git -C "$ROOT" rev-parse HEAD^ >/dev/null 2>&1; then
   exit 1
 fi
 
-if git -C "$ROOT" diff HEAD^ HEAD --quiet -- apps/api/; then
-  echo "No apps/api changes — skipping API deploy"
-  exit 0
+# diff-tree includes merge-commit changes (diff HEAD^ HEAD can miss merge-only diffs).
+if git -C "$ROOT" diff-tree --no-commit-id --name-only -r HEAD | grep -q '^apps/api/'; then
+  echo "apps/api changed — building API"
+  exit 1
 fi
 
-echo "apps/api changed — building API"
-exit 1
+echo "No apps/api changes — skipping API deploy"
+exit 0

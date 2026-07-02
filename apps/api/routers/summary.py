@@ -10,32 +10,26 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/summary", tags=["Summary"])
 
-_MATCH_PAGE_SIZE = 500
 _MAX_MATCHES = 2000
 _EVENT_COUNT_CHUNK = 100
 
 
+def _count_table_rows(supabase: Client, table: str) -> int:
+    response = (
+        supabase.table(table).select("id", count="exact").limit(0).execute()
+    )
+    return response.count or 0
+
+
 def _accessible_match_ids(supabase: Client) -> list[int]:
-    """RLS-scoped match ids (paginated for large seasons)."""
-    ids: list[int] = []
-    offset = 0
-
-    while offset < _MAX_MATCHES:
-        batch = (
-            supabase.table("matches")
-            .select("id")
-            .range(offset, offset + _MATCH_PAGE_SIZE - 1)
-            .execute()
-        ).data or []
-        if not batch:
-            break
-
-        ids.extend(row["id"] for row in batch if row.get("id") is not None)
-        if len(batch) < _MATCH_PAGE_SIZE:
-            break
-        offset += _MATCH_PAGE_SIZE
-
-    return ids
+    """RLS-scoped match ids for event aggregation (single round trip)."""
+    rows = (
+        supabase.table("matches")
+        .select("id")
+        .limit(_MAX_MATCHES)
+        .execute()
+    ).data or []
+    return [row["id"] for row in rows if row.get("id") is not None]
 
 
 def _count_events_for_matches(supabase: Client, match_ids: list[int]) -> int:
@@ -63,14 +57,10 @@ def _count_events_for_matches(supabase: Client, match_ids: list[int]) -> int:
 def get_summary(supabase: Client = Depends(get_supabase_public_read)):
     """Get high-level summary of loaded data visible to the caller (RLS-scoped)."""
     try:
+        matches_count = _count_table_rows(supabase, "matches")
         match_ids = _accessible_match_ids(supabase)
-        matches_count = len(match_ids)
         events_count = _count_events_for_matches(supabase, match_ids)
-
-        players_response = (
-            supabase.table("players").select("id", count="exact").limit(0).execute()
-        )
-        players_count = players_response.count or 0
+        players_count = _count_table_rows(supabase, "players")
 
         return {
             "total_matches": matches_count,
