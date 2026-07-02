@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { COLLABORATION_QUERY_OPTIONS } from "@/lib/collaboration-queries";
+import { useAuthMeQuery } from "@/lib/use-auth-me-query";
 import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { WORKSPACE_SCOPED_QUERY_PREFIXES } from "@/lib/workspace-data-queries";
 import {
@@ -20,14 +22,10 @@ interface Workspace {
   slug: string;
 }
 
-interface AuthMe {
-  active_workspace_id: string | null;
-  active_workspace_name: string | null;
-}
-
 export function SidebarWorkspace() {
   const queryClient = useQueryClient();
   const queriesEnabled = useCollaborationQueriesEnabled();
+  const authMe = useAuthMeQuery();
 
   const {
     data: workspaces,
@@ -36,19 +34,16 @@ export function SidebarWorkspace() {
   } = useQuery<Workspace[]>({
     queryKey: ["workspaces"],
     queryFn: () => apiFetchJson<Workspace[]>("/workspaces/"),
-    enabled: queriesEnabled,
-    retry: false,
+    enabled: queriesEnabled && authMe.isSuccess,
+    ...COLLABORATION_QUERY_OPTIONS,
   });
 
-  const { data: me, isLoading: meLoading } = useQuery<AuthMe>({
-    queryKey: ["auth-me"],
-    queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: queriesEnabled,
-  });
+  const me = authMe.data;
+  const meLoading = authMe.isLoading;
 
   const setActive = useMutation({
     mutationFn: (workspaceId: string) =>
-      apiFetchJson<AuthMe>("/auth/me", {
+      apiFetchJson("/auth/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active_workspace_id: workspaceId }),

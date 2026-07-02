@@ -1,3 +1,4 @@
+import { getCachedAccessToken } from "@/lib/access-token-store";
 import { getAccessToken } from "@/lib/supabase/session";
 
 function getConfiguredApiBaseUrl(): string {
@@ -105,7 +106,7 @@ export function getApiUrl(path: string): string {
 
 export async function apiFetch(path: string, init?: RequestInit) {
   const headers = new Headers(init?.headers);
-  const token = await getAccessToken();
+  const token = getCachedAccessToken() ?? (await getAccessToken());
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }

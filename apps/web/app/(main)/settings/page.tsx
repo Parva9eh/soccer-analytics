@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { apiFetchJson, ApiError, parseQueryError } from "@/lib/api";
 import { AUTH_ENABLED } from "@/lib/auth-config";
+import { COLLABORATION_QUERY_OPTIONS } from "@/lib/collaboration-queries";
+import { useAuthMeQuery } from "@/lib/use-auth-me-query";
 import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -25,13 +27,10 @@ interface Workspace {
   member_count: number;
 }
 
-interface AuthMe {
-  active_workspace_id: string | null;
-}
-
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const queriesEnabled = useCollaborationQueriesEnabled();
+  const authMe = useAuthMeQuery();
   const [name, setName] = useState("");
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -48,16 +47,11 @@ export default function SettingsPage() {
   } = useQuery<Workspace[]>({
     queryKey: ["workspaces"],
     queryFn: () => apiFetchJson<Workspace[]>("/workspaces/"),
-    enabled: mounted && queriesEnabled,
-    retry: 1,
+    enabled: mounted && queriesEnabled && authMe.isSuccess,
+    ...COLLABORATION_QUERY_OPTIONS,
   });
 
-  const { data: me } = useQuery<AuthMe>({
-    queryKey: ["auth-me"],
-    queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: mounted && queriesEnabled,
-    retry: false,
-  });
+  const me = authMe.data;
 
   const createMutation = useMutation({
     mutationFn: (workspaceName: string) =>
@@ -73,7 +67,7 @@ export default function SettingsPage() {
         created,
       ]);
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-      apiFetchJson<AuthMe>("/auth/me", {
+      apiFetchJson("/auth/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active_workspace_id: created.id }),
@@ -107,7 +101,8 @@ export default function SettingsPage() {
     );
   }
 
-  const listError = error && isFetched ? parseQueryError(error) : null;
+  const listErrorSource = authMe.error ?? (isFetched ? error : null);
+  const listError = listErrorSource ? parseQueryError(listErrorSource) : null;
   const hasWorkspaces = workspaces.length > 0;
 
   return (

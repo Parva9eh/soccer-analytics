@@ -1,4 +1,7 @@
-import { getCachedAccessToken } from "@/lib/access-token-store";
+import {
+  getCachedAccessToken,
+  setCachedAccessToken,
+} from "@/lib/access-token-store";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 import { createClient } from "./client";
 
@@ -18,7 +21,11 @@ export async function getAccessToken(): Promise<string | null> {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
+    const token = session?.access_token ?? null;
+    if (token) {
+      setCachedAccessToken(token);
+    }
+    return token;
   } catch {
     return null;
   }

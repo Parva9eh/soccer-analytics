@@ -2,11 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/api";
+import { COLLABORATION_QUERY_OPTIONS } from "@/lib/collaboration-queries";
+import { useAuthMeQuery } from "@/lib/use-auth-me-query";
 import { useCollaborationQueriesEnabled } from "@/lib/use-collaboration-queries-enabled";
-
-interface AuthMe {
-  active_workspace_id: string | null;
-}
 
 interface Workspace {
   id: string;
@@ -15,24 +13,20 @@ interface Workspace {
 /** Active workspace id for signed-in users (undefined for guests or when auth is off). */
 export function useActiveWorkspaceId(): string | undefined {
   const queriesEnabled = useCollaborationQueriesEnabled();
-
-  const { data: me } = useQuery<AuthMe>({
-    queryKey: ["auth-me"],
-    queryFn: () => apiFetchJson<AuthMe>("/auth/me"),
-    enabled: queriesEnabled,
-  });
+  const authMe = useAuthMeQuery();
 
   const { data: workspaces } = useQuery<Workspace[]>({
     queryKey: ["workspaces"],
     queryFn: () => apiFetchJson<Workspace[]>("/workspaces/"),
-    enabled: queriesEnabled,
+    enabled: queriesEnabled && authMe.isSuccess,
+    ...COLLABORATION_QUERY_OPTIONS,
   });
 
   if (!queriesEnabled) {
     return undefined;
   }
 
-  const active = me?.active_workspace_id;
+  const active = authMe.data?.active_workspace_id;
   if (active && workspaces?.some((workspace) => workspace.id === active)) {
     return active;
   }
