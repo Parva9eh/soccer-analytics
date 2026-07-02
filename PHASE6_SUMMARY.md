@@ -86,7 +86,7 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 ---
 
-## 6.5 — Data expansion 🔄 (branch `phase6/data-expansion`)
+## 6.5 — Data expansion ✅ (branch `phase6/data-expansion`, merge `88a786b`)
 
 | Area | Change |
 |------|--------|
@@ -123,7 +123,7 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 6.2 (ops checklist)         → ✅ done
 6.7 (e2e proxy smoke)       → in progress on main
 6.3 (polish)                → ✅ done
-6.5 (data)                  → 🔄 in progress on phase6/data-expansion
+6.5 (data)                  → ✅ done (`phase6/data-expansion`)
 6.4 (realtime)              → largest architectural slice
 6.6 (sharing)               → after stable signed-in UX
 ```
@@ -142,6 +142,7 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 |-------|--------|------------------------|
 | 6.1 collaboration + `/backend` proxy | `phase6/collaboration-proxy` | `58398e9` |
 | 6.3 polish | `phase6/ops-polish` | `c0fbdca` |
+| 6.5 data expansion | `phase6/data-expansion` | `88a786b` |
 
 ```bash
 git checkout main && git pull

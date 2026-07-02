@@ -394,7 +394,7 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
 | Phase 4 | ✅ Completed | 4.1–4.8 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) |
 | Phase 5 | ✅ Completed | 5.1–5.10 on `main`, prod on Vercel — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
-| Phase 6 | 🔄 In progress | 6.1 ✅ 6.3 ✅; next: 6.2 ops, 6.5 data, or 6.4 realtime — [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
+| Phase 6 | 🔄 In progress | 6.1–6.3 ✅ 6.5 ✅; next: 6.4 realtime or 6.6 sharing — [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
 
 Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md), [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md).
 
