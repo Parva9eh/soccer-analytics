@@ -1,6 +1,43 @@
 from routers import summary as summary_module
 
 
+def test_normalize_rpc_row_list():
+    assert summary_module._normalize_rpc_row([{"total_matches": 3}]) == {
+        "total_matches": 3,
+    }
+
+
+def test_build_summary_prefers_workspace_rpc(monkeypatch):
+    calls: list[str] = []
+
+    class FakeClient:
+        def rpc(self, name, _params=None):
+            calls.append(name)
+
+            class R:
+                def execute(self):
+                    if name == "workspace_report_snapshot":
+                        return type(
+                            "E",
+                            (),
+                            {
+                                "data": {
+                                    "total_matches": 73,
+                                    "total_events": 134492,
+                                },
+                            },
+                        )()
+                    raise RuntimeError("should not reach data_summary")
+
+            return R()
+
+    out = summary_module._build_summary(FakeClient(), has_user_token=True)
+
+    assert calls == ["workspace_report_snapshot"]
+    assert out["total_matches"] == 73
+    assert out["total_events"] == 134492
+
+
 def test_count_events_for_matches_chunks(monkeypatch):
     calls: list[list[int]] = []
 
@@ -25,34 +62,7 @@ def test_count_events_for_matches_chunks(monkeypatch):
             return FakeQuery()
 
     monkeypatch.setattr(summary_module, "_EVENT_COUNT_CHUNK", 2)
-    match_ids = [1, 2, 3, 4, 5]
-
-    total = summary_module._count_events_for_matches(FakeClient(), match_ids)
+    total = summary_module._count_events_for_matches(FakeClient(), [1, 2, 3, 4, 5])
 
     assert total == 50
     assert calls == [[1, 2], [3, 4], [5]]
-
-
-def test_accessible_match_ids_single_fetch():
-    class FakeQuery:
-        def select(self, *_args, **_kwargs):
-            return self
-
-        def limit(self, *_args, **_kwargs):
-            return self
-
-        def execute(self):
-            return type(
-                "R",
-                (),
-                {"data": [{"id": 1}, {"id": 2}, {"id": None}, {}]},
-            )()
-
-    class FakeClient:
-        def table(self, name):
-            assert name == "matches"
-            return FakeQuery()
-
-    ids = summary_module._accessible_match_ids(FakeClient())
-
-    assert ids == [1, 2]
