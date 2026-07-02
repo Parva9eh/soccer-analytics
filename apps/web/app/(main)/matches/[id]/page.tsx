@@ -5,12 +5,23 @@
 // `new THREE.Clock()` (in its events bundles), it gets our non-deprecated shim.
 import "@/lib/three-patch";
 
-import { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import {
+  Suspense,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
 import { apiFetchJson } from "@/lib/api";
+import {
+  buildMatchesListPath,
+  readCompetitionSeasonFromSearchParams,
+} from "@/lib/competition-filter";
 import { useActiveWorkspaceId } from "@/lib/use-active-workspace";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 import { useAuthSession } from "@/lib/supabase/use-auth-session";
@@ -105,6 +116,8 @@ interface Match {
   home_score: number | null;
   away_score: number | null;
   match_week: number | null;
+  competition?: string | null;
+  season?: string | null;
 }
 
 interface Event {
@@ -134,6 +147,7 @@ function MatchDetailPageContent() {
   const searchParams = useSearchParams();
   const savedId = searchParams.get("saved");
   const matchId = params.id ? Number(params.id) : null;
+  const listFilters = readCompetitionSeasonFromSearchParams(searchParams);
   const workspaceId = useActiveWorkspaceId();
   const { session } = useAuthSession();
   const canSaveView =
@@ -235,6 +249,20 @@ function MatchDetailPageContent() {
     queryFn: () => apiFetchJson<Match>(`/matches/${matchId}`),
     enabled: !!matchId,
   });
+
+  const backHref = useMemo(() => {
+    const competition = listFilters.competition ?? match?.competition ?? null;
+    const season = listFilters.season ?? match?.season ?? null;
+    if (competition && season) {
+      return buildMatchesListPath(competition, season);
+    }
+    return "/matches";
+  }, [
+    listFilters.competition,
+    listFilters.season,
+    match?.competition,
+    match?.season,
+  ]);
 
   const { data: matchXg } = useQuery<MatchXg>({
     queryKey: ["match-xg", workspaceId, matchId],
@@ -466,7 +494,7 @@ function MatchDetailPageContent() {
     return (
       <PageShell wide>
         <Link
-          href="/matches"
+          href={backHref}
           className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -478,7 +506,7 @@ function MatchDetailPageContent() {
           onRetry={() => refetchMatch()}
           action={
             <Button variant="outline" size="sm" asChild>
-              <Link href="/matches">All matches</Link>
+              <Link href={backHref}>All matches</Link>
             </Button>
           }
         />
@@ -497,7 +525,7 @@ function MatchDetailPageContent() {
     <PageShell wide>
       {/* Back Button */}
       <Link
-        href="/matches"
+        href={backHref}
         className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

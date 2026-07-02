@@ -109,6 +109,11 @@ export function MatchesListPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const catalogReady = !catalogLoading && catalog !== undefined;
+  const hasLinkedData = (catalog?.length ?? 0) > 0;
+  const filterInCatalog = isFilterInCatalog(catalog, competition, season);
+  const firstCatalog = getFirstCatalogFilters(catalog);
+
   const matchesQueryKey = ["matches", workspaceId, competition, season] as const;
 
   const {
@@ -120,6 +125,8 @@ export function MatchesListPage() {
   } = useQuery<Match[]>({
     queryKey: matchesQueryKey,
     queryFn: () => apiFetchJson<Match[]>(buildMatchesQuery(competition, season)),
+    enabled:
+      catalogReady && (!hasLinkedData || filterInCatalog || isGuest),
   });
 
   const handleCompetitionChange = (name: string) => {
@@ -131,11 +138,6 @@ export function MatchesListPage() {
   const handleSeasonChange = (year: string) => {
     updateFilters(competition, year);
   };
-
-  const catalogReady = !catalogLoading && catalog !== undefined;
-  const hasLinkedData = (catalog?.length ?? 0) > 0;
-  const filterInCatalog = isFilterInCatalog(catalog, competition, season);
-  const firstCatalog = getFirstCatalogFilters(catalog);
 
   useEffect(() => {
     if (!catalogReady || !hasLinkedData || !firstCatalog) {
@@ -269,7 +271,13 @@ export function MatchesListPage() {
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {matches?.map((match) => (
-            <MatchCard key={match.id} match={match} hasEvents={false} />
+            <MatchCard
+              key={match.id}
+              match={match}
+              hasEvents={false}
+              competition={competition}
+              season={season}
+            />
           ))}
         </div>
       )}
