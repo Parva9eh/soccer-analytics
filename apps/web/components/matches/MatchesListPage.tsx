@@ -88,6 +88,7 @@ export function MatchesListPage() {
   const workspaceId = useActiveWorkspaceId();
   const { session } = useAuthSession();
   const isSignedIn = AUTH_ENABLED && Boolean(session?.access_token);
+  const isGuest = !isSignedIn;
   const competition = readFilter(searchParams, "competition", DEFAULT_COMPETITION);
   const season = readFilter(searchParams, "season", DEFAULT_SEASON);
 
