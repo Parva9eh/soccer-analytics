@@ -33,30 +33,26 @@ def test_count_events_for_matches_chunks(monkeypatch):
     assert calls == [[1, 2], [3, 4], [5]]
 
 
-def test_accessible_match_ids_paginates(monkeypatch):
-    pages = [[{"id": 1}, {"id": 2}], [{"id": 3}], []]
-    page_index = {"i": 0}
-
+def test_accessible_match_ids_single_fetch():
     class FakeQuery:
         def select(self, *_args, **_kwargs):
             return self
 
-        def range(self, start, end):
-            self.start = start
+        def limit(self, *_args, **_kwargs):
             return self
 
         def execute(self):
-            data = pages[page_index["i"]]
-            page_index["i"] += 1
-            return type("R", (), {"data": data})()
+            return type(
+                "R",
+                (),
+                {"data": [{"id": 1}, {"id": 2}, {"id": None}, {}]},
+            )()
 
     class FakeClient:
         def table(self, name):
             assert name == "matches"
             return FakeQuery()
 
-    monkeypatch.setattr(summary_module, "_MATCH_PAGE_SIZE", 2)
-
     ids = summary_module._accessible_match_ids(FakeClient())
 
-    assert ids == [1, 2, 3]
+    assert ids == [1, 2]
