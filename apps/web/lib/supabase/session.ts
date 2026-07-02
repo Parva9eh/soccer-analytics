@@ -1,3 +1,4 @@
+import { getCachedAccessToken } from "@/lib/access-token-store";
 import { AUTH_ENABLED } from "@/lib/auth-config";
 import { createClient } from "./client";
 
@@ -5,6 +6,11 @@ import { createClient } from "./client";
 export async function getAccessToken(): Promise<string | null> {
   if (!AUTH_ENABLED || typeof window === "undefined") {
     return null;
+  }
+
+  const cached = getCachedAccessToken();
+  if (cached) {
+    return cached;
   }
 
   try {

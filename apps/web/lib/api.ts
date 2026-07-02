@@ -81,9 +81,15 @@ export async function apiFetch(path: string, init?: RequestInit) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  return fetch(getApiUrl(path), {
+  const url = getApiUrl(path);
+  const useCookies =
+    typeof window !== "undefined" &&
+    (url.startsWith("/") || url.startsWith(window.location.origin));
+
+  return fetch(url, {
     ...init,
     headers,
+    credentials: useCookies ? "include" : init?.credentials,
   });
 }
 
