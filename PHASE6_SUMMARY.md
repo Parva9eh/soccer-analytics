@@ -86,11 +86,17 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 ---
 
-## 6.5 — Data expansion
+## 6.5 — Data expansion 🔄 (branch `phase6/data-expansion`)
 
-- Second competition/season in ETL + `workspace_datasets` linking UX
-- Document StatsBomb loader for additional open competitions
-- Catalog filters already multi-competition-ready — validate with 2+ seasons loaded
+| Area | Change |
+|------|--------|
+| ETL | `--load-season` full pipeline; presets `demo` / `expansion` (PL 2003/04) |
+| Fix | Season DB lookup scoped by `competition_id` (multi-league safe) |
+| API | `GET /competitions/inventory` — all loaded seasons for workspace linking |
+| UX | Workspace data access uses catalog dropdown instead of free-text |
+| Docs | `scripts/load-statsbomb-season.sh`, `apps/api/README.md` ETL section |
+
+**You run in production:** `./scripts/load-statsbomb-season.sh expansion` (30–60+ min for events), then link Premier League in workspace settings.
 
 ---
 
@@ -114,10 +120,10 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 ```
 6.1 (auth + /backend proxy) → ✅ done
-6.2 (ops checklist)         → you: uptime, migrations audit, OAuth URLs
+6.2 (ops checklist)         → ✅ done
 6.7 (e2e proxy smoke)       → in progress on main
 6.3 (polish)                → ✅ done
-6.5 (data)                  → if you want more than La Liga demo
+6.5 (data)                  → 🔄 in progress on phase6/data-expansion
 6.4 (realtime)              → largest architectural slice
 6.6 (sharing)               → after stable signed-in UX
 ```

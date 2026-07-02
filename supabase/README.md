@@ -113,6 +113,19 @@ Apply migrations **in filename order**:
 
 ETL and admin scripts continue to use the **service role** (bypasses RLS).
 
+### Loading a second season (Phase 6.5)
+
+Default guest demo is **La Liga 2020/21**. To add **Premier League 2003/04** (or another StatsBomb open season):
+
+```bash
+cd apps/api
+uv run python -m etl.cli --load-season --preset expansion
+```
+
+Or from repo root: `./scripts/load-statsbomb-season.sh expansion`
+
+Signed-in workspace admins link extra seasons via **Settings → Workspace → Data access** (`GET /competitions/inventory` lists all loaded seasons). Guests remain scoped to La Liga 2020/21 until anon RLS policies are extended.
+
 ### Supabase advisor: `player_match_stats` without RLS
 
 This table is **not** created by repo migrations — it may exist only on your hosted project (manual SQL, experiment, or external script). The advisor flags any `public` table exposed to PostgREST without RLS.

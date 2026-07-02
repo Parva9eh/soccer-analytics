@@ -126,9 +126,53 @@ Required production env vars: see `.env.example` and [DEPLOY.md](../../DEPLOY.md
 
 `Dockerfile` + `docker-compose.yml` for local long-running API. Vercel production uses serverless Python, not the container image.
 
+## StatsBomb ETL (data loading)
+
+Loads [StatsBomb open data](https://github.com/statsbomb/open-data) into Supabase using the **service role** (`apps/api/.env`).
+
+| Dataset | Competition | Season | Role |
+|---------|-------------|--------|------|
+| Guest demo | La Liga | 2020/2021 | Public anon browse (RLS) |
+| Expansion | Premier League | 2003/2004 | Workspace linking |
+
+**Full season (recommended):**
+
+```bash
+cd apps/api
+# Curated presets
+uv run python -m etl.cli --load-season --preset demo
+uv run python -m etl.cli --load-season --preset expansion
+
+# Or explicit names
+uv run python -m etl.cli --load-season --competition "Premier League" --season "2003/2004"
+```
+
+From repo root:
+
+```bash
+./scripts/load-statsbomb-season.sh expansion
+```
+
+**Step-by-step (metadata only first):**
+
+```bash
+uv run python -m etl.cli --load-competitions
+uv run python -m etl.cli --load-seasons --competition "Premier League"
+uv run python -m etl.cli --load-matches --competition "Premier League" --season "2003/2004"
+uv run python -m etl.cli --load-events --match-id <statsbomb_match_id>   # smoke test
+uv run python -m etl.cli --load-season --preset expansion                 # or full pipeline
+```
+
+`--list-presets` shows curated datasets. `--dry-run` previews without writes. Event ingest for a full season can take **30–60+ minutes** depending on network and Supabase latency.
+
+After loading, link seasons per workspace under **Settings → Workspace → Data access** (or rely on La Liga auto-seed for new workspaces). Guests still browse **La Liga 2020/21 only** until anon RLS is widened.
+
+Optional: refresh zone materialized view — see [DEPLOY.md](../../DEPLOY.md#step-4--zone-materialized-view-optional).
+
 ## Related docs
 
 - [apps/web/README.md](../web/README.md) — frontend and `/backend` proxy
 - [DEPLOY.md](../../DEPLOY.md) — full deployment guide
 - [supabase/README.md](../../supabase/README.md) — migrations and RLS
 - [PHASE5_SUMMARY.md](../../PHASE5_SUMMARY.md) — CI and production ops
+- [PHASE6_SUMMARY.md](../../PHASE6_SUMMARY.md) — Phase 6 slices including 6.5 data expansion
