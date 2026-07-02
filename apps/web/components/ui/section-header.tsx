@@ -29,8 +29,10 @@ export function SectionHeader({
         )}
       </div>
       {action && (
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-          {action}
+        <div className="-mx-1 w-full min-w-0 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:w-auto sm:overflow-visible sm:pb-0">
+          <div className="flex min-w-max flex-wrap items-center gap-2 sm:min-w-0 sm:justify-end">
+            {action}
+          </div>
         </div>
       )}
     </div>

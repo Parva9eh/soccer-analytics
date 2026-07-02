@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { WorkspaceManageSkeleton } from "@/components/settings/WorkspaceManageSkeleton";
 import { ArrowLeft, Copy, Database, Info, Mail, Users } from "lucide-react";
 
 interface WorkspaceDetail {
@@ -205,11 +206,7 @@ export default function WorkspaceManagePage() {
   }
 
   if (!workspace) {
-    return (
-      <PageShell>
-        <PageHeader title="Workspace" description="Loading…" />
-      </PageShell>
-    );
+    return <WorkspaceManageSkeleton />;
   }
 
   const selectedRoleMeta = INVITE_ROLES.find((r) => r.value === role);
@@ -290,9 +287,15 @@ export default function WorkspaceManagePage() {
                   compact
                 />
               ) : !datasets?.length ? (
-                <p className="text-caption text-muted-foreground">
-                  No datasets linked yet. Add a competition and season below.
-                </p>
+                <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-6 text-center">
+                  <p className="text-sm font-medium text-foreground">
+                    No datasets linked yet
+                  </p>
+                  <p className="text-caption mx-auto mt-1 max-w-md text-muted-foreground">
+                    Add La Liga 2020/21 (or another loaded season) below. Until
+                    then, matches and analytics stay empty for this workspace.
+                  </p>
+                </div>
               ) : (
                 <ul className="divide-y divide-border rounded-lg border border-border">
                   {datasets.map((dataset) => (
