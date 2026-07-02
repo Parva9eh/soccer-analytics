@@ -9,7 +9,7 @@ from typing import Any
 
 @dataclass
 class MockExecuteResult:
-    data: list[dict[str, Any]]
+    data: Any
     count: int | None = None
 
 
@@ -112,12 +112,33 @@ class _QueryBuilder:
         return MockExecuteResult(data=rows)
 
 
+class _RpcBuilder:
+    def __init__(self, client: "MockSupabaseClient", name: str, _params: Any) -> None:
+        self._client = client
+        self._name = name
+
+    def execute(self) -> MockExecuteResult:
+        if self._name == "data_summary_snapshot":
+            return MockExecuteResult(
+                data={
+                    "total_matches": len(self._client._tables.get("matches", [])),
+                    "total_events": len(self._client._tables.get("events", [])),
+                    "total_players": len(self._client._tables.get("players", [])),
+                    "status": "healthy",
+                }
+            )
+        raise NotImplementedError(f"Mock RPC not implemented: {self._name}")
+
+
 class MockSupabaseClient:
     def __init__(self, tables: dict[str, list[dict[str, Any]]]) -> None:
         self._tables = tables
 
     def table(self, name: str) -> _QueryBuilder:
         return _QueryBuilder(self._tables.get(name, []))
+
+    def rpc(self, name: str, params: Any = None) -> _RpcBuilder:
+        return _RpcBuilder(self, name, params)
 
 
 def e2e_fixture() -> dict[str, list[dict[str, Any]]]:
