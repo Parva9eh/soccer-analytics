@@ -3,7 +3,9 @@ import logging
 from fastapi import APIRouter, Depends
 from supabase import Client
 
-from core.supabase_client import get_supabase_public_read
+from core.auth import AuthUser
+from core.deps import get_current_user_required
+from core.supabase_client import get_supabase_public_read, get_supabase_service_client
 from schemas.competition import CompetitionCatalogItem
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
 
@@ -22,47 +24,70 @@ def list_competitions_catalog(
 ) -> list[CompetitionCatalogItem]:
     """List competitions and their seasons for UI filters."""
     try:
-        comp_result = (
-            supabase.table("competitions")
-            .select("id, name")
-            .order("name")
-            .execute()
-        )
-        competitions = comp_result.data or []
-
-        season_result = (
-            supabase.table("seasons")
-            .select("competition_id, year")
-            .order("year")
-            .execute()
-        )
-        seasons_by_comp: dict[int, list[str]] = {}
-        for row in season_result.data or []:
-            comp_id = row.get("competition_id")
-            year = row.get("year")
-            if comp_id is None or not year:
-                continue
-            seasons_by_comp.setdefault(comp_id, []).append(year)
-
-        catalog: list[CompetitionCatalogItem] = []
-        for comp in competitions:
-            comp_id = comp.get("id")
-            name = comp.get("name")
-            if comp_id is None or not name:
-                continue
-            catalog.append(
-                CompetitionCatalogItem(
-                    name=name,
-                    seasons=seasons_by_comp.get(comp_id, []),
-                )
-            )
-
-        return catalog
+        return _build_catalog_from_supabase(supabase)
 
     except Exception:
         logger.exception("Error in list_competitions_catalog")
         raise_http_exception(
             status_code=500,
             detail="Failed to fetch competitions catalog",
+            code=ErrorCode.INTERNAL_SERVER_ERROR,
+        )
+
+
+def _build_catalog_from_supabase(supabase: Client) -> list[CompetitionCatalogItem]:
+    comp_result = (
+        supabase.table("competitions")
+        .select("id, name")
+        .order("name")
+        .execute()
+    )
+    competitions = comp_result.data or []
+
+    season_result = (
+        supabase.table("seasons")
+        .select("competition_id, year")
+        .order("year")
+        .execute()
+    )
+    seasons_by_comp: dict[int, list[str]] = {}
+    for row in season_result.data or []:
+        comp_id = row.get("competition_id")
+        year = row.get("year")
+        if comp_id is None or not year:
+            continue
+        seasons_by_comp.setdefault(comp_id, []).append(year)
+
+    catalog: list[CompetitionCatalogItem] = []
+    for comp in competitions:
+        comp_id = comp.get("id")
+        name = comp.get("name")
+        if comp_id is None or not name:
+            continue
+        seasons = seasons_by_comp.get(comp_id, [])
+        if not seasons:
+            continue
+        catalog.append(CompetitionCatalogItem(name=name, seasons=seasons))
+
+    return catalog
+
+
+@router.get(
+    "/inventory",
+    response_model=list[CompetitionCatalogItem],
+    responses=COMMON_ERROR_RESPONSES,
+)
+def list_competitions_inventory(
+    _user: AuthUser = Depends(get_current_user_required),
+) -> list[CompetitionCatalogItem]:
+    """All competition seasons loaded in the database (for workspace dataset linking)."""
+    try:
+        supabase = get_supabase_service_client()
+        return _build_catalog_from_supabase(supabase)
+    except Exception:
+        logger.exception("Error in list_competitions_inventory")
+        raise_http_exception(
+            status_code=500,
+            detail="Failed to fetch competitions inventory",
             code=ErrorCode.INTERNAL_SERVER_ERROR,
         )
