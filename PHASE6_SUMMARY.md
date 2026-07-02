@@ -63,11 +63,18 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 
 ---
 
-## 6.3 — Deferred Phase 2 polish
+## 6.3 — Deferred Phase 2 polish ✅ (July 2026)
 
-- Pitch-only overlay responsive audit (match detail 3D/2D on small screens)
-- Collaboration empty states: clearer copy when workspace has no linked datasets
-- Loading skeleton consistency on `/settings/workspaces/[id]`
+| Area | Change |
+|------|--------|
+| Brand | `LogoMark` + `BrandLockup` in sidebar/mobile nav; SVG favicon (`app/icon.svg`); auth pages use mark |
+| Hero | `DashboardHero` on home — pitch grid, trajectory arc, guest vs signed-in copy, live match/event chips |
+| Empty states | `WorkspaceDatasetsEmpty` on dashboard, analytics, reports, analyses when workspace has no linked datasets |
+| Skeletons | `WorkspaceManageSkeleton` while workspace detail loads |
+| Match detail | Responsive pitch heights — capped 2D `max-h` on small screens; lower 3D `min-h` on mobile |
+| Pitch controls | `SectionHeader` action row scrolls horizontally on narrow viewports |
+
+**Files:** `components/brand/*`, `components/workspace/WorkspaceDatasetsEmpty.tsx`, `lib/workspace-empty.ts`, `lib/use-workspace-catalog.ts`
 
 ---
 
@@ -109,7 +116,7 @@ Seen from **`python-httpx`** (API token verify) and **`node`** (Next.js `getUser
 6.1 (auth + /backend proxy) → ✅ done
 6.2 (ops checklist)         → you: uptime, migrations audit, OAuth URLs
 6.7 (e2e proxy smoke)       → in progress on main
-6.3 (polish)                → small UI PRs
+6.3 (polish)                → ✅ done
 6.5 (data)                  → if you want more than La Liga demo
 6.4 (realtime)              → largest architectural slice
 6.6 (sharing)               → after stable signed-in UX
