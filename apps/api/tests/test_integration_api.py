@@ -52,6 +52,18 @@ def test_health_supabase_uses_mock_count(api_client: TestClient):
     assert payload["matches_count"] == 1
 
 
+def test_summary_uses_data_snapshot_rpc(api_client: TestClient):
+    response = api_client.get("/summary/")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload == {
+        "total_matches": 1,
+        "total_events": 3,
+        "total_players": 0,
+        "status": "healthy",
+    }
+
+
 def test_season_zones_aggregates_mock_events(api_client: TestClient):
     response = api_client.get(
         "/analytics/zones/season",
