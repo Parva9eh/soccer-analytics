@@ -5,6 +5,7 @@ from etl.events import load_events_for_match, load_all_events
 from etl.matches import load_matches_for_season
 from etl.players import load_players_for_loaded_matches
 from etl.presets import EXPANSION_DATASET, GUEST_DEMO_DATASET, RECOMMENDED_DATASETS
+from etl.preflight import require_events_upsert_ready, verify_events_upsert_ready
 from etl.season_pipeline import load_full_season
 
 
@@ -42,6 +43,11 @@ def main():
         help="Use a curated dataset: demo (La Liga 2020/21) or expansion (Premier League 2003/04)",
     )
     parser.add_argument("--list-presets", action="store_true", help="Show curated dataset presets")
+    parser.add_argument(
+        "--verify-etl",
+        action="store_true",
+        help="Check events upsert prerequisites (run before a long season load)",
+    )
 
     args = parser.parse_args()
     dry_run = args.dry_run
@@ -53,6 +59,11 @@ def main():
                 print(f"  {preset.description}")
         return
 
+    if args.verify_etl:
+        verify_events_upsert_ready()
+        print("✅ ETL preflight OK — events upsert is ready.")
+        return
+
     if args.preset == "demo":
         args.competition = GUEST_DEMO_DATASET.competition
         args.season = GUEST_DEMO_DATASET.season
@@ -61,6 +72,17 @@ def main():
         args.competition = EXPANSION_DATASET.competition
         args.season = EXPANSION_DATASET.season
         args.gender = EXPANSION_DATASET.gender
+
+    needs_event_preflight = (
+        not dry_run
+        and (
+            args.load_events
+            or args.load_events_all
+            or (args.load_season and not args.skip_events)
+        )
+    )
+    if needs_event_preflight:
+        require_events_upsert_ready()
 
     if args.load_competitions:
         load_competitions(dry_run)

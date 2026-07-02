@@ -130,7 +130,8 @@ def load_events_for_match(statsbomb_match_id: int, dry_run: bool = False) -> Non
             print(f"   Failed: {failed}")
             print(f"   First error: {first_error}")
             print(
-                "   Tip: apply supabase/migrations/20250606000000_events_statsbomb_event_id.sql"
+                "   Tip: run `uv run python -m etl.cli --verify-etl` and apply "
+                "supabase/migrations/20250606001000_events_statsbomb_event_id_constraint_fix.sql"
             )
 
         print("\n   Top event types:")
