@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { setCachedAccessToken } from "@/lib/access-token-store";
 import { AUTH_ENABLED } from "@/lib/auth-config";
@@ -34,55 +34,81 @@ function buildE2eSession(): Session {
   };
 }
 
-function readInitialAuthState(): { session: Session | null; isLoading: boolean } {
-  if (!AUTH_ENABLED) {
-    return { session: null, isLoading: false };
-  }
-
-  return { session: null, isLoading: true };
+function subscribeToE2eAuth(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
 }
 
 export function useAuthSession() {
-  const [session, setSession] = useState<Session | null>(
-    () => readInitialAuthState().session,
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
   );
-  const [isLoading, setIsLoading] = useState(
-    () => readInitialAuthState().isLoading,
+  const e2eAuthActive = useSyncExternalStore(
+    subscribeToE2eAuth,
+    () => isE2eAuthRequested(),
+    () => false,
+  );
+
+  const e2eSession = useMemo(
+    () =>
+      AUTH_ENABLED && E2E_AUTH_ENABLED && isClient && e2eAuthActive
+        ? buildE2eSession()
+        : null,
+    [isClient, e2eAuthActive],
+  );
+
+  const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
+  const [supabaseLoading, setSupabaseLoading] = useState(
+    AUTH_ENABLED && !E2E_AUTH_ENABLED,
   );
 
   useEffect(() => {
-    if (!AUTH_ENABLED) {
-      return;
+    if (e2eSession) {
+      setCachedAccessToken(E2E_ACCESS_TOKEN);
     }
+  }, [e2eSession]);
 
-    if (E2E_AUTH_ENABLED) {
-      if (isE2eAuthRequested()) {
-        const session = buildE2eSession();
-        setSession(session);
-        setCachedAccessToken(E2E_ACCESS_TOKEN);
-      }
-      setIsLoading(false);
+  useEffect(() => {
+    if (!AUTH_ENABLED || E2E_AUTH_ENABLED) {
       return;
     }
 
     const supabase = createClient();
 
     supabase.auth.getSession().then(({ data: { session: current } }) => {
-      setSession(current);
+      setSupabaseSession(current);
       setCachedAccessToken(current?.access_token ?? null);
-      setIsLoading(false);
+      setSupabaseLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
+      setSupabaseSession(next);
       setCachedAccessToken(next?.access_token ?? null);
-      setIsLoading(false);
+      setSupabaseLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  return { session, isLoading, isAuthenticated: Boolean(session?.access_token) };
+  if (!AUTH_ENABLED) {
+    return { session: null, isLoading: false, isAuthenticated: false };
+  }
+
+  if (E2E_AUTH_ENABLED) {
+    return {
+      session: e2eSession,
+      isLoading: !isClient,
+      isAuthenticated: Boolean(e2eSession?.access_token),
+    };
+  }
+
+  return {
+    session: supabaseSession,
+    isLoading: supabaseLoading,
+    isAuthenticated: Boolean(supabaseSession?.access_token),
+  };
 }
