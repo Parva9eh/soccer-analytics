@@ -5,6 +5,8 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
+E2E_USER_ID = "11111111-1111-1111-1111-111111111111"
+E2E_WORKSPACE_ID = "22222222-2222-2222-2222-222222222222"
 
 
 @dataclass
@@ -24,8 +26,9 @@ class _NotProxy:
 
 
 class _QueryBuilder:
-    def __init__(self, rows: list[dict[str, Any]]) -> None:
+    def __init__(self, rows: list[dict[str, Any]], *, mutable: bool = False) -> None:
         self._source = rows
+        self._mutable = mutable
         self._eq: dict[str, Any] = {}
         self._in: dict[str, list[Any]] = {}
         self._not_null: set[str] = set()
@@ -34,6 +37,7 @@ class _QueryBuilder:
         self._range: tuple[int, int] | None = None
         self._count_exact = False
         self._single = False
+        self._update_payload: dict[str, Any] | None = None
 
     @property
     def not_(self) -> _NotProxy:
@@ -69,7 +73,21 @@ class _QueryBuilder:
         self._limit = 1
         return self
 
+    def update(self, payload: dict[str, Any]) -> "_QueryBuilder":
+        self._update_payload = payload
+        return self
+
     def execute(self) -> MockExecuteResult:
+        if self._update_payload is not None:
+            if not self._mutable:
+                raise RuntimeError("Updates are only supported on mutable mock tables")
+            updated: list[dict[str, Any]] = []
+            for row in self._source:
+                if all(row.get(column) == value for column, value in self._eq.items()):
+                    row.update(self._update_payload)
+                    updated.append(deepcopy(row))
+            return MockExecuteResult(data=updated)
+
         rows = [deepcopy(row) for row in self._source]
 
         for column, value in self._eq.items():
@@ -113,9 +131,15 @@ class _QueryBuilder:
 
 
 class _RpcBuilder:
-    def __init__(self, client: "MockSupabaseClient", name: str, _params: Any) -> None:
+    def __init__(
+        self,
+        client: "MockSupabaseClient",
+        name: str,
+        params: Any,
+    ) -> None:
         self._client = client
         self._name = name
+        self._params = params
 
     def execute(self) -> MockExecuteResult:
         if self._name == "data_summary_snapshot":
@@ -127,18 +151,67 @@ class _RpcBuilder:
                     "status": "healthy",
                 }
             )
+        if self._name == "create_workspace_for_user":
+            workspace_name = "E2E Workspace"
+            if isinstance(self._params, dict):
+                workspace_name = str(self._params.get("p_name") or workspace_name)
+            row = {
+                "id": E2E_WORKSPACE_ID,
+                "name": workspace_name,
+                "slug": "e2e-workspace",
+            }
+            self._client._ensure_e2e_workspace(row)
+            return MockExecuteResult(data=[row])
         raise NotImplementedError(f"Mock RPC not implemented: {self._name}")
 
 
 class MockSupabaseClient:
     def __init__(self, tables: dict[str, list[dict[str, Any]]]) -> None:
         self._tables = tables
+        self._rpc_params: Any = None
 
     def table(self, name: str) -> _QueryBuilder:
-        return _QueryBuilder(self._tables.get(name, []))
+        rows = self._tables.setdefault(name, [])
+        return _QueryBuilder(rows, mutable=True)
 
     def rpc(self, name: str, params: Any = None) -> _RpcBuilder:
+        self._rpc_params = params
         return _RpcBuilder(self, name, params)
+
+    def _ensure_e2e_workspace(self, workspace: dict[str, Any]) -> None:
+        workspaces = self._tables.setdefault("workspaces", [])
+        if not any(row.get("id") == workspace["id"] for row in workspaces):
+            workspaces.append(deepcopy(workspace))
+
+        members = self._tables.setdefault("workspace_members", [])
+        if not any(
+            row.get("workspace_id") == workspace["id"]
+            and row.get("user_id") == E2E_USER_ID
+            for row in members
+        ):
+            members.append(
+                {
+                    "workspace_id": workspace["id"],
+                    "user_id": E2E_USER_ID,
+                    "role": "admin",
+                    "workspaces": deepcopy(workspace),
+                }
+            )
+
+        profiles = self._tables.setdefault("profiles", [])
+        if not any(row.get("id") == E2E_USER_ID for row in profiles):
+            profiles.append(
+                {
+                    "id": E2E_USER_ID,
+                    "display_name": "E2E User",
+                    "email": "e2e@soccer-analytics.test",
+                    "active_workspace_id": workspace["id"],
+                }
+            )
+        else:
+            for row in profiles:
+                if row.get("id") == E2E_USER_ID:
+                    row["active_workspace_id"] = workspace["id"]
 
 
 def e2e_fixture() -> dict[str, list[dict[str, Any]]]:
@@ -159,6 +232,33 @@ def e2e_fixture() -> dict[str, list[dict[str, Any]]]:
             "jersey_number": 9,
             "nationality": "France",
         },
+    ]
+    data["profiles"] = [
+        {
+            "id": E2E_USER_ID,
+            "display_name": "E2E User",
+            "email": "e2e@soccer-analytics.test",
+            "active_workspace_id": E2E_WORKSPACE_ID,
+        }
+    ]
+    data["workspaces"] = [
+        {
+            "id": E2E_WORKSPACE_ID,
+            "name": "E2E Workspace",
+            "slug": "e2e-workspace",
+        }
+    ]
+    data["workspace_members"] = [
+        {
+            "workspace_id": E2E_WORKSPACE_ID,
+            "user_id": E2E_USER_ID,
+            "role": "admin",
+            "workspaces": {
+                "id": E2E_WORKSPACE_ID,
+                "name": "E2E Workspace",
+                "slug": "e2e-workspace",
+            },
+        }
     ]
     data["events"] = [
         {

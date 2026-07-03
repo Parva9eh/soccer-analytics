@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_ENABLED, isAuthRequiredPath } from "@/lib/auth-config";
+import { E2E_AUTH_ENABLED } from "@/lib/e2e-auth";
 import { hasSupabaseEnv } from "./env";
 import { refreshSupabaseSession } from "./refresh-session";
 
@@ -36,6 +37,11 @@ export async function updateSession(request: NextRequest) {
   const { response, user } = await refreshSupabaseSession(request);
 
   if (!user && isAuthRequiredPath(pathname)) {
+    // Playwright signed-in smoke uses client-side mock session (localStorage).
+    if (E2E_AUTH_ENABLED) {
+      return response;
+    }
+
     const loginUrl = request.nextUrl.clone();
     const returnTo = `${pathname}${request.nextUrl.search}`;
     loginUrl.pathname = "/login";

@@ -40,7 +40,10 @@ export default defineConfig({
         // Same-origin proxy avoids CORS and flaky cross-port env in dev.
         NEXT_PUBLIC_API_URL: `${webUrl}/backend`,
         E2E_API_PROXY_TARGET: apiUrl,
-        NEXT_PUBLIC_AUTH_ENABLED: "false",
+        NEXT_PUBLIC_AUTH_ENABLED: "true",
+        NEXT_PUBLIC_E2E_AUTH: "true",
+        NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
       },
     },
   ],
