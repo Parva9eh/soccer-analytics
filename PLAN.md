@@ -410,18 +410,23 @@ Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE5_SUMMARY
 
 ### Merging a completed phase into `main`
 
+`main` is **protected** — do **not** push to it directly. Open a PR from the phase branch, wait for all CI checks, then merge.
+
 Use a **merge commit** so the phase branch history stays visible on `main`. Do **not** squash. Do **not** delete the phase branch after merge.
 
-**Local:**
+**Workflow:**
 
 ```bash
-git checkout main
-git pull origin main
-git merge --no-ff phaseN/branch-name -m "Merge branch 'phaseN/branch-name'"
-git push origin main
+git push -u origin phaseN/branch-name
+gh pr create --base main --head phaseN/branch-name \
+  --title "Merge phaseN/branch-name" \
+  --body "Phase slice ready for merge."
+# After CI is green:
+gh pr merge --merge --delete-branch=false
+git checkout main && git pull origin main
 ```
 
-**GitHub PR:** choose **“Create a merge commit”** (not “Squash and merge”).
+**GitHub PR UI:** choose **“Create a merge commit”** only (squash and rebase are disabled on `main`).
 
 **After merge:**
 
