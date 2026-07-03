@@ -56,3 +56,4 @@ Thumbs.db
 # Local notes (not committed)
 DOCKER_COMPOSE_LOCAL.md
 DATA_LOADING.md
+VERCEL_CI.md
