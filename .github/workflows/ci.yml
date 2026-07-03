@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -33,6 +34,10 @@ jobs:
       ENVIRONMENT: test
       REQUIRE_AUTH: "false"
     steps:
+      - name: Notify Vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - soccer-analytics-api: API tests"
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
@@ -49,6 +54,10 @@ jobs:
       run:
         working-directory: apps/web
     steps:
+      - name: Notify Vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - soccer-analytics-web: Web checks"
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
@@ -73,6 +82,10 @@ jobs:
       NEXT_PUBLIC_API_URL: https://example.com
       NEXT_PUBLIC_AUTH_ENABLED: "false"
     steps:
+      - name: Notify Vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - soccer-analytics-web: production build"
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
@@ -89,6 +102,14 @@ jobs:
     name: Docker image build
     runs-on: ubuntu-latest
     steps:
+      - name: Notify Vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - soccer-analytics-api: Docker build"
+      - name: Notify Vercel (web image)
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - soccer-analytics-web: Docker build"
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - name: Build API image
@@ -116,6 +137,10 @@ jobs:
       run:
         working-directory: apps/web
     steps:
+      - name: Notify Vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - soccer-analytics-web: E2E smoke"
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
