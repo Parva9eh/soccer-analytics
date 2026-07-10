@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 6 planned — ops, polish & growth (June 2026)  
-**Active branch:** `main` — 6.1 (`phase6/collaboration-proxy`) and 6.3 (`phase6/ops-polish`) merged with `--no-ff`; next slice on a new `phase6/...` branch
+**Current Phase:** Phase 7 — production hardening from code review (July 2026)  
+**Active work:** Phase 7 slices on `phase7/*` branches; Phase 6 product slices paused until 7.x security/perf closes
 
 ---
 
@@ -355,7 +355,7 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 
 ---
 
-### Phase 6: Ops, Polish & Growth (Planned)
+### Phase 6: Ops, Polish & Growth (In progress)
 
 **Goal:** Harden signed-in collaboration, production ops, and selective product extensions.
 
@@ -368,23 +368,48 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 - Same-origin `/backend` route handler (auth injection, compression fix)
 - Guest and signed-in browsing verified in production
 
-#### 6.2–6.7 — Planned slices
+#### 6.2–6.7 — Remaining product slices (after Phase 7 hardening)
 
-- Production ops (uptime, migrations audit, zone MV)
-- Pitch overlay responsive polish
-- Realtime, data expansion, sharing/embeds, performance tests
+- Production ops (uptime, migrations audit, zone MV) — largely done
+- Pitch overlay responsive polish — largely done (6.3)
+- Realtime (6.4), sharing/embeds (6.6), performance tests (6.7)
+- Data expansion (6.5) ✅ StatsBomb open seasons remain primary data source
+
+**Note:** Phase **7** takes priority over remaining Phase 6 product work until production security and analytics correctness blockers are closed.
 
 ---
 
-### Future / Stretch Goals (beyond Phase 6)
+### Phase 7: Production Hardening — Code Review Remediation (In progress)
 
+**Goal:** Fix production-blocking security issues, analytics correctness/performance, and structural debt identified in the July 2026 strict code review. Keep **StatsBomb Open Data** as the primary event source (do not replace with API-Football free).
+
+**Plan:** [PHASE7_SUMMARY.md](./PHASE7_SUMMARY.md)
+
+| Slice | Branch | Scope |
+|-------|--------|--------|
+| 7.0 | `phase7/plan-docs` | Plan docs + `/local/` gitignore for review artifacts |
+| 7.1 | `phase7/security-p0` | RLS membership, seed RPC, open redirects, per-request Supabase JWT clients, JWT `aud` fail-closed |
+| 7.2 | `phase7/security-config` | REQUIRE_AUTH footgun, health surface, E2E prod hard-disable, SECURITY.md |
+| 7.3 | `phase7/analytics-perf` | Events count/page, season pagination, possession batch, `get_match` 404 |
+| 7.4 | `phase7/services-layer` | `services/season_scope`, thin routers, zone cache TTL/LRU |
+| 7.5 | `phase7/match-page-refactor` | Match detail decompose, dynamic 3D, multipage events, shared event types |
+| 7.6 | `phase7/analytics-dashboard` | Unify guest/auth analytics UI, query invalidation, cold-start polish |
+
+**Operator:** After 7.1 merges, apply new Supabase migrations on hosted Supabase (SQL Editor).
+
+---
+
+### Future / Stretch Goals (beyond Phase 7)
+
+- Remaining Phase 6 product slices (realtime, sharing)
 - Dedicated native mobile app
 - Community / public analysis feeds
+- Optional API-Football (or similar) as a **secondary** live-score/standings layer only — not a replacement for StatsBomb event data
 - Additional commercial hosting tiers if outgrowing Hobby
 
 ---
 
-## Current Status (as of June 2026)
+## Current Status (as of July 2026)
 
 | Phase | Status | Notes |
 |-------|--------|-------|
@@ -394,9 +419,10 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 | Phase 3 | ✅ Completed | Merged to `main` — [PHASE3_SUMMARY.md](./PHASE3_SUMMARY.md) |
 | Phase 4 | ✅ Completed | 4.1–4.8 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) |
 | Phase 5 | ✅ Completed | 5.1–5.10 on `main`, prod on Vercel — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
-| Phase 6 | 🔄 In progress | 6.1–6.3 ✅ 6.5 ✅; next: 6.4 realtime or 6.6 sharing — [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
+| Phase 6 | 🔄 Paused for 7 | 6.1–6.3 ✅ 6.5 ✅; product slices resume after Phase 7 — [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
+| Phase 7 | 🔄 In progress | Security → perf → architecture — [PHASE7_SUMMARY.md](./PHASE7_SUMMARY.md) |
 
-Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md), [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md).
+Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md), [PHASE7_SUMMARY.md](./PHASE7_SUMMARY.md).
 
 ---
 

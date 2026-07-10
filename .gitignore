@@ -53,7 +53,5 @@ Thumbs.db
 # Misc
 *.log
 
-# Local notes (not committed)
-DOCKER_COMPOSE_LOCAL.md
-DATA_LOADING.md
-VERCEL_CI.md
+# Local notes and review artifacts (not committed)
+/local/
