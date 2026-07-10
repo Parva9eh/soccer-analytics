@@ -12,6 +12,7 @@ from analytics.xg import (
     shot_xg_from_details,
 )
 from core.supabase_client import get_supabase_public_read
+from services.season_scope import resolve_season_match_ids
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.xg import (
     MatchXgFormPoint,
@@ -104,42 +105,6 @@ def _resolve_match_teams(
     return home, away, row
 
 
-def _match_ids_for_season(
-    supabase: Client, competition: str, season: str
-) -> list[int]:
-    comp = (
-        supabase.table("competitions")
-        .select("id")
-        .eq("name", competition)
-        .limit(1)
-        .execute()
-    )
-    if not comp.data:
-        return []
-
-    comp_id = comp.data[0]["id"]
-    season_row = (
-        supabase.table("seasons")
-        .select("id")
-        .eq("competition_id", comp_id)
-        .eq("year", season)
-        .limit(1)
-        .execute()
-    )
-    if not season_row.data:
-        return []
-
-    season_id = season_row.data[0]["id"]
-    matches = (
-        supabase.table("matches")
-        .select("id")
-        .eq("competition_id", comp_id)
-        .eq("season_id", season_id)
-        .execute()
-    )
-    return [int(row["id"]) for row in matches.data or [] if row.get("id") is not None]
-
-
 def _rolling_means(values: list[float], window: int) -> list[float]:
     rolling: list[float] = []
     for index in range(len(values)):
@@ -216,7 +181,7 @@ def _shots_for_season(
 ) -> tuple[list[int], list[dict[str, Any]]]:
     from services.event_fetch import fetch_events_paginated
 
-    match_ids = _match_ids_for_season(supabase, competition, season)
+    match_ids = resolve_season_match_ids(supabase, competition, season)
     if not match_ids:
         return [], []
 

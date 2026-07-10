@@ -19,7 +19,7 @@ from core.season_zone_cache import (
     set_cached_season_zones,
 )
 from core.supabase_client import get_supabase_public_read
-from routers.analytics_profiles import _season_match_ids
+from services.season_scope import resolve_season_match_ids
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.zones import (
     HeatmapBinOut,
@@ -137,7 +137,7 @@ def _read_season_zones_from_view(
 def _build_season_zones(
     supabase: Client, competition: str, season: str
 ) -> list[TeamZoneSummary]:
-    match_ids = _season_match_ids(supabase, competition, season)
+    match_ids = resolve_season_match_ids(supabase, competition, season)
     cache_key = SeasonScopeCache.scope_key(
         _ZONES_CACHE_PREFIX, competition, season, match_ids
     )
@@ -207,7 +207,7 @@ def get_team_season_heatmap(
 ) -> TeamHeatmapResponse:
     """Binned spatial heatmap for one team's season events."""
     try:
-        match_ids = _season_match_ids(supabase, competition, season)
+        match_ids = resolve_season_match_ids(supabase, competition, season)
         rows = _positioned_events_for_matches(
             supabase,
             match_ids,

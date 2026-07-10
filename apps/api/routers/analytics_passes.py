@@ -15,6 +15,7 @@ from analytics.passes import (
     pass_team_name,
 )
 from core.supabase_client import get_supabase_public_read
+from services.season_scope import resolve_season_match_ids
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.passes import (
     MatchPassNetworkResponse,
@@ -53,42 +54,6 @@ def _resolve_match_teams(
     home = (row.get("home_team") or {}).get("name") or "Home"
     away = (row.get("away_team") or {}).get("name") or "Away"
     return home, away
-
-
-def _season_match_ids(
-    supabase: Client, competition: str, season: str
-) -> list[int]:
-    comp = (
-        supabase.table("competitions")
-        .select("id")
-        .eq("name", competition)
-        .limit(1)
-        .execute()
-    )
-    if not comp.data:
-        return []
-
-    comp_id = comp.data[0]["id"]
-    season_row = (
-        supabase.table("seasons")
-        .select("id")
-        .eq("competition_id", comp_id)
-        .eq("year", season)
-        .limit(1)
-        .execute()
-    )
-    if not season_row.data:
-        return []
-
-    season_id = season_row.data[0]["id"]
-    matches = (
-        supabase.table("matches")
-        .select("id")
-        .eq("competition_id", comp_id)
-        .eq("season_id", season_id)
-        .execute()
-    )
-    return [int(row["id"]) for row in matches.data or [] if row.get("id") is not None]
 
 
 def _pass_events_for_matches(
@@ -296,7 +261,7 @@ def get_progressive_pass_leaderboard(
 ) -> ProgressivePassLeaderboardResponse:
     """Teams ranked by progressive completed passes in a season."""
     try:
-        match_ids = _season_match_ids(supabase, competition, season)
+        match_ids = resolve_season_match_ids(supabase, competition, season)
         if not match_ids:
             return ProgressivePassLeaderboardResponse(
                 competition=competition,
