@@ -6,14 +6,19 @@ on:
       - main
       - "phase4/**"
       - "phase5/**"
+      - "phase6/**"
+      - "phase7/**"
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
+# statuses: write — commit statuses for Vercel Deployment Checks
+# actions: read — vercel/repository-dispatch status action lists workflow jobs
 permissions:
   contents: read
   statuses: write
+  actions: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -35,6 +40,7 @@ jobs:
       REQUIRE_AUTH: "false"
     steps:
       - name: Notify Vercel
+        continue-on-error: true
         uses: vercel/repository-dispatch/actions/status@v1
         with:
           name: "Vercel - soccer-analytics-api: API tests"
@@ -55,6 +61,7 @@ jobs:
         working-directory: apps/web
     steps:
       - name: Notify Vercel
+        continue-on-error: true
         uses: vercel/repository-dispatch/actions/status@v1
         with:
           name: "Vercel - soccer-analytics-web: Web checks"
@@ -83,6 +90,7 @@ jobs:
       NEXT_PUBLIC_AUTH_ENABLED: "false"
     steps:
       - name: Notify Vercel
+        continue-on-error: true
         uses: vercel/repository-dispatch/actions/status@v1
         with:
           name: "Vercel - soccer-analytics-web: production build"
@@ -103,10 +111,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Vercel
+        continue-on-error: true
         uses: vercel/repository-dispatch/actions/status@v1
         with:
           name: "Vercel - soccer-analytics-api: Docker build"
       - name: Notify Vercel (web image)
+        continue-on-error: true
         uses: vercel/repository-dispatch/actions/status@v1
         with:
           name: "Vercel - soccer-analytics-web: Docker build"
@@ -138,6 +148,7 @@ jobs:
         working-directory: apps/web
     steps:
       - name: Notify Vercel
+        continue-on-error: true
         uses: vercel/repository-dispatch/actions/status@v1
         with:
           name: "Vercel - soccer-analytics-web: E2E smoke"
