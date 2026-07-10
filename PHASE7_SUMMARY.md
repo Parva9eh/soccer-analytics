@@ -132,10 +132,12 @@ Close production-blocking security issues, fix analytics correctness/performance
 
 | Slice | Status |
 |-------|--------|
-| 7.0 plan-docs | ✅ On branch `phase7/plan-docs` / stacked under 7.1 |
-| 7.1 security-p0 | ✅ Branch `phase7/security-p0` |
-| 7.2 security-config | 🔄 Implementing |
-| 7.3 analytics-perf | ⏳ Pending |
-| 7.4 services-layer | ⏳ Pending |
-| 7.5 match-page-refactor | ⏳ Pending |
-| 7.6 analytics-dashboard | ⏳ Pending |
+| 7.0 plan-docs | ✅ `phase7/plan-docs` |
+| 7.1 security-p0 | ✅ `phase7/security-p0` |
+| 7.2 security-config | ✅ `phase7/security-config` |
+| 7.3 analytics-perf | ✅ `phase7/analytics-perf` |
+| 7.4 services-layer | ✅ `phase7/services-layer` |
+| 7.5 match-page-refactor | ✅ `phase7/match-page-refactor` |
+| 7.6 analytics-dashboard | ✅ `phase7/analytics-dashboard` (tip of stack) |
+
+**Merge order:** merge the stack bottom-up (or open a stacked PR series). Tip branch `phase7/analytics-dashboard` contains all Phase 7 work.

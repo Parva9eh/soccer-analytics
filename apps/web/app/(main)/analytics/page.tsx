@@ -36,19 +36,12 @@ import { PossessionSummaryPanel } from "@/components/analytics/PossessionSummary
 import { ProgressivePassLeaderboardPanel } from "@/components/analytics/ProgressivePassLeaderboard";
 import { SeasonZonePanel } from "@/components/analytics/SeasonZonePanel";
 import { SeasonTeamHeatmapPanel } from "@/components/analytics/SeasonTeamHeatmapPanel";
-import type { SeasonZonesSummary } from "@/lib/zone-types";
-import type { SeasonPossessionSummary } from "@/lib/possession-types";
 import { XgFormChart } from "@/components/analytics/XgFormChart";
 import { XgLeaderboards } from "@/components/analytics/XgLeaderboards";
-import type { ProgressivePassLeaderboard } from "@/lib/pass-types";
-import {
-  formatXg,
-  type PlayerXgLeaderboard,
-  type SeasonXg,
-  type TeamXgLeaderboard,
-} from "@/lib/xg-types";
+import { formatXg } from "@/lib/xg-types";
 import { queryAwaitingData } from "@/lib/query-loading";
 import { useDataScope } from "@/lib/use-data-scope";
+import { useSeasonAnalyticsQueries } from "@/lib/use-season-analytics-queries";
 import { CompetitionSeasonFilter } from "@/components/matches/CompetitionSeasonFilter";
 import { DashboardPanels } from "@/components/reports/DashboardPanels";
 import { SaveReportDialog } from "@/components/reports/SaveReportDialog";
@@ -221,69 +214,28 @@ function AuthAnalyticsDashboard() {
   });
   const { data: dashboard, error, refetch } = dashboardQuery;
 
-  const seasonXgParams = new URLSearchParams({
-    competition,
-    season,
-  });
   const xgScopeEnabled =
     catalogReady && scope === "filtered" && filterInCatalog && hasLinkedData;
 
-  const { data: seasonXg, isLoading: seasonXgLoading } = useQuery<SeasonXg>({
-    queryKey: ["season-xg", workspaceId, competition, season],
-    queryFn: () =>
-      apiFetchJson<SeasonXg>(`/analytics/xg/season?${seasonXgParams}`),
-    enabled: xgScopeEnabled,
-  });
-
-  const { data: playerXg, isLoading: playerXgLoading } =
-    useQuery<PlayerXgLeaderboard>({
-      queryKey: ["player-xg", workspaceId, competition, season],
-      queryFn: () =>
-        apiFetchJson<PlayerXgLeaderboard>(
-          `/analytics/xg/players?${seasonXgParams}&limit=8`,
-        ),
-      enabled: xgScopeEnabled,
-    });
-
-  const { data: teamXg, isLoading: teamXgLoading } =
-    useQuery<TeamXgLeaderboard>({
-      queryKey: ["team-xg", workspaceId, competition, season],
-      queryFn: () =>
-        apiFetchJson<TeamXgLeaderboard>(
-          `/analytics/xg/teams?${seasonXgParams}`,
-        ),
-      enabled: xgScopeEnabled,
-    });
-
-  const { data: progressivePasses, isLoading: progressivePassesLoading } =
-    useQuery<ProgressivePassLeaderboard>({
-      queryKey: ["progressive-passes", workspaceId, competition, season],
-      queryFn: () =>
-        apiFetchJson<ProgressivePassLeaderboard>(
-          `/analytics/passes/progressive?${seasonXgParams}&limit=10`,
-        ),
-      enabled: xgScopeEnabled,
-    });
-
-  const { data: possessionSummary, isLoading: possessionSummaryLoading } =
-    useQuery<SeasonPossessionSummary>({
-      queryKey: ["season-possession", workspaceId, competition, season],
-      queryFn: () =>
-        apiFetchJson<SeasonPossessionSummary>(
-          `/analytics/possession/season?${seasonXgParams}`,
-        ),
-      enabled: xgScopeEnabled,
-    });
-
-  const { data: seasonZones, isLoading: seasonZonesLoading } =
-    useQuery<SeasonZonesSummary>({
-      queryKey: ["season-zones", workspaceId, competition, season],
-      queryFn: () =>
-        apiFetchJson<SeasonZonesSummary>(
-          `/analytics/zones/season?${seasonXgParams}`,
-        ),
-      enabled: xgScopeEnabled,
-    });
+  const {
+    seasonXg,
+    seasonXgLoading,
+    playerXg,
+    playerXgLoading,
+    teamXg,
+    teamXgLoading,
+    progressivePasses,
+    progressivePassesLoading,
+    possessionSummary,
+    possessionSummaryLoading,
+    seasonZones,
+    seasonZonesLoading,
+  } = useSeasonAnalyticsQueries(
+    workspaceId,
+    competition,
+    season,
+    xgScopeEnabled,
+  );
 
   const scopeLabel = reportScopeLabel(
     scope === "filtered" ? competition : null,
@@ -514,80 +466,25 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
   const { data: summary, error, refetch } = summaryQuery;
   const summaryLoading = queryAwaitingData(scopeReady, summaryQuery);
 
-  const legacyXgParams = new URLSearchParams({
-    competition: DEFAULT_COMPETITION,
-    season: DEFAULT_SEASON,
-  });
-  const { data: seasonXg, isLoading: seasonXgLoading } = useQuery<SeasonXg>({
-    queryKey: ["season-xg", workspaceId, DEFAULT_COMPETITION, DEFAULT_SEASON],
-    queryFn: () =>
-      apiFetchJson<SeasonXg>(`/analytics/xg/season?${legacyXgParams}`),
-  });
-
-  const { data: playerXg, isLoading: playerXgLoading } =
-    useQuery<PlayerXgLeaderboard>({
-      queryKey: [
-        "player-xg",
-        workspaceId,
-        DEFAULT_COMPETITION,
-        DEFAULT_SEASON,
-      ],
-      queryFn: () =>
-        apiFetchJson<PlayerXgLeaderboard>(
-          `/analytics/xg/players?${legacyXgParams}&limit=8`,
-        ),
-    });
-
-  const { data: teamXg, isLoading: teamXgLoading } =
-    useQuery<TeamXgLeaderboard>({
-      queryKey: ["team-xg", workspaceId, DEFAULT_COMPETITION, DEFAULT_SEASON],
-      queryFn: () =>
-        apiFetchJson<TeamXgLeaderboard>(
-          `/analytics/xg/teams?${legacyXgParams}`,
-        ),
-    });
-
-  const { data: progressivePasses, isLoading: progressivePassesLoading } =
-    useQuery<ProgressivePassLeaderboard>({
-      queryKey: [
-        "progressive-passes",
-        workspaceId,
-        DEFAULT_COMPETITION,
-        DEFAULT_SEASON,
-      ],
-      queryFn: () =>
-        apiFetchJson<ProgressivePassLeaderboard>(
-          `/analytics/passes/progressive?${legacyXgParams}&limit=10`,
-        ),
-    });
-
-  const { data: possessionSummary, isLoading: possessionSummaryLoading } =
-    useQuery<SeasonPossessionSummary>({
-      queryKey: [
-        "season-possession",
-        workspaceId,
-        DEFAULT_COMPETITION,
-        DEFAULT_SEASON,
-      ],
-      queryFn: () =>
-        apiFetchJson<SeasonPossessionSummary>(
-          `/analytics/possession/season?${legacyXgParams}`,
-        ),
-    });
-
-  const { data: seasonZones, isLoading: seasonZonesLoading } =
-    useQuery<SeasonZonesSummary>({
-      queryKey: [
-        "season-zones",
-        workspaceId,
-        DEFAULT_COMPETITION,
-        DEFAULT_SEASON,
-      ],
-      queryFn: () =>
-        apiFetchJson<SeasonZonesSummary>(
-          `/analytics/zones/season?${legacyXgParams}`,
-        ),
-    });
+  const {
+    seasonXg,
+    seasonXgLoading,
+    playerXg,
+    playerXgLoading,
+    teamXg,
+    teamXgLoading,
+    progressivePasses,
+    progressivePassesLoading,
+    possessionSummary,
+    possessionSummaryLoading,
+    seasonZones,
+    seasonZonesLoading,
+  } = useSeasonAnalyticsQueries(
+    workspaceId,
+    DEFAULT_COMPETITION,
+    DEFAULT_SEASON,
+    scopeReady,
+  );
 
   if (error) {
     return (
