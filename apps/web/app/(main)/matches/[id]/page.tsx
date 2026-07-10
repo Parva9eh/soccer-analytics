@@ -415,7 +415,9 @@ function MatchDetailPageContent() {
     return base.filter((event) => allowed.has(event.id));
   })();
 
-  const eventDensityByMinute = useMemo(() => {
+  // Single O(n) pass — avoid useMemo here: React Compiler rejects memo deps on
+  // non-memoized filtered arrays (react-hooks/preserve-manual-memoization).
+  const eventDensityByMinute = (() => {
     const counts = Array.from({ length: 95 }, () => 0);
     for (const event of filteredPitchEvents) {
       const minute = event.minute;
@@ -424,7 +426,7 @@ function MatchDetailPageContent() {
       }
     }
     return counts;
-  }, [filteredPitchEvents]);
+  })();
 
   const homeHeatmapEvents = filteredPitchEvents.filter((event) =>
     eventMatchesTeamFilter(event.details, "home", homeTeamName, awayTeamName),
