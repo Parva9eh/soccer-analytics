@@ -8,6 +8,8 @@ from core.auth import _extract_bearer
 from schemas.error import ErrorCode, raise_http_exception
 from functools import lru_cache
 
+# get_settings still used by _new_client
+
 
 def _new_client(*, use_service_role: bool) -> Client:
     """Create a fresh Supabase client (never share mutable auth headers across requests)."""
@@ -64,23 +66,16 @@ def get_supabase(
     authorization: Annotated[Optional[str], Header()] = None,
 ) -> Client:
     """
-    Legacy FastAPI dependency (prefer get_supabase_public_read / get_user_supabase).
+    Legacy dependency — prefer get_supabase_public_read / get_user_supabase.
 
-    - Bearer token present → fresh user-scoped anon client (RLS).
-    - No token + REQUIRE_AUTH=false → service role (local dev footgun — avoid new use).
-    - No token + REQUIRE_AUTH=true → 401.
+    Always requires a Bearer token. Never returns the service-role client for
+    anonymous HTTP callers (ETL/health use get_supabase_service_client directly).
     """
-    settings = get_settings()
     token = _extract_bearer(authorization)
-
-    if token:
-        return client_with_user_jwt(token)
-
-    if settings.REQUIRE_AUTH:
+    if not token:
         raise_http_exception(
             status_code=401,
             detail="Authentication required",
             code=ErrorCode.UNAUTHORIZED,
         )
-
-    return get_supabase_service_client()
+    return client_with_user_jwt(token)

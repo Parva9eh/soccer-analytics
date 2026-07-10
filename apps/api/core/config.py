@@ -11,7 +11,9 @@ class Settings(BaseSettings):
     # JWT secret from Supabase project Settings → API → JWT Secret (HS256)
     SUPABASE_JWT_SECRET: str | None = None
 
-    # When true, API routes require Authorization: Bearer <access_token>
+    # When true, auth-gated deps reject missing Bearer tokens.
+    # Prefer get_supabase_public_read / get_user_supabase over legacy get_supabase.
+    # Production should set REQUIRE_AUTH=true (see .env.example).
     REQUIRE_AUTH: bool = False
 
     # Logging configuration

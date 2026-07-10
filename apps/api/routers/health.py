@@ -36,16 +36,16 @@ def readiness_check(
     supabase: Client = Depends(get_supabase_service_client),
     request_id: str = Depends(get_request_id),
 ):
-    """Readiness probe for load balancers and container orchestrators."""
+    """Readiness probe — boolean only (no row counts on the public surface)."""
     try:
-        response = supabase.table("matches").select("id", count="exact").limit(0).execute()
+        # Prove DB connectivity without leaking inventory size.
+        supabase.table("matches").select("id").limit(1).execute()
         settings = get_settings()
         return {
             "status": "ready",
             "service": "Soccer Analytics API",
             "environment": settings.ENVIRONMENT,
             "database": "connected",
-            "matches_count": response.count,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "request_id": request_id if request_id != "-" else None,
         }
@@ -63,16 +63,16 @@ def test_supabase_connection(
     supabase: Client = Depends(get_supabase_service_client),
     request_id: str = Depends(get_request_id)
 ):
-    """Test Supabase connection."""
+    """Test Supabase connection (boolean only)."""
     try:
-        response = supabase.table("matches").select("id", count="exact").limit(0).execute()
+        supabase.table("matches").select("id").limit(1).execute()
         settings = get_settings()
         return {
             "status": "connected",
             "service": "supabase",
             "environment": settings.ENVIRONMENT,
-            "matches_count": response.count,
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "request_id": request_id if request_id != "-" else None,
         }
     except Exception:
         logger.exception("Supabase connection test failed")
