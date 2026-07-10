@@ -1,5 +1,6 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { safeReturnPath } from "@/lib/auth/safe-return-path";
 import {
   createRouteHandlerClient,
   resolveRedirectUrl,
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/";
+  const next = safeReturnPath(searchParams.get("next"), "/");
   const authError = searchParams.get("error");
   const errorCode = searchParams.get("error_code");
 

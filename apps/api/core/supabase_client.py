@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from fastapi import Depends, Header
+from fastapi import Header
 from supabase import Client, create_client
 
 from core.config import get_settings
@@ -9,9 +9,8 @@ from schemas.error import ErrorCode, raise_http_exception
 from functools import lru_cache
 
 
-@lru_cache()
-def _create_supabase_client(use_service_role: bool = True) -> Client:
-    """Create a Supabase client (cached)."""
+def _new_client(*, use_service_role: bool) -> Client:
+    """Create a fresh Supabase client (never share mutable auth headers across requests)."""
     settings = get_settings()
     key = (
         settings.SUPABASE_SERVICE_ROLE_KEY
@@ -21,19 +20,30 @@ def _create_supabase_client(use_service_role: bool = True) -> Client:
     return create_client(settings.SUPABASE_URL, key)
 
 
+@lru_cache()
+def _service_role_client() -> Client:
+    """Process-wide service-role client (ETL / health only — never user JWT)."""
+    return _new_client(use_service_role=True)
+
+
 def get_supabase_service_client() -> Client:
     """Client with full privileges (for ETL, admin operations)."""
-    return _create_supabase_client(use_service_role=True)
+    return _service_role_client()
 
 
 def get_supabase_anon_client() -> Client:
-    """Client with anon key (respects Row Level Security)."""
-    return _create_supabase_client(use_service_role=False)
+    """
+    Fresh anon client for guest / public-read RLS.
+
+    A new instance every call so Authorization headers set on user-scoped
+    clients cannot leak into guest requests (postgrest.auth mutates headers).
+    """
+    return _new_client(use_service_role=False)
 
 
 def client_with_user_jwt(access_token: str) -> Client:
-    """Anon client scoped to the authenticated user (RLS applies)."""
-    client = get_supabase_anon_client()
+    """Fresh anon client scoped to one user's JWT (RLS applies)."""
+    client = _new_client(use_service_role=False)
     client.postgrest.auth(access_token)
     return client
 
@@ -54,10 +64,10 @@ def get_supabase(
     authorization: Annotated[Optional[str], Header()] = None,
 ) -> Client:
     """
-    FastAPI dependency for route handlers.
+    Legacy FastAPI dependency (prefer get_supabase_public_read / get_user_supabase).
 
-    - Bearer token present → anon client with user JWT (RLS).
-    - No token + REQUIRE_AUTH=false → service role (local dev / ETL-era default).
+    - Bearer token present → fresh user-scoped anon client (RLS).
+    - No token + REQUIRE_AUTH=false → service role (local dev footgun — avoid new use).
     - No token + REQUIRE_AUTH=true → 401.
     """
     settings = get_settings()

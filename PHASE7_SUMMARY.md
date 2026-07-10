@@ -132,8 +132,8 @@ Close production-blocking security issues, fix analytics correctness/performance
 
 | Slice | Status |
 |-------|--------|
-| 7.0 plan-docs | 🔄 In progress |
-| 7.1 security-p0 | ⏳ Pending |
+| 7.0 plan-docs | ✅ On branch `phase7/plan-docs` / stacked under 7.1 |
+| 7.1 security-p0 | 🔄 Implementing |
 | 7.2 security-config | ⏳ Pending |
 | 7.3 analytics-perf | ⏳ Pending |
 | 7.4 services-layer | ⏳ Pending |

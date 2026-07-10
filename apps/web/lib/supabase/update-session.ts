@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_ENABLED, isAuthRequiredPath } from "@/lib/auth-config";
+import { safeReturnPath } from "@/lib/auth/safe-return-path";
 import { E2E_AUTH_ENABLED } from "@/lib/e2e-auth";
 import { hasSupabaseEnv } from "./env";
 import { refreshSupabaseSession } from "./refresh-session";
@@ -51,7 +52,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && (pathname === "/login" || pathname === "/signup")) {
-    const next = request.nextUrl.searchParams.get("next") || "/";
+    const next = safeReturnPath(request.nextUrl.searchParams.get("next"), "/");
     return NextResponse.redirect(new URL(next, request.url));
   }
 
