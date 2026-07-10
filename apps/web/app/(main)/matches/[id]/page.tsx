@@ -61,9 +61,29 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import dynamic from "next/dynamic";
 import { Pitch } from "@/components/pitch/Pitch";
-import { ThreeDPitch } from "@/components/pitch/ThreeDPitch";
 import { getEventColor, getEventIcon, EVENT_TYPES } from "@/components/pitch/utils";
+import {
+  fetchAllMatchEvents,
+  type EventsPageResponse,
+  type PitchEvent,
+} from "@/lib/event-types";
+
+const ThreeDPitch = dynamic(
+  () =>
+    import("@/components/pitch/ThreeDPitch").then((mod) => mod.ThreeDPitch),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="surface-card min-h-[min(320px,52vh)] animate-pulse rounded-xl border sm:min-h-[480px]"
+        role="status"
+        aria-label="Loading 3D pitch"
+      />
+    ),
+  },
+);
 import { PitchLayersPopover } from "@/components/pitch/PitchLayersPopover";
 import { TableEventFilterPopover } from "@/components/pitch/TableEventFilterPopover";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -120,27 +140,12 @@ interface Match {
   season?: string | null;
 }
 
-interface Event {
-  id: number;
-  minute: number | null;
-  second: number | null;
-  event_type: string | null;
-  x: number | null;
-  y: number | null;
-  end_x: number | null;
-  end_y: number | null;
-  details?: unknown;
-}
+type Event = PitchEvent;
 
 type PitchViewMode = "events" | "shots" | "passes";
 type EventsDisplayMode = "dots" | "heatmap";
 
-interface EventsResponse {
-  total: number;
-  page: number;
-  page_size: number;
-  events: Event[];
-}
+type EventsResponse = EventsPageResponse;
 
 function MatchDetailPageContent() {
   const params = useParams();
@@ -307,18 +312,10 @@ function MatchDetailPageContent() {
       enabled: !!matchId,
     });
 
-  // Fetch events for Pitch
-  const { data: pitchEventsData, isPending: pitchEventsPending, isFetching: pitchEventsFetching } = useQuery<EventsResponse>({
+  // Fetch all pitch events (paginated until complete — not a hard 500-row cap).
+  const { data: pitchEventsData, isPending: pitchEventsPending, isFetching: pitchEventsFetching, isError: pitchEventsError, refetch: refetchPitchEvents } = useQuery<EventsResponse>({
     queryKey: ["pitch-events", workspaceId, matchId],
-    queryFn: async () => {
-      try {
-        return await apiFetchJson<EventsResponse>(
-          `/events/?match_id=${matchId}&page=1&page_size=500`,
-        );
-      } catch {
-        return { events: [], total: 0, page: 1, page_size: 500 };
-      }
-    },
+    queryFn: () => fetchAllMatchEvents(matchId!),
     enabled: !!matchId,
   });
 
@@ -417,6 +414,17 @@ function MatchDetailPageContent() {
     const allowed = new Set(selectedPossessionChain.event_ids);
     return base.filter((event) => allowed.has(event.id));
   })();
+
+  const eventDensityByMinute = useMemo(() => {
+    const counts = Array.from({ length: 95 }, () => 0);
+    for (const event of filteredPitchEvents) {
+      const minute = event.minute;
+      if (minute != null && minute >= 0 && minute < 95) {
+        counts[minute] += 1;
+      }
+    }
+    return counts;
+  }, [filteredPitchEvents]);
 
   const homeHeatmapEvents = filteredPitchEvents.filter((event) =>
     eventMatchesTeamFilter(event.details, "home", homeTeamName, awayTeamName),
@@ -891,8 +899,7 @@ function MatchDetailPageContent() {
             <span>Event density (per minute)</span>
           </div>
           <div className="flex h-3 w-full gap-px overflow-hidden rounded border border-border/80 bg-background">
-            {Array.from({ length: 95 }, (_, min) => {
-              const count = filteredPitchEvents.filter(e => e.minute === min).length;
+            {eventDensityByMinute.map((count, min) => {
               const intensity = Math.min(count / 4, 1);
               const bg = intensity > 0 ? `rgba(163, 163, 172, ${0.2 + intensity * 0.7})` : 'rgba(15, 23, 42, 0.6)';
               return <div key={min} className="flex-1" style={{ backgroundColor: bg }} title={`Minute ${min}: ${count} events`} />;
@@ -972,6 +979,12 @@ function MatchDetailPageContent() {
                 }
               />
             )
+          ) : pitchEventsError && pitchViewMode === "events" ? (
+            <QueryErrorState
+              error={pitchEventsError}
+              onRetry={() => void refetchPitchEvents()}
+              title="Unable to load pitch events"
+            />
           ) : pitchEventsLoading && pitchViewMode === "events" ? (
             <div
               className="surface-card min-h-[min(280px,52vh)] animate-pulse rounded-xl border sm:min-h-[400px]"
