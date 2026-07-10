@@ -12,6 +12,7 @@ import {
   getAuthCallbackUrl,
   getEmailConfirmDestination,
 } from "@/lib/auth/oauth";
+import { safeReturnPath } from "@/lib/auth/safe-return-path";
 
 type AuthMode = "login" | "signup";
 
@@ -22,7 +23,7 @@ interface AuthFormProps {
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/";
+  const next = safeReturnPath(searchParams.get("next"), "/");
   const errorParam = searchParams.get("error");
 
   const [email, setEmail] = useState("");

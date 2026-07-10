@@ -43,29 +43,22 @@ def _payload_to_user(payload: dict[str, Any]) -> AuthUser:
     )
 
 
-def _decode_with_audience_fallback(
+def _decode_with_audience(
     token: str,
     key: Any,
     algorithms: list[str],
 ) -> dict[str, Any]:
-    try:
-        return jwt.decode(
-            token,
-            key,
-            algorithms=algorithms,
-            audience="authenticated",
-        )
-    except InvalidTokenError:
-        return jwt.decode(
-            token,
-            key,
-            algorithms=algorithms,
-            options={"verify_aud": False},
-        )
+    """Fail closed on audience — only Supabase access tokens for role `authenticated`."""
+    return jwt.decode(
+        token,
+        key,
+        algorithms=algorithms,
+        audience="authenticated",
+    )
 
 
 def _decode_hs256(token: str, secret: str) -> dict[str, Any]:
-    return _decode_with_audience_fallback(token, secret, ["HS256"])
+    return _decode_with_audience(token, secret, ["HS256"])
 
 
 def _decode_jwks(token: str, jwks_url: str) -> dict[str, Any]:
@@ -73,7 +66,7 @@ def _decode_jwks(token: str, jwks_url: str) -> dict[str, Any]:
     if _JWKS_CLIENT is None or getattr(_JWKS_CLIENT, "uri", None) != jwks_url:
         _JWKS_CLIENT = PyJWKClient(jwks_url, cache_keys=True)
     signing_key = _JWKS_CLIENT.get_signing_key_from_jwt(token)
-    return _decode_with_audience_fallback(
+    return _decode_with_audience(
         token,
         signing_key.key,
         ["ES256", "RS256", "EdDSA", "HS256"],

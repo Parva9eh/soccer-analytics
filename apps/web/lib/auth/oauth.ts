@@ -1,3 +1,5 @@
+import { safeReturnPath } from "@/lib/auth/safe-return-path";
+
 function getOrigin(): string {
   return typeof window !== "undefined"
     ? window.location.origin
@@ -5,12 +7,12 @@ function getOrigin(): string {
 }
 
 export function getAuthCallbackUrl(nextPath: string): string {
-  const next = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
+  const next = safeReturnPath(nextPath, "/");
   return `${getOrigin()}/auth/callback?next=${encodeURIComponent(next)}`;
 }
 
 /** Post-confirmation destination passed to Supabase as emailRedirectTo ({{ .RedirectTo }}). */
 export function getEmailConfirmDestination(nextPath: string): string {
-  const next = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
+  const next = safeReturnPath(nextPath, "/");
   return `${getOrigin()}${next}`;
 }
