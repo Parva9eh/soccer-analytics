@@ -20,6 +20,22 @@ export const WORKSPACE_SCOPED_QUERY_PREFIXES = [
   "saved-analyses",
   "reports-dashboard",
   "workspace-reports",
+  // Analytics (must invalidate on workspace switch)
+  "season-xg",
+  "player-xg",
+  "team-xg",
+  "progressive-passes",
+  "season-possession",
+  "season-zones",
+  "team-season-heatmap",
+  "team-xg-form",
+  "match-xg",
+  "match-pass-network",
+  "player-season-profile",
+  "team-season-profile",
+  "compare-players",
+  "compare-teams",
+  "compare-matches",
 ] as const;
 
 /** Avoid caching auth failures; retry once when the session may not be ready yet. */
