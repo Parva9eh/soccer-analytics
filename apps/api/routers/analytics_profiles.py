@@ -115,16 +115,14 @@ def _season_match_rows(
 def _events_for_matches(
     supabase: Client, match_ids: list[int], event_type: str
 ) -> list[dict[str, Any]]:
-    if not match_ids:
-        return []
-    result = (
-        supabase.table("events")
-        .select("match_id, x, end_x, event_type, details")
-        .eq("event_type", event_type)
-        .in_("match_id", match_ids)
-        .execute()
+    from services.event_fetch import fetch_events_paginated
+
+    return fetch_events_paginated(
+        supabase,
+        "match_id, x, end_x, event_type, details",
+        match_ids=match_ids,
+        event_type=event_type,
     )
-    return result.data or []
 
 
 def _lookup_player(supabase: Client, player_id: int) -> dict[str, Any]:
@@ -349,12 +347,13 @@ def _fetch_match_row(supabase: Client, match_id: int) -> dict[str, Any]:
 
 
 def _match_events(supabase: Client, match_id: int) -> list[dict[str, Any]]:
-    return (
-        supabase.table("events")
-        .select("id, x, end_x, event_type, details")
-        .eq("match_id", match_id)
-        .execute()
-    ).data or []
+    from services.event_fetch import fetch_events_paginated
+
+    return fetch_events_paginated(
+        supabase,
+        "id, x, end_x, event_type, details",
+        match_id=match_id,
+    )
 
 
 def _build_match_profile(
@@ -458,23 +457,21 @@ def _build_match_profile(
 def _season_event_bundle(
     supabase: Client, competition: str, season: str
 ) -> tuple[list[int], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    from services.event_fetch import fetch_events_paginated
+
     match_ids = _season_match_ids(supabase, competition, season)
     pass_rows = _events_for_matches(supabase, match_ids, "Pass")
     shot_rows = _events_for_matches(supabase, match_ids, "Shot")
     all_rows: list[dict[str, Any]] = []
     if match_ids:
-        all_rows = (
-            supabase.table("events")
-            .select("match_id, minute, second, event_type, details")
-            .in_("match_id", match_ids)
-            .order("minute")
-            .order("second")
-            .order("id")
-            .execute()
-        ).data or []
+        all_rows = fetch_events_paginated(
+            supabase,
+            "match_id, minute, second, event_type, details",
+            match_ids=match_ids,
+            order=True,
+        )
     match_rows = _season_match_rows(supabase, competition, season)
     return match_ids, pass_rows, shot_rows, all_rows, match_rows
-
 
 @router.get(
     "/players/{player_id}",

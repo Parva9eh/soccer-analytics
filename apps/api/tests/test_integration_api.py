@@ -44,12 +44,12 @@ def test_competitions_catalog_groups_seasons(api_client: TestClient):
     assert payload[0]["seasons"] == ["2020/2021"]
 
 
-def test_health_supabase_uses_mock_count(api_client: TestClient):
+def test_health_supabase_connected(api_client: TestClient):
     response = api_client.get("/health/supabase")
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "connected"
-    assert payload["matches_count"] == 1
+    assert "matches_count" not in payload
 
 
 def test_summary_uses_data_snapshot_rpc(api_client: TestClient):
