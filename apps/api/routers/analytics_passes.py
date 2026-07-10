@@ -94,16 +94,14 @@ def _season_match_ids(
 def _pass_events_for_matches(
     supabase: Client, match_ids: list[int]
 ) -> list[dict[str, Any]]:
-    if not match_ids:
-        return []
-    result = (
-        supabase.table("events")
-        .select("match_id, x, y, end_x, details")
-        .eq("event_type", "Pass")
-        .in_("match_id", match_ids)
-        .execute()
+    from services.event_fetch import fetch_events_paginated
+
+    return fetch_events_paginated(
+        supabase,
+        "match_id, x, y, end_x, details",
+        match_ids=match_ids,
+        event_type="Pass",
     )
-    return result.data or []
 
 
 def _accumulate_team_pass_stats(

@@ -108,16 +108,27 @@ def _season_match_ids(
 
 
 def _events_for_match(supabase: Client, match_id: int) -> list[dict[str, Any]]:
-    result = (
-        supabase.table("events")
-        .select("id, minute, second, event_type, details")
-        .eq("match_id", match_id)
-        .order("minute")
-        .order("second")
-        .order("id")
-        .execute()
+    from services.event_fetch import fetch_events_paginated
+
+    return fetch_events_paginated(
+        supabase,
+        "id, match_id, minute, second, event_type, details",
+        match_id=match_id,
+        order=True,
     )
-    return result.data or []
+
+
+def _events_for_matches(
+    supabase: Client, match_ids: list[int]
+) -> list[dict[str, Any]]:
+    from services.event_fetch import fetch_events_paginated
+
+    return fetch_events_paginated(
+        supabase,
+        "id, match_id, minute, second, event_type, details",
+        match_ids=match_ids,
+        order=True,
+    )
 
 
 def _build_chains(
@@ -309,8 +320,16 @@ def get_season_possession_summary(
             }
         )
 
+        # One paginated pull for the whole season (not N sequential match fetches).
+        all_events = _events_for_matches(supabase, match_ids)
+        by_match: dict[int, list[dict[str, Any]]] = defaultdict(list)
+        for row in all_events:
+            mid = row.get("match_id")
+            if mid is not None:
+                by_match[int(mid)].append(row)
+
         for match_id in match_ids:
-            chains = _build_chains(_events_for_match(supabase, match_id))
+            chains = _build_chains(by_match.get(match_id, []))
             per_match = _aggregate_team_possession(chains)
             for team, summary in per_match.items():
                 bucket = team_totals[team]

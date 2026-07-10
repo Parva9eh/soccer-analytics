@@ -1,7 +1,7 @@
 import logging
 
-from fastapi import APIRouter, Query, Depends
-from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from typing import List
 from supabase import Client
 
 from core.supabase_client import get_supabase_public_read
@@ -133,6 +133,8 @@ def get_match(
             season=season.get("year"),
         )
 
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("Error in get_match")
         raise_http_exception(

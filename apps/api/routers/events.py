@@ -36,11 +36,6 @@ def get_events(
         if event_type:
             query = query.eq("event_type", event_type)
 
-        # Get total count
-        count_response = query.execute()
-        total = count_response.count or 0
-
-        # Get paginated results
         offset = pagination.offset
         response = (
             query.order("minute")
@@ -50,10 +45,10 @@ def get_events(
         )
 
         return EventListResponse(
-            total=total,
+            total=response.count or 0,
             page=pagination.page,
             page_size=pagination.page_size,
-            events=response.data or []
+            events=response.data or [],
         )
 
     except Exception:

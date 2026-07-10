@@ -214,18 +214,19 @@ def _matches_for_season(
 def _shots_for_season(
     supabase: Client, competition: str, season: str
 ) -> tuple[list[int], list[dict[str, Any]]]:
+    from services.event_fetch import fetch_events_paginated
+
     match_ids = _match_ids_for_season(supabase, competition, season)
     if not match_ids:
         return [], []
 
-    shots = (
-        supabase.table("events")
-        .select("match_id, details")
-        .eq("event_type", "Shot")
-        .in_("match_id", match_ids)
-        .execute()
+    shots = fetch_events_paginated(
+        supabase,
+        "match_id, details",
+        match_ids=match_ids,
+        event_type="Shot",
     )
-    return match_ids, shots.data or []
+    return match_ids, shots
 
 
 @router.get(
