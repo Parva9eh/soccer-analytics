@@ -20,6 +20,7 @@ from analytics.tactical import (
 )
 from analytics.xg import is_goal_outcome, shot_outcome, shot_team_name, shot_xg_from_details
 from core.supabase_client import get_supabase_public_read
+from services.season_scope import list_season_match_rows, resolve_season_match_ids
 from routers.analytics_possession import _aggregate_team_possession, _build_chains
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.profiles import (
@@ -34,82 +35,6 @@ from schemas.profiles import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/analytics/profiles", tags=["Analytics"])
-
-
-def _season_match_ids(
-    supabase: Client, competition: str, season: str
-) -> list[int]:
-    comp = (
-        supabase.table("competitions")
-        .select("id")
-        .eq("name", competition)
-        .limit(1)
-        .execute()
-    )
-    if not comp.data:
-        return []
-
-    comp_id = comp.data[0]["id"]
-    season_row = (
-        supabase.table("seasons")
-        .select("id")
-        .eq("competition_id", comp_id)
-        .eq("year", season)
-        .limit(1)
-        .execute()
-    )
-    if not season_row.data:
-        return []
-
-    season_id = season_row.data[0]["id"]
-    matches = (
-        supabase.table("matches")
-        .select("id")
-        .eq("competition_id", comp_id)
-        .eq("season_id", season_id)
-        .execute()
-    )
-    return [int(row["id"]) for row in matches.data or [] if row.get("id") is not None]
-
-
-def _season_match_rows(
-    supabase: Client, competition: str, season: str
-) -> list[dict[str, Any]]:
-    comp = (
-        supabase.table("competitions")
-        .select("id")
-        .eq("name", competition)
-        .limit(1)
-        .execute()
-    )
-    if not comp.data:
-        return []
-
-    comp_id = comp.data[0]["id"]
-    season_row = (
-        supabase.table("seasons")
-        .select("id")
-        .eq("competition_id", comp_id)
-        .eq("year", season)
-        .limit(1)
-        .execute()
-    )
-    if not season_row.data:
-        return []
-
-    season_id = season_row.data[0]["id"]
-    matches = (
-        supabase.table("matches")
-        .select(
-            "id, home_score, away_score, "
-            "home_team:teams!home_team_id(name), "
-            "away_team:teams!away_team_id(name)"
-        )
-        .eq("competition_id", comp_id)
-        .eq("season_id", season_id)
-        .execute()
-    )
-    return matches.data or []
 
 
 def _events_for_matches(
@@ -459,7 +384,7 @@ def _season_event_bundle(
 ) -> tuple[list[int], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     from services.event_fetch import fetch_events_paginated
 
-    match_ids = _season_match_ids(supabase, competition, season)
+    match_ids = resolve_season_match_ids(supabase, competition, season)
     pass_rows = _events_for_matches(supabase, match_ids, "Pass")
     shot_rows = _events_for_matches(supabase, match_ids, "Shot")
     all_rows: list[dict[str, Any]] = []
@@ -470,7 +395,7 @@ def _season_event_bundle(
             match_ids=match_ids,
             order=True,
         )
-    match_rows = _season_match_rows(supabase, competition, season)
+    match_rows = list_season_match_rows(supabase, competition, season)
     return match_ids, pass_rows, shot_rows, all_rows, match_rows
 
 @router.get(
