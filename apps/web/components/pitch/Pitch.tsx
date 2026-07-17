@@ -1,25 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import type { PitchEvent } from "@/lib/event-types";
 import { getEventColor } from "./utils";
 import { PitchFrame } from "./PitchFrame";
 import { Goals2D } from "./Goals2D";
 import { SVG_VIEW, getSvgPitchMarkings, statsbombToSvg } from "./constants";
 
-interface EventPoint {
-  id: number;
-  x: number | null;
-  y: number | null;
-  end_x?: number | null;
-  end_y?: number | null;
-  event_type: string | null;
-  minute: number | null;
-  second: number | null;
-}
-
 interface PitchProps {
-  events: EventPoint[];
-  onEventClick?: (event: EventPoint) => void;
+  events: PitchEvent[];
+  onEventClick?: (event: PitchEvent) => void;
   highlightedEventId?: number | null;
   selectedEventIds?: number[];
   onSelectionChange?: (ids: number[]) => void;
@@ -44,7 +34,7 @@ export function Pitch({
   onSelectionChange,
   selectedEventIds = [],
 }: PitchProps) {
-  const [hoveredEvent, setHoveredEvent] = useState<EventPoint | null>(null);
+  const [hoveredEvent, setHoveredEvent] = useState<PitchEvent | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);

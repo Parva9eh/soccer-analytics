@@ -79,8 +79,10 @@ curl https://<your-api-project>.vercel.app/health/ready
 
 ## Authentication (Phase 3)
 
-- **`REQUIRE_AUTH=false`** (default): Routes use the service-role client when no Bearer token is sent (local dev).
-- **`REQUIRE_AUTH=true`**: Collaboration routes require a valid Supabase JWT. Read routes (`/matches`, `/events`, `/players`, `/competitions`, `/summary`) accept anonymous requests via the Supabase anon key; RLS limits guests to the public demo dataset.
+- **Read routes** (`/matches`, `/events`, `/players`, `/competitions`, `/summary`, analytics): `get_supabase_public_read` — Bearer JWT → user-scoped RLS, or anon guest demo RLS when no token.
+- **Collaboration routes** (`/workspaces`, `/analyses`, `/reports`, `/auth/*`): require Bearer JWT via `get_user_supabase` / `require_auth_user`.
+- **ETL / health / inventory**: `get_supabase_service_client()` only (never as an anonymous HTTP fallback).
+- **`REQUIRE_AUTH`**: keep `true` in production (see `.env.example`). Local tests may set `false`; it no longer grants service-role access without a token.
 - Set **`SUPABASE_JWT_SECRET`** from Supabase → Settings → API → JWT Secret.
 - ETL and admin scripts should call `get_supabase_service_client()` directly, not the route dependency.
 

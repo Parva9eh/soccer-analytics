@@ -5,6 +5,7 @@ from typing import Optional
 from supabase import Client
 
 from core.supabase_client import get_supabase_public_read
+from services.event_fetch import COLUMNS_LIST
 from schemas.event import EventListResponse
 from schemas.params import PaginationParams
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
@@ -25,11 +26,11 @@ def get_events(
     event_type: Optional[str] = Query(None, description="Filter by event type (e.g. Pass, Shot)"),
     pagination: PaginationParams = Depends()
 ) -> EventListResponse:
-    """Get paginated events for a match, optionally filtered by event_type."""
+    """Get paginated events for a match (projected columns, not select *)."""
     try:
         query = (
             supabase.table("events")
-            .select("*", count="exact")
+            .select(COLUMNS_LIST, count="exact")
             .eq("match_id", match_id)
         )
 

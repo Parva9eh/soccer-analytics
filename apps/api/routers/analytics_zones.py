@@ -13,12 +13,11 @@ from analytics.zones import (
 from core.config import get_settings
 from core.season_zone_cache import (
     SeasonScopeCache,
-    get_cached_positioned_events,
     get_cached_season_zones,
-    set_cached_positioned_events,
     set_cached_season_zones,
 )
 from core.supabase_client import get_supabase_public_read
+from services.event_fetch import COLUMNS_POSITIONED, fetch_events_paginated
 from services.season_scope import resolve_season_match_ids
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.zones import (
@@ -32,8 +31,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/analytics/zones", tags=["Analytics"])
 
-_PAGE_SIZE = 1000
-_EVENTS_CACHE_PREFIX = "events"
 _ZONES_CACHE_PREFIX = "zones"
 
 
@@ -44,36 +41,15 @@ def _positioned_events_for_matches(
     competition: str,
     season: str,
 ) -> list[dict[str, Any]]:
+    """Fetch positioned events once per request (no process-wide raw-event cache)."""
     if not match_ids:
         return []
-
-    settings = get_settings()
-    cache_key = SeasonScopeCache.scope_key(
-        _EVENTS_CACHE_PREFIX, competition, season, match_ids
+    return fetch_events_paginated(
+        supabase,
+        COLUMNS_POSITIONED,
+        match_ids=match_ids,
+        require_position=True,
     )
-    cached = get_cached_positioned_events(cache_key)
-    if cached is not None:
-        return cached
-
-    rows: list[dict[str, Any]] = []
-    offset = 0
-    while True:
-        batch = (
-            supabase.table("events")
-            .select("x, y, details")
-            .in_("match_id", match_ids)
-            .not_.is_("x", "null")
-            .not_.is_("y", "null")
-            .range(offset, offset + _PAGE_SIZE - 1)
-            .execute()
-        ).data or []
-        rows.extend(batch)
-        if len(batch) < _PAGE_SIZE:
-            break
-        offset += _PAGE_SIZE
-
-    set_cached_positioned_events(cache_key, rows)
-    return rows
 
 
 def _teams_from_zone_counts(

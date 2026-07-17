@@ -1,9 +1,9 @@
-"use client";
+/** @deprecated Prefer `useDataScope().workspaceId` — kept for existing call sites. */
+export { useDataScope as useActiveWorkspaceScope } from "@/lib/use-data-scope";
 
 import { useDataScope } from "@/lib/use-data-scope";
 
-/** Active workspace id for signed-in users (undefined for guests or when auth is off). */
+/** Active workspace id for React Query keys (undefined while guest / loading). */
 export function useActiveWorkspaceId(): string | undefined {
-  const { workspaceId } = useDataScope();
-  return workspaceId;
+  return useDataScope().workspaceId;
 }

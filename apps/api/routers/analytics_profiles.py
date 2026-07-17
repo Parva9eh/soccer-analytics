@@ -21,7 +21,7 @@ from analytics.tactical import (
 from analytics.xg import is_goal_outcome, shot_outcome, shot_team_name, shot_xg_from_details
 from core.supabase_client import get_supabase_public_read
 from services.season_scope import list_season_match_rows, resolve_season_match_ids
-from routers.analytics_possession import _aggregate_team_possession, _build_chains
+from services.possession_chains import aggregate_team_possession, build_possession_chains
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, raise_http_exception
 from schemas.profiles import (
     CompareMatchesResponse,
@@ -219,8 +219,8 @@ def _build_team_profile(
         ):
             progressive += 1
 
-    possession_stats = _aggregate_team_possession(
-        _build_chains(
+    possession_stats = aggregate_team_possession(
+        build_possession_chains(
             [
                 event
                 for event in all_event_rows
@@ -382,19 +382,20 @@ def _build_match_profile(
 def _season_event_bundle(
     supabase: Client, competition: str, season: str
 ) -> tuple[list[int], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    from services.event_fetch import fetch_events_paginated
+    from services.event_fetch import COLUMNS_SEASON_BUNDLE, fetch_events_paginated
 
     match_ids = resolve_season_match_ids(supabase, competition, season)
-    pass_rows = _events_for_matches(supabase, match_ids, "Pass")
-    shot_rows = _events_for_matches(supabase, match_ids, "Shot")
     all_rows: list[dict[str, Any]] = []
     if match_ids:
         all_rows = fetch_events_paginated(
             supabase,
-            "match_id, minute, second, event_type, details",
+            COLUMNS_SEASON_BUNDLE,
             match_ids=match_ids,
             order=True,
         )
+    # Single full-season pull; derive pass/shot subsets in process.
+    pass_rows = [r for r in all_rows if r.get("event_type") == "Pass"]
+    shot_rows = [r for r in all_rows if r.get("event_type") == "Shot"]
     match_rows = list_season_match_rows(supabase, competition, season)
     return match_ids, pass_rows, shot_rows, all_rows, match_rows
 

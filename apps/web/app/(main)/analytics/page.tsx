@@ -32,12 +32,7 @@ import {
   type ReportScope,
   type WorkspaceDashboard,
 } from "@/lib/report-types";
-import { PossessionSummaryPanel } from "@/components/analytics/PossessionSummaryPanel";
-import { ProgressivePassLeaderboardPanel } from "@/components/analytics/ProgressivePassLeaderboard";
-import { SeasonZonePanel } from "@/components/analytics/SeasonZonePanel";
-import { SeasonTeamHeatmapPanel } from "@/components/analytics/SeasonTeamHeatmapPanel";
-import { XgFormChart } from "@/components/analytics/XgFormChart";
-import { XgLeaderboards } from "@/components/analytics/XgLeaderboards";
+import { SeasonAnalyticsPanels } from "@/components/analytics/SeasonAnalyticsPanels";
 import { formatXg } from "@/lib/xg-types";
 import { queryAwaitingData } from "@/lib/query-loading";
 import { useDataScope } from "@/lib/use-data-scope";
@@ -392,57 +387,23 @@ function AuthAnalyticsDashboard() {
           </div>
 
           {scope === "filtered" && (
-            <XgLeaderboards
+            <SeasonAnalyticsPanels
               competition={competition}
               season={season}
-              players={playerXg}
-              teams={teamXg}
-              loading={playerXgLoading || teamXgLoading}
-            />
-          )}
-
-          {scope === "filtered" && (
-            <XgFormChart
-              competition={competition}
-              season={season}
-              teams={teamXg}
-              teamsLoading={teamXgLoading}
-            />
-          )}
-
-          {scope === "filtered" && (
-            <ProgressivePassLeaderboardPanel
-              competition={competition}
-              season={season}
-              data={progressivePasses}
-              loading={progressivePassesLoading}
-            />
-          )}
-
-          {scope === "filtered" && (
-            <PossessionSummaryPanel
-              competition={competition}
-              season={season}
-              data={possessionSummary}
-              loading={possessionSummaryLoading}
-            />
-          )}
-
-          {scope === "filtered" && (
-            <SeasonZonePanel
-              competition={competition}
-              season={season}
-              data={seasonZones}
-              loading={seasonZonesLoading}
-            />
-          )}
-
-          {scope === "filtered" && (
-            <SeasonTeamHeatmapPanel
-              competition={competition}
-              season={season}
-              zoneData={seasonZones}
-              zoneLoading={seasonZonesLoading}
+              queries={{
+                seasonXg,
+                seasonXgLoading,
+                playerXg,
+                playerXgLoading,
+                teamXg,
+                teamXgLoading,
+                progressivePasses,
+                progressivePassesLoading,
+                possessionSummary,
+                possessionSummaryLoading,
+                seasonZones,
+                seasonZonesLoading,
+              }}
             />
           )}
 
@@ -560,47 +521,23 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
         />
       </div>
 
-      <XgLeaderboards
+      <SeasonAnalyticsPanels
         competition={DEFAULT_COMPETITION}
         season={DEFAULT_SEASON}
-        players={playerXg}
-        teams={teamXg}
-        loading={playerXgLoading || teamXgLoading}
-      />
-
-      <XgFormChart
-        competition={DEFAULT_COMPETITION}
-        season={DEFAULT_SEASON}
-        teams={teamXg}
-        teamsLoading={teamXgLoading}
-      />
-
-      <ProgressivePassLeaderboardPanel
-        competition={DEFAULT_COMPETITION}
-        season={DEFAULT_SEASON}
-        data={progressivePasses}
-        loading={progressivePassesLoading}
-      />
-
-      <PossessionSummaryPanel
-        competition={DEFAULT_COMPETITION}
-        season={DEFAULT_SEASON}
-        data={possessionSummary}
-        loading={possessionSummaryLoading}
-      />
-
-      <SeasonZonePanel
-        competition={DEFAULT_COMPETITION}
-        season={DEFAULT_SEASON}
-        data={seasonZones}
-        loading={seasonZonesLoading}
-      />
-
-      <SeasonTeamHeatmapPanel
-        competition={DEFAULT_COMPETITION}
-        season={DEFAULT_SEASON}
-        zoneData={seasonZones}
-        zoneLoading={seasonZonesLoading}
+        queries={{
+          seasonXg,
+          seasonXgLoading,
+          playerXg,
+          playerXgLoading,
+          teamXg,
+          teamXgLoading,
+          progressivePasses,
+          progressivePassesLoading,
+          possessionSummary,
+          possessionSummaryLoading,
+          seasonZones,
+          seasonZonesLoading,
+        }}
       />
 
       <AnalyticsRoadmap />
@@ -621,10 +558,19 @@ function LegacyAnalyticsPage({ guestMode = false }: { guestMode?: boolean }) {
   );
 }
 
+/** Workspace dashboard when signed in; demo summary dashboard otherwise. */
 export default function AnalyticsPage() {
   const { session, isLoading } = useAuthSession();
 
-  if (AUTH_ENABLED && !isLoading && session) {
+  if (AUTH_ENABLED && isLoading) {
+    return (
+      <PageShell>
+        <div className="surface-card h-64 animate-pulse rounded-xl border" />
+      </PageShell>
+    );
+  }
+
+  if (AUTH_ENABLED && session) {
     return (
       <Suspense
         fallback={

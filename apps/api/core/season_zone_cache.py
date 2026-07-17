@@ -1,4 +1,4 @@
-"""TTL + LRU cache for season-scoped zone aggregates (RLS-safe per match-id scope)."""
+"""TTL + LRU cache for season-scoped zone aggregates (not raw event lists)."""
 
 from __future__ import annotations
 
@@ -70,14 +70,11 @@ class SeasonScopeCache(Generic[T]):
         self._entries.clear()
 
 
-def _build_caches() -> tuple[
-    SeasonScopeCache[list[dict[str, Any]]],
-    SeasonScopeCache[list[dict[str, Any]]],
-]:
-    return SeasonScopeCache(), SeasonScopeCache()
+def _build_zones_cache() -> SeasonScopeCache[list[dict[str, Any]]]:
+    return SeasonScopeCache()
 
 
-_season_zones_cache, _positioned_events_cache = _build_caches()
+_season_zones_cache: SeasonScopeCache[list[dict[str, Any]]] = _build_zones_cache()
 
 
 def get_cached_season_zones(key: str) -> list[dict[str, Any]] | None:
@@ -88,20 +85,11 @@ def set_cached_season_zones(key: str, teams: list[dict[str, Any]]) -> None:
     _season_zones_cache.set(key, teams)
 
 
-def get_cached_positioned_events(key: str) -> list[dict[str, Any]] | None:
-    return _positioned_events_cache.get(key)
-
-
-def set_cached_positioned_events(key: str, rows: list[dict[str, Any]]) -> None:
-    _positioned_events_cache.set(key, rows)
-
-
 def clear_season_zone_caches() -> None:
     _season_zones_cache.clear()
-    _positioned_events_cache.clear()
 
 
 def reset_season_zone_caches_from_settings() -> None:
     """Rebuild caches after settings change (tests)."""
-    global _season_zones_cache, _positioned_events_cache
-    _season_zones_cache, _positioned_events_cache = _build_caches()
+    global _season_zones_cache
+    _season_zones_cache = _build_zones_cache()

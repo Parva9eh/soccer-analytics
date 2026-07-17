@@ -13,11 +13,9 @@ import {
   useCallback,
   useMemo,
 } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Trophy, X } from "lucide-react";
-import { apiFetchJson } from "@/lib/api";
 import {
   buildMatchesListPath,
   readCompetitionSeasonFromSearchParams,
@@ -65,10 +63,10 @@ import dynamic from "next/dynamic";
 import { Pitch } from "@/components/pitch/Pitch";
 import { getEventColor, getEventIcon, EVENT_TYPES } from "@/components/pitch/utils";
 import {
-  fetchAllMatchEvents,
   type EventsPageResponse,
   type PitchEvent,
 } from "@/lib/event-types";
+import { useMatchDetailQueries } from "@/lib/use-match-detail-queries";
 
 const ThreeDPitch = dynamic(
   () =>
@@ -211,15 +209,31 @@ function MatchDetailPageContent() {
     }
   }, [highlightedEventId]);
 
-  const { data: savedAnalysis } = useQuery<{
-    id: string;
-    title: string;
-    config: Record<string, unknown>;
-  }>({
-    queryKey: ["saved-analysis", savedId],
-    queryFn: () =>
-      apiFetchJson(`/analyses/${savedId}`),
-    enabled: AUTH_ENABLED && Boolean(savedId),
+  const {
+    savedAnalysis,
+    match,
+    matchLoading,
+    matchError,
+    refetchMatch,
+    matchXg,
+    passNetwork,
+    passNetworkLoading,
+    eventsData,
+    eventsLoading,
+    pitchEventsData,
+    pitchEventsLoading,
+    pitchEventsError,
+    refetchPitchEvents,
+    allPitchEvents,
+  } = useMatchDetailQueries({
+    matchId,
+    workspaceId,
+    savedId,
+    passTeamFilter,
+    pitchViewMode,
+    currentPage,
+    pageSize,
+    selectedEventType,
   });
 
   useEffect(() => {
@@ -243,18 +257,6 @@ function MatchDetailPageContent() {
     });
   }, [savedAnalysis]);
 
-  // Fetch match details
-  const {
-    data: match,
-    isLoading: matchLoading,
-    error: matchError,
-    refetch: refetchMatch,
-  } = useQuery<Match>({
-    queryKey: ["match", workspaceId, matchId],
-    queryFn: () => apiFetchJson<Match>(`/matches/${matchId}`),
-    enabled: !!matchId,
-  });
-
   const backHref = useMemo(() => {
     const competition = listFilters.competition ?? match?.competition ?? null;
     const season = listFilters.season ?? match?.season ?? null;
@@ -269,59 +271,12 @@ function MatchDetailPageContent() {
     match?.season,
   ]);
 
-  const { data: matchXg } = useQuery<MatchXg>({
-    queryKey: ["match-xg", workspaceId, matchId],
-    queryFn: () => apiFetchJson<MatchXg>(`/analytics/xg/matches/${matchId}`),
-    enabled: matchId != null,
-  });
-
   const passNetworkTeam =
     match && passTeamFilter === "home"
       ? match.home_team ?? ""
       : match?.away_team ?? "";
 
-  const { data: passNetwork, isLoading: passNetworkLoading } =
-    useQuery<MatchPassNetwork>({
-      queryKey: [
-        "match-pass-network",
-        workspaceId,
-        matchId,
-        passNetworkTeam,
-      ],
-      queryFn: () =>
-        apiFetchJson<MatchPassNetwork>(
-          `/analytics/passes/matches/${matchId}?team=${encodeURIComponent(passNetworkTeam)}`,
-        ),
-      enabled:
-        pitchViewMode === "passes" &&
-        matchId != null &&
-        Boolean(passNetworkTeam),
-    });
 
-  // Fetch events for table
-  const { data: eventsData, isLoading: eventsLoading } =
-    useQuery<EventsResponse>({
-      queryKey: ["events", workspaceId, matchId, currentPage, selectedEventType],
-      queryFn: async () => {
-        const eventTypeParam =
-          selectedEventType === "all" ? "" : `&event_type=${selectedEventType}`;
-        return apiFetchJson<EventsResponse>(
-          `/events/?match_id=${matchId}&page=${currentPage}&page_size=${pageSize}${eventTypeParam}`,
-        );
-      },
-      enabled: !!matchId,
-    });
-
-  // Fetch all pitch events (paginated until complete — not a hard 500-row cap).
-  const { data: pitchEventsData, isPending: pitchEventsPending, isFetching: pitchEventsFetching, isError: pitchEventsError, refetch: refetchPitchEvents } = useQuery<EventsResponse>({
-    queryKey: ["pitch-events", workspaceId, matchId],
-    queryFn: () => fetchAllMatchEvents(matchId!),
-    enabled: !!matchId,
-  });
-
-  const pitchEventsLoading =
-    pitchEventsPending || (pitchEventsFetching && pitchEventsData === undefined);
-  const allPitchEvents = pitchEventsData?.events ?? [];
 
   const shotMapEvents = allPitchEvents.filter((event) => {
     if (!isShotEvent(event.event_type) || event.x == null || event.y == null) {
