@@ -32,24 +32,14 @@ import {
   GRASS_BASE,
   statsbombToWorld,
 } from "./constants";
+import type { PitchEvent } from "@/lib/event-types";
 import { StadiumEnvironment3D } from "./StadiumEnvironment3D";
 import { PitchFrame } from "./PitchFrame";
 import { Goals3D } from "./Goal3D";
 
-interface EventPoint {
-  id: number;
-  x: number | null;
-  y: number | null;
-  end_x?: number | null;
-  end_y?: number | null;
-  event_type: string | null;
-  minute: number | null;
-  second: number | null;
-}
-
 interface ThreeDPitchProps {
-  events: EventPoint[];
-  onEventClick?: (event: EventPoint) => void;
+  events: PitchEvent[];
+  onEventClick?: (event: PitchEvent) => void;
   highlightedEventId?: number | null;
   selectedEventIds?: number[];
   viewMode?: 'top' | 'side' | 'goal' | 'iso';
@@ -420,7 +410,7 @@ export function ThreeDPitch({
   const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
 
   // Hover state for 3D tooltip parity with 2D (advanced consistent UX)
-  const [hoveredEvent3D, setHoveredEvent3D] = useState<EventPoint | null>(null);
+  const [hoveredEvent3D, setHoveredEvent3D] = useState<PitchEvent | null>(null);
 
   // Disable orbit during drag select (shift+drag)
   useEffect(() => {

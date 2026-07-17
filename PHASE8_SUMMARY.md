@@ -1,6 +1,6 @@
 # Phase 8 Plan — Residual Code-Review Remediation
 
-**Status:** Implementing (July 2026)  
+**Status:** Implemented on branch stack (July 2026)  
 **Prerequisite:** Phase 7 on `main`; membership migration applied on hosted Supabase ✅  
 **Source:** `local/CODE_REVIEW_PHASE7.md`
 
@@ -21,10 +21,10 @@ Finish structural and efficiency work left open after Phase 7 without changing p
 
 ## Success criteria
 
-- [ ] No private cross-router domain imports
-- [ ] Events API projects columns (not `*`) for list/pitch
-- [ ] Match page under ~800 lines with extracted modules
-- [ ] Single analytics page component tree
-- [ ] Season profile bundle is one paginated pull (not 3)
-- [ ] Docs match real Supabase client model
-- [ ] Migration marked applied in SECURITY/PHASE7 notes
+- [x] No private cross-router domain imports
+- [x] Events API projects columns (not `*`) for list/pitch
+- [~] Match page queries extracted (`useMatchDetailQueries`); full UI split still >1k lines (~1380)
+- [x] Shared season panels (`SeasonAnalyticsPanels`); entry still workspace vs demo branches
+- [x] Season profile bundle is one paginated pull (not 3)
+- [x] Docs match real Supabase client model
+- [x] Migration marked applied in SECURITY notes

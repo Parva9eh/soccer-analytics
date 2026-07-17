@@ -11,6 +11,7 @@ from supabase import Client
 from core.deps import get_current_user_required, get_user_supabase
 from core.auth import AuthUser
 from core.workspace_access import require_workspace_admin, require_workspace_member
+from services.workspaces import list_user_workspaces
 from core.supabase_client import get_supabase_service_client
 from core.supabase_errors import raise_for_supabase_error
 from schemas.error import ErrorCode, COMMON_ERROR_RESPONSES, raise_http_exception
@@ -120,41 +121,6 @@ def _dataset_rows_to_response(rows: list[dict]) -> list[WorkspaceDatasetResponse
     return results
 
 
-def _list_user_workspaces(supabase: Client, user_id: str) -> list[WorkspaceResponse]:
-    membership = (
-        supabase.table("workspace_members")
-        .select("workspace_id, role, workspaces(id, name, slug)")
-        .eq("user_id", user_id)
-        .execute()
-    )
-    rows = membership.data or []
-    results: list[WorkspaceResponse] = []
-
-    for row in rows:
-        ws = row.get("workspaces") or {}
-        ws_id = ws.get("id")
-        if not ws_id:
-            continue
-
-        count_resp = (
-            supabase.table("workspace_members")
-            .select("user_id", count="exact")
-            .eq("workspace_id", ws_id)
-            .execute()
-        )
-        results.append(
-            WorkspaceResponse(
-                id=ws_id,
-                name=ws["name"],
-                slug=ws["slug"],
-                role=WorkspaceRole(row["role"]),
-                member_count=count_resp.count or 0,
-            )
-        )
-
-    return results
-
-
 @router.get(
     "/",
     response_model=List[WorkspaceResponse],
@@ -166,7 +132,7 @@ def list_workspaces(
 ) -> List[WorkspaceResponse]:
     """List workspaces the current user belongs to (empty list when none)."""
     try:
-        return _list_user_workspaces(supabase, user.id)
+        return list_user_workspaces(supabase, user.id)
     except HTTPException:
         raise
     except APIError as exc:

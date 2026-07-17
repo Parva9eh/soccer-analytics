@@ -8,7 +8,7 @@ from supabase import Client
 from core.auth import AuthUser
 from core.deps import get_current_user_required, get_user_supabase
 from core.supabase_errors import raise_for_supabase_error
-from routers.workspaces import _list_user_workspaces
+from services.workspaces import list_user_workspaces
 from schemas.auth import AuthMeResponse, AuthMeUpdate
 from schemas.error import COMMON_ERROR_RESPONSES, ErrorCode, ErrorResponse, raise_http_exception
 
@@ -136,7 +136,7 @@ def bootstrap_user(
     Safe to call after every sign-in; no-op when workspaces already exist.
     """
     try:
-        existing = _list_user_workspaces(supabase, user.id)
+        existing = list_user_workspaces(supabase, user.id)
         if not existing:
             result = supabase.rpc(
                 "create_workspace_for_user",

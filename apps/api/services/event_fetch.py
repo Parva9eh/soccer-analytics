@@ -9,6 +9,14 @@ from supabase import Client
 # Match PostgREST default max-rows; always page until short batch.
 PAGE_SIZE = 1000
 
+# Default projections (avoid select("*") for list/pitch consumers).
+COLUMNS_LIST = (
+    "id, match_id, minute, second, event_type, x, y, end_x, end_y, details"
+)
+COLUMNS_PITCH = "id, match_id, minute, second, event_type, x, y, end_x, end_y, details"
+COLUMNS_POSITIONED = "x, y, details"
+COLUMNS_SEASON_BUNDLE = "id, match_id, minute, second, event_type, x, end_x, details"
+
 
 def fetch_events_paginated(
     supabase: Client,
@@ -18,6 +26,7 @@ def fetch_events_paginated(
     match_id: int | None = None,
     event_type: str | None = None,
     order: bool = False,
+    require_position: bool = False,
 ) -> list[dict[str, Any]]:
     """
     Load all matching event rows via range pagination.
@@ -40,6 +49,8 @@ def fetch_events_paginated(
             query = query.in_("match_id", list(match_ids))
         if event_type is not None:
             query = query.eq("event_type", event_type)
+        if require_position:
+            query = query.not_.is_("x", "null").not_.is_("y", "null")
         if order:
             query = query.order("minute").order("second").order("id")
         batch = (
