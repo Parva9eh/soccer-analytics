@@ -1,8 +1,8 @@
 # Soccer Analytics - Project Plan
 
 **Repository:** [soccer-analytics](https://github.com/Parva9eh/soccer-analytics)  
-**Current Phase:** Phase 7 — production hardening from code review (July 2026)  
-**Active work:** Phase 7 slices on `phase7/*` branches; Phase 6 product slices paused until 7.x security/perf closes
+**Current Phase:** Phase 8 — residual code-review structure & efficiency (July 2026)  
+**Active work:** Phase 8 slices on `phase8/*` branches (post Phase 7 hardening)
 
 ---
 
@@ -395,11 +395,28 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 | 7.5 | `phase7/match-page-refactor` | Match detail decompose, dynamic 3D, multipage events, shared event types |
 | 7.6 | `phase7/analytics-dashboard` | Unify guest/auth analytics UI, query invalidation, cold-start polish |
 
-**Operator:** After 7.1 merges, apply new Supabase migrations on hosted Supabase (SQL Editor).
+**Operator:** Membership migration applied on hosted Supabase ✅
 
 ---
 
-### Future / Stretch Goals (beyond Phase 7)
+### Phase 8: Residual Review Remediation (In progress)
+
+**Goal:** Finish structural debt from Phase 7 review: services ownership, season efficiency, analytics unify, match-page split, docs/types.
+
+**Plan:** [PHASE8_SUMMARY.md](./PHASE8_SUMMARY.md)
+
+| Slice | Branch |
+|-------|--------|
+| 8.0 | `phase8/plan-docs` |
+| 8.1 | `phase8/services-ownership` |
+| 8.2 | `phase8/events-types-docs` |
+| 8.3 | `phase8/season-efficiency` |
+| 8.4 | `phase8/analytics-unify` |
+| 8.5 | `phase8/match-decompose` |
+
+---
+
+### Future / Stretch Goals (beyond Phase 8)
 
 - Remaining Phase 6 product slices (realtime, sharing)
 - Dedicated native mobile app
@@ -420,9 +437,10 @@ Phases 4.1–4.8 are merged to `main`. See [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.
 | Phase 4 | ✅ Completed | 4.1–4.8 on `main` — [PHASE4_SUMMARY.md](./PHASE4_SUMMARY.md) |
 | Phase 5 | ✅ Completed | 5.1–5.10 on `main`, prod on Vercel — [PHASE5_SUMMARY.md](./PHASE5_SUMMARY.md) |
 | Phase 6 | 🔄 Paused for 7 | 6.1–6.3 ✅ 6.5 ✅; product slices resume after Phase 7 — [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md) |
-| Phase 7 | 🔄 In progress | Security → perf → architecture — [PHASE7_SUMMARY.md](./PHASE7_SUMMARY.md) |
+| Phase 7 | ✅ On main | Security + pagination + CI — [PHASE7_SUMMARY.md](./PHASE7_SUMMARY.md); migration applied |
+| Phase 8 | 🔄 In progress | Residual structure/efficiency — [PHASE8_SUMMARY.md](./PHASE8_SUMMARY.md) |
 
-Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE6_SUMMARY.md](./PHASE6_SUMMARY.md), [PHASE7_SUMMARY.md](./PHASE7_SUMMARY.md).
+Detailed summaries: [PHASE0_SUMMARY.md](./PHASE0_SUMMARY.md) … [PHASE7_SUMMARY.md](./PHASE7_SUMMARY.md), [PHASE8_SUMMARY.md](./PHASE8_SUMMARY.md).
 
 ---
 

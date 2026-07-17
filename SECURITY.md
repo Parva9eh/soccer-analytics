@@ -44,7 +44,7 @@ git config core.hooksPath .githooks
 - Never expose the Supabase **service role** key in the frontend or public repos.
 - The web **anon** key is public by design; data access must be enforced with Supabase RLS.
 - Rotate Supabase keys if you suspect exposure.
-- Apply all `supabase/migrations/` on hosted Supabase (SQL Editor or CLI), including Phase 7 membership hardening (`20260710120000_secure_workspace_membership.sql`).
+- Apply all `supabase/migrations/` on hosted Supabase (SQL Editor or CLI), including Phase 7 membership hardening (`20260710120000_secure_workspace_membership.sql`) — **applied** (July 2026).
 
 ## Workspace membership & datasets
 
